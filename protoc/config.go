@@ -5,7 +5,6 @@ type Cfg struct {
 	ProtoPath string   `yaml:"proto-path,omitempty"`
 	Root      []string `yaml:"root,omitempty"`
 	Depends   []depend `yaml:"deps,omitempty"`
-	Input     []string `yaml:"input,omitempty"`
 	Plugins   []plugin `yaml:"plugins,omitempty"`
 	Includes  []string `yaml:"includes,omitempty"`
 }

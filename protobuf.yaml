@@ -1,13 +1,13 @@
 version: v1
 proto-path: .proto
 root:
-  - retag
-  - protoc-gen-retag/example
+- retag
+- protoc-gen-retag/example
 deps:
-  - name: google/protobuf
-    url: /usr/local/include/google/protobuf
+- name: google/protobuf
+  url: /usr/local/include/google/protobuf
 plugins:
-  - name: go
-    opt: paths=source_relative
-  - name: retag
-    opt: paths=source_relative
+- name: go
+  opt: paths=source_relative
+- name: retag
+  opt: paths=source_relative

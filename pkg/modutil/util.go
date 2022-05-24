@@ -51,12 +51,3 @@ func LoadVersions() map[string]string {
 
 	return versions
 }
-
-func LoadMod() *modfile.File {
-	var path = GoModPath()
-	var modBytes = xerror.PanicBytes(ioutil.ReadFile(path))
-
-	var a, err = modfile.Parse("in", modBytes, nil)
-	xerror.Panic(err, "go.mod 解析失败")
-	return a
-}

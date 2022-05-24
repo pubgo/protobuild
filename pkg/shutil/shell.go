@@ -2,7 +2,6 @@ package shutil
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -32,14 +31,6 @@ func GoModGraph() (string, error) {
 
 func GoList() (string, error) {
 	return Run("go", "list", "./...")
-}
-
-func GraphViz(in, out string) (err error) {
-	ret, err := Run("dot", "-Tsvg", in)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(out, []byte(ret), 0600)
 }
 
 func Shell(args ...string) *exec.Cmd {

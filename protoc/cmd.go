@@ -1,7 +1,6 @@
 package protoc
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"io/fs"
@@ -12,15 +11,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/emicklei/proto"
-	"github.com/pubgo/x/iox"
 	"github.com/pubgo/x/pathutil"
 	"github.com/pubgo/xerror"
 	"github.com/urfave/cli/v2"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/pubgo/protobuild/pkg/modutil"
-	"github.com/pubgo/protobuild/pkg/protoutil"
 	"github.com/pubgo/protobuild/pkg/shutil"
 	"github.com/pubgo/protobuild/pkg/typex"
 	"github.com/pubgo/protobuild/pkg/utils"
@@ -53,22 +49,24 @@ func Main() {
 			content := xerror.PanicBytes(ioutil.ReadFile(protoCfg))
 			xerror.Panic(yaml.Unmarshal(content, &cfg))
 
-			if cfg.ProtoPath == "" {
-				protoPath := filepath.Join(pwd, ".lava", "proto")
+			cfg.ProtoPath = utils.FirstFnNotEmpty(func() string {
+				return cfg.ProtoPath
+			}, func() string {
+				protoPath := filepath.Join(pwd, ".proto")
 				if pathutil.IsExist(protoPath) {
-					cfg.ProtoPath = protoPath
+					return protoPath
 				}
-			}
-
-			if cfg.ProtoPath == "" {
+				return ""
+			}, func() string {
 				goModPath := filepath.Dir(modutil.GoModPath())
 				if goModPath == "" {
-					panic("没找到项目go.mod文件")
+					panic("没有找到项目go.mod文件")
 				}
 
-				cfg.ProtoPath = filepath.Join(goModPath, ".lava", "proto")
-				xerror.Panic(pathutil.IsNotExistMkDir(cfg.ProtoPath))
-			}
+				return filepath.Join(goModPath, ".proto")
+			})
+
+			xerror.Panic(pathutil.IsNotExistMkDir(cfg.ProtoPath))
 
 			// protobuf文件检查
 			for _, dep := range cfg.Depends {
@@ -77,62 +75,6 @@ func Main() {
 			return nil
 		},
 		Commands: cli.Commands{
-			&cli.Command{
-				Name:  "tidy",
-				Usage: "检查缺失protobuf依赖并把版本信息写入protobuf.yaml",
-				Action: func(ctx *cli.Context) error {
-					defer xerror.RespExit()
-
-					// 解析go.mod并获取所有pkg版本
-					var versions = modutil.LoadVersions()
-					for i, dep := range cfg.Depends {
-						var url = os.ExpandEnv(dep.Url)
-
-						// url是本地目录, 不做检查
-						if pathutil.IsDir(url) {
-							continue
-						}
-
-						var v = versions[url]
-						if v == "" {
-							v = dep.Version
-						}
-
-						// go.mod中version不存在, 并且protobuf.yaml也没有指定
-						if v == "" {
-							// go pkg缓存
-							var localPkg, err = ioutil.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
-							xerror.Panic(err)
-
-							var _, name = filepath.Split(url)
-							for j := range localPkg {
-								if !localPkg[j].IsDir() {
-									continue
-								}
-
-								if strings.HasPrefix(localPkg[j].Name(), name+"@") {
-									v = strings.TrimPrefix(localPkg[j].Name(), name+"@")
-									break
-								}
-							}
-						}
-
-						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s@%s", url, v)) {
-							xerror.Panic(shutil.Shell("go", "get", "-d", url+"/...").Run())
-
-							// 再次解析go.mod然后获取版本信息
-							versions = modutil.LoadVersions()
-							v = versions[url]
-
-							xerror.Assert(v == "", "%s version为空", url)
-						}
-
-						cfg.Depends[i].Version = v
-					}
-					xerror.Panic(ioutil.WriteFile(protoCfg, xerror.PanicBytes(yaml.Marshal(cfg)), 0755))
-					return nil
-				},
-			},
 			&cli.Command{
 				Name:  "gen",
 				Usage: "编译protobuf文件",
@@ -243,9 +185,57 @@ func Main() {
 			},
 			&cli.Command{
 				Name:  "vendor",
-				Usage: "把项目protobuf依赖同步到.lava/proto中",
+				Usage: "同步项目protobuf依赖到.proto中",
 				Action: func(ctx *cli.Context) error {
 					defer xerror.RespExit()
+
+					// 解析go.mod并获取所有pkg版本
+					var versions = modutil.LoadVersions()
+					for i, dep := range cfg.Depends {
+						var url = os.ExpandEnv(dep.Url)
+
+						// url是本地目录, 不做检查
+						if pathutil.IsDir(url) {
+							continue
+						}
+
+						var v = utils.FirstFnNotEmpty(func() string {
+							return versions[url]
+						}, func() string {
+							return dep.Version
+						}, func() string {
+							// go.mod中version不存在, 并且protobuf.yaml也没有指定
+							// go pkg缓存
+							var localPkg, err = ioutil.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
+							xerror.Panic(err)
+
+							var _, name = filepath.Split(url)
+							for j := range localPkg {
+								if !localPkg[j].IsDir() {
+									continue
+								}
+
+								if strings.HasPrefix(localPkg[j].Name(), name+"@") {
+									return strings.TrimPrefix(localPkg[j].Name(), name+"@")
+								}
+							}
+							return ""
+						})
+
+						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s@%s", url, v)) {
+							fmt.Println("go", "get", "-d", url+"/...")
+							xerror.Panic(shutil.Shell("go", "get", "-d", url+"/...").Run())
+
+							// 再次解析go.mod然后获取版本信息
+							versions = modutil.LoadVersions()
+							v = versions[url]
+
+							xerror.Assert(v == "", "%s version为空", url)
+						}
+
+						cfg.Depends[i].Version = v
+					}
+					xerror.Panic(ioutil.WriteFile(protoCfg, xerror.PanicBytes(yaml.Marshal(cfg)), 0755))
 
 					// 删除老的protobuf文件
 					_ = os.RemoveAll(cfg.ProtoPath)
@@ -299,106 +289,6 @@ func Main() {
 					return nil
 				},
 			},
-			&cli.Command{
-				Name:  "check",
-				Usage: "protobuf文件检查",
-				Action: func(ctx *cli.Context) error {
-					defer xerror.RespExit()
-
-					var protoList sync.Map
-					for i := range cfg.Root {
-						if pathutil.IsNotExist(cfg.Root[i]) {
-							log.Printf("proto root (%s) not flund\n", cfg.Root[i])
-							continue
-						}
-
-						xerror.Panic(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
-							if err != nil {
-								return err
-							}
-
-							if info.IsDir() {
-								return nil
-							}
-
-							if !strings.HasSuffix(info.Name(), ".proto") {
-								return nil
-							}
-
-							protoList.Store(path, struct{}{})
-							return nil
-						}))
-					}
-
-					// 处理检测gateway url
-					var handler = func(protoFile string) {
-						var data, err = iox.ReadText(protoFile)
-						xerror.Panic(err)
-
-						parser := proto.NewParser(strings.NewReader(data))
-						definition, err := parser.Parse()
-						xerror.Panic(err, protoFile)
-
-						// package name
-						var pkg string
-						proto.Walk(definition, proto.WithPackage(func(p *proto.Package) {
-							var replacer = strings.NewReplacer(".", "/", "-", "/")
-							pkg = replacer.Replace(p.Name)
-						}))
-
-						var rpcList []*proto.RPC
-						proto.Walk(definition, proto.WithService(func(srv *proto.Service) {
-							for _, e := range srv.Elements {
-								var rpc, ok = e.(*proto.RPC)
-								if !ok {
-									continue
-								}
-
-								rpcList = append(rpcList, rpc)
-							}
-						}))
-
-						var dataLine = strings.Split(data, "\n")
-						for i := range rpcList {
-							rpc := rpcList[i]
-							insert := fmt.Sprintf(`
-rpc %s (%s) returns (%s) {
-  option (google.api.http) = {
-    post: "%s"
-    body: "*"
-  };`, rpc.Name, rpc.RequestType, rpc.ReturnsType, "/"+protoutil.Camel2Case(fmt.Sprintf("%s/%s/%s", protoutil.Camel2Case(pkg), protoutil.Camel2Case(rpc.Parent.(*proto.Service).Name), protoutil.Camel2Case(rpc.Name))))
-
-							var hasHttp bool
-							for i := range rpc.Options {
-								if rpc.Options[i].Name == "(google.api.http)" {
-									hasHttp = true
-								}
-							}
-
-							// 如果option为0, 那么可以整体替换, 通过正则表达式
-							if len(rpc.Options) == 0 || !hasHttp {
-								_ = insert
-								var rpcData = strings.Trim(dataLine[rpc.Position.Line-1], ";")
-								// 以}结尾
-								if rpcData[len(rpcData)-1] == '}' {
-									dataLine[rpc.Position.Line-1] = insert + "\n}\n"
-								} else {
-									dataLine[rpc.Position.Line-1] = insert
-								}
-							}
-						}
-
-						data = strings.Join(dataLine, "\n")
-						xerror.Panic(ioutil.WriteFile(protoFile, []byte(data), 0755))
-					}
-					protoList.Range(func(key, _ interface{}) bool {
-						defer xerror.RespExit(key)
-						handler(key.(string))
-						return true
-					})
-					return nil
-				},
-			},
 		},
 	}
 	xerror.Exit(app.Run(os.Args))
@@ -406,15 +296,10 @@ rpc %s (%s) returns (%s) {
 
 func copyFile(dstFilePath string, srcFilePath string) (written int64, err error) {
 	srcFile, err := os.Open(srcFilePath)
-	xerror.Panic(err, "打开源文件错误，错误信息")
+	xerror.Panic(err, "打开源文件错误", srcFilePath)
 
-	defer srcFile.Close()
-	reader := bufio.NewReader(srcFile)
+	dstFile, err := os.OpenFile(dstFilePath, os.O_WRONLY|os.O_CREATE, 0444)
+	xerror.Panic(err, "打开目标文件错误", dstFilePath)
 
-	dstFile, err := os.OpenFile(dstFilePath, os.O_WRONLY|os.O_CREATE, 0777)
-	xerror.Panic(err, "打开目标文件错误，错误信息")
-
-	writer := bufio.NewWriter(dstFile)
-	defer dstFile.Close()
-	return io.Copy(writer, reader)
+	return io.Copy(dstFile, srcFile)
 }
