@@ -9,9 +9,7 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - github.com/pubgo/protobuild/version.CommitID={{ .ShortCommit }}
-      - github.com/pubgo/protobuild/version.BuildTime={{ .CommitDate }}
-      - github.com/pubgo/protobuild/version.Version={{ .Tag }}
+      - -X 'github.com/pubgo/protobuild/version.BuildTime={{ .Date }}' -X 'github.com/pubgo/protobuild/version.CommitID={{ .Commit }}' -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
   - main: ./protoc-gen-retag/main.go
     id: protoc-gen-retag
     binary: protoc-gen-retag
