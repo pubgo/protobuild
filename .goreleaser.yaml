@@ -2,6 +2,7 @@ builds:
   - main: ./main.go
     id: protobuild
     binary: protobuild
+    skip: false
     goos:
       - linux
       - darwin
@@ -9,10 +10,13 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - -X 'github.com/pubgo/protobuild/version.BuildTime={{ .Date }}' -X 'github.com/pubgo/protobuild/version.CommitID={{ .Commit }}' -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
+      - -X 'github.com/pubgo/protobuild/version.BuildTime={{ .Date }}'
+      - -X 'github.com/pubgo/protobuild/version.CommitID={{ .Commit }}'
+      - -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
   - main: ./protoc-gen-retag/main.go
     id: protoc-gen-retag
     binary: protoc-gen-retag
+    skip: false
     goos:
       - linux
       - darwin
