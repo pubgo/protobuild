@@ -12,7 +12,7 @@ builds:
       - github.com/pubgo/protobuild/version.CommitID={{ .ShortCommit }}
       - github.com/pubgo/protobuild/version.BuildTime={{ .CommitDate }}
       - github.com/pubgo/protobuild/version.Version={{ .Tag }}
-  - main: ./cmd/protoc-gen-retag/main.go
+  - main: ./protoc-gen-retag/main.go
     id: protoc-gen-retag
     binary: protoc-gen-retag
     goos:
