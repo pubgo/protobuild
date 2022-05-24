@@ -3,7 +3,6 @@ module github.com/pubgo/protobuild
 go 1.18
 
 require (
-	github.com/emicklei/proto v1.10.0
 	github.com/fatih/structtag v1.2.0
 	github.com/flosch/pongo2/v5 v5.0.0
 	github.com/hashicorp/go-version v1.5.0

@@ -1,0 +1,28 @@
+builds:
+  - main: ./main.go
+    id: protobuild
+    binary: protobuild
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+    ldflags:
+      - github.com/pubgo/protobuild/version.CommitID={{ .ShortCommit }}
+      - github.com/pubgo/protobuild/version.BuildTime={{ .CommitDate }}
+      - github.com/pubgo/protobuild/version.Version={{ .Tag }}
+  - main: ./cmd/protoc-gen-retag/main.go
+    id: protoc-gen-retag
+    binary: protoc-gen-retag
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+archives:
+  - name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
+    format: binary
+    replacements:
+      amd64: x86_64
