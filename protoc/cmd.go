@@ -189,6 +189,8 @@ func Main() {
 				Action: func(ctx *cli.Context) error {
 					defer xerror.RespExit()
 
+					var changed bool
+
 					// 解析go.mod并获取所有pkg版本
 					var versions = modutil.LoadVersions()
 					for i, dep := range cfg.Depends {
@@ -222,7 +224,8 @@ func Main() {
 							return ""
 						})
 
-						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s@%s", url, v)) {
+						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
+							changed = true
 							fmt.Println("go", "get", "-d", url+"/...")
 							xerror.Panic(shutil.Shell("go", "get", "-d", url+"/...").Run())
 
@@ -235,7 +238,12 @@ func Main() {
 
 						cfg.Depends[i].Version = v
 					}
-					xerror.Panic(ioutil.WriteFile(protoCfg, xerror.PanicBytes(yaml.Marshal(cfg)), 0755))
+					xerror.Panic(ioutil.WriteFile(protoCfg, xerror.PanicBytes(yaml.Marshal(cfg)), 0644))
+
+					if !changed {
+						fmt.Println("skip")
+						return nil
+					}
 
 					// 删除老的protobuf文件
 					_ = os.RemoveAll(cfg.ProtoPath)
