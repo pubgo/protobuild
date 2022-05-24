@@ -17,7 +17,6 @@ import (
 	"github.com/pubgo/x/pathutil"
 	"github.com/pubgo/xerror"
 	"github.com/urfave/cli/v2"
-	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/pubgo/protobuild/pkg/modutil"
@@ -171,8 +170,11 @@ func Main() {
 
 						var data = ""
 						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.ProtoPath, pwd)
-						var lavaOut = ""
-						var lavaOpt = ""
+						for i := range cfg.Includes {
+							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
+						}
+						var retagOut = ""
+						var retagOpt = ""
 						for i := range cfg.Plugins {
 							var plg = cfg.Plugins[i]
 
@@ -214,9 +216,9 @@ func Main() {
 								return nil
 							}(plg.Opt)
 
-							if name == "lava" {
-								lavaOut = fmt.Sprintf(" --%s_out=%s", name, out)
-								lavaOpt = fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
+							if name == "retag" {
+								retagOut = fmt.Sprintf(" --%s_out=%s", name, out)
+								retagOpt = fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
 								continue
 							}
 
@@ -229,7 +231,9 @@ func Main() {
 						data = base + data + " " + filepath.Join(in, "*.proto")
 						fmt.Println(data + "\n")
 						xerror.Panic(shutil.Shell(data).Run(), data)
-						data = base + lavaOut + lavaOpt + " " + filepath.Join(in, "*.proto")
+						if retagOut != "" && retagOpt != "" {
+							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
+						}
 						fmt.Println(data + "\n")
 						xerror.Panic(shutil.Shell(data).Run(), data)
 						return true
@@ -266,7 +270,7 @@ func Main() {
 							url = filepath.Join(modPath, url)
 						}
 
-						zap.S().Debug(url)
+						fmt.Println(url)
 
 						url = xerror.PanicStr(filepath.Abs(url))
 						var newUrl = filepath.Join(cfg.ProtoPath, dep.Name)

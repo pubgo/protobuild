@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/pubgo/xerror"
-
-	"github.com/pubgo/lava/consts"
 )
 
 func EqualFieldType(out interface{}, kind reflect.Kind, key string) bool {
@@ -107,14 +105,6 @@ func IfEmpty(str string, fx func()) {
 	if str == "" {
 		fx()
 	}
-}
-
-func GetDefault(names ...string) string {
-	var name = consts.KeyDefault
-	if len(names) > 0 && names[0] != "" {
-		name = names[0]
-	}
-	return name
 }
 
 func Cost(fn func()) (dur time.Duration, err error) {

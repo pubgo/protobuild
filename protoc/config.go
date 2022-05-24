@@ -7,6 +7,7 @@ type Cfg struct {
 	Depends   []depend `yaml:"deps,omitempty"`
 	Input     []string `yaml:"input,omitempty"`
 	Plugins   []plugin `yaml:"plugins,omitempty"`
+	Includes  []string `yaml:"includes,omitempty"`
 }
 
 type plugin struct {
