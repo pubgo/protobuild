@@ -3,6 +3,7 @@ module github.com/pubgo/protobuild
 go 1.18
 
 require (
+	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
 	github.com/fatih/structtag v1.2.0
 	github.com/flosch/pongo2/v5 v5.0.0
 	github.com/hashicorp/go-version v1.5.0

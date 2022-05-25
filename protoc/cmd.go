@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cnf/structhash"
 	"github.com/pubgo/x/pathutil"
 	"github.com/pubgo/xerror"
 	"github.com/urfave/cli/v2"
@@ -72,6 +73,13 @@ func Main() {
 			for _, dep := range cfg.Depends {
 				xerror.Assert(dep.Name == "" || dep.Url == "", "name和url都不能为空")
 			}
+
+			checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))
+			if cfg.Checksum != checksum {
+				cfg.Checksum = checksum
+				cfg.changed = true
+			}
+
 			return nil
 		},
 		Commands: cli.Commands{
@@ -240,8 +248,8 @@ func Main() {
 					}
 					xerror.Panic(ioutil.WriteFile(protoCfg, xerror.PanicBytes(yaml.Marshal(cfg)), 0644))
 
-					if !changed {
-						fmt.Println("skip")
+					if !changed && !cfg.changed {
+						fmt.Println("No changes")
 						return nil
 					}
 
