@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package orm;
+
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/pubgo/protobuild/ormpb;ormpb";
+
+message Timestamp {
+  google.protobuf.Timestamp timestamp = 1;
+}
