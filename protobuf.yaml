@@ -2,14 +2,14 @@ version: v1
 proto-path: .proto
 checksum: 0f7c5397b378b6024614c8edb8971e0c09a7b69f
 root:
-- retag
-- protoc-gen-retag
-- ormpb
+  - retag
+  - protoc-gen-retag
+  - ormpb
 deps:
-- name: google/protobuf
-  url: /usr/local/include/google/protobuf
+  - name: google/protobuf
+    url: /usr/local/include/google/protobuf
 plugins:
-- name: go
-  opt: paths=source_relative
-- name: retag
-  opt: paths=source_relative
+  - name: go
+    opt: paths=source_relative
+  - name: retag
+    opt: paths=source_relative

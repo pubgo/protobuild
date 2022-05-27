@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package example;
+
+import "retag/retag.proto";
+import "orm/orm.proto";
+
+option go_package = "./;example";
+
+message Role{
+  // role id
+  int32 id = 1 [
+    (retag.tags) = {name:"gorm",value:"primarykey"}
+  ];
+
+  // role name, e.g. "admin"
+  string name = 2 [
+    (retag.tags) = {name:"gorm",value:"index"}
+  ];
+
+
+  // role status
+  string status = 3;
+
+  // org id
+  string org_id = 4 [
+    (retag.tags) = {name:"gorm",value:"index"}
+  ];
+
+  // role display name, e.g. "administrators"
+  string display_name = 6;
+
+  string remark = 7;
+
+  orm.Timestamp  created_at = 8;
+
+  orm.Timestamp  updated_at = 9;
+
+  orm.Timestamp  deleted_at = 10 [
+    (retag.tags) = {name:"gorm",value:"index;"}
+  ];
+}

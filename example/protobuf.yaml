@@ -1,0 +1,19 @@
+version: v1
+proto-path: ../.proto
+checksum: 19b198eaf2f3de6ca5d9ef6de526435964d518fa
+root:
+- proto
+deps:
+- name: google/protobuf
+  url: /usr/local/include/google/protobuf
+- name: retag
+  url: ../
+  path: /retag
+- name: orm
+  url: ../
+  path: /ormpb
+plugins:
+- name: go
+  opt: paths=source_relative
+- name: retag
+  opt: paths=source_relative

@@ -5,6 +5,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	pgs "github.com/lyft/protoc-gen-star"
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
 )
+
+var logs = log.New(os.Stderr, "", log.Llongfile|log.LstdFlags)
 
 type mod struct {
 	*pgs.ModuleBase
@@ -74,7 +77,7 @@ func (m mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Packag
 			filename = strings.TrimPrefix(filename, trim)
 		}
 
-		os.Stderr.WriteString(filename)
+		logs.Printf("filename=>%s", filename)
 
 		fs := token.NewFileSet()
 		fn, err := parser.ParseFile(fs, filename, nil, parser.ParseComments)
