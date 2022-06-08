@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"time"
+	
 	example "github.com/pubgo/protobuild/example/proto"
 	"github.com/pubgo/protobuild/ormpb"
 	"github.com/pubgo/xerror"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gl "gorm.io/gorm/logger"
-	"log"
-	"os"
-	"reflect"
-	"time"
 )
 
 func main() {

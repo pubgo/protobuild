@@ -1,3 +1,5 @@
+// Note: 本项目主要思路和代码来源于protoc-gen-gotag, 感谢srikrsna
+
 package main
 
 import (

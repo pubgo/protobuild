@@ -45,7 +45,7 @@ func Main() {
 			},
 		},
 		Before: func(ctx *cli.Context) error {
-			defer xerror.RespExit()
+			defer xerror.RecoverAndExit()
 
 			content := xerror.PanicBytes(ioutil.ReadFile(protoCfg))
 			xerror.Panic(yaml.Unmarshal(content, &cfg))
@@ -87,7 +87,7 @@ func Main() {
 				Name:  "gen",
 				Usage: "编译protobuf文件",
 				Action: func(ctx *cli.Context) error {
-					defer xerror.RespExit()
+					defer xerror.RecoverAndExit()
 
 					var protoList sync.Map
 
@@ -195,7 +195,7 @@ func Main() {
 				Name:  "vendor",
 				Usage: "同步项目protobuf依赖到.proto中",
 				Action: func(ctx *cli.Context) error {
-					defer xerror.RespExit()
+					defer xerror.RecoverAndExit()
 
 					var changed bool
 
@@ -285,7 +285,9 @@ func Main() {
 								return err
 							}
 
-							defer xerror.RespErr(&gErr)
+							defer xerror.RecoverErr(&gErr, func(err xerror.XErr) xerror.XErr {
+								return err.WrapF("path=%s name=%s", path, info.Name())
+							})
 
 							if info.IsDir() {
 								return nil
