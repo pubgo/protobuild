@@ -122,7 +122,7 @@ func Main() {
 
 						var data = ""
 						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
-						for i := range cfg.Root {
+						for i := range cfg.Includes {
 							base += fmt.Sprintf(" -I %s", cfg.Root[i])
 						}
 						var retagOut = ""

@@ -5,6 +5,7 @@ type Cfg struct {
 	Vendor   string   `yaml:"vendor,omitempty"`
 	Checksum string   `yaml:"checksum,omitempty" hash:"-"`
 	Root     []string `yaml:"root,omitempty" hash:"-"`
+	Includes []string `yaml:"includes,omitempty" hash:"-"`
 	Depends  []depend `yaml:"deps,omitempty"`
 	Plugins  []plugin `yaml:"plugins,omitempty" hash:"-"`
 	changed  bool
