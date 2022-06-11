@@ -1,11 +1,11 @@
 package modutil
 
 import (
+	"github.com/pubgo/protobuild/internal/utils"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/pubgo/protobuild/pkg/utils"
 	"github.com/pubgo/xerror"
 	"golang.org/x/mod/modfile"
 )

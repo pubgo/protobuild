@@ -8,7 +8,7 @@ import (
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
 	"github.com/pubgo/xerror"
 
-	rt "github.com/pubgo/protobuild/retag"
+	retagpb "github.com/pubgo/protobuild/pkg/retag"
 )
 
 type tagExtractor struct {
@@ -50,8 +50,8 @@ func newTagExtractor(d pgs.DebuggerCommon, ctx pgsgo.Context, autoTags []string)
 }
 
 func (v *tagExtractor) VisitOneOf(o pgs.OneOf) (pgs.Visitor, error) {
-	var tval []*rt.Tag
-	ok, err := o.Extension(rt.E_OneofTags, &tval)
+	var tval []*retagpb.Tag
+	ok, err := o.Extension(retagpb.E_OneofTags, &tval)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +75,8 @@ func (v *tagExtractor) VisitOneOf(o pgs.OneOf) (pgs.Visitor, error) {
 }
 
 func (v *tagExtractor) VisitField(f pgs.Field) (pgs.Visitor, error) {
-	var tval []*rt.Tag
-	ok, err := f.Extension(rt.E_Tags, &tval)
+	var tval []*retagpb.Tag
+	ok, err := f.Extension(retagpb.E_Tags, &tval)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (v *tagExtractor) VisitField(f pgs.Field) (pgs.Visitor, error) {
 	return v, nil
 }
 
-func (v *tagExtractor) Extract(f pgs.File) StructTags {
+func (v *tagExtractor) Extract(f pgs.File) structTags {
 	v.tags = map[string]map[string]*structtag.Tags{}
 
 	v.CheckErr(pgs.Walk(v, f))

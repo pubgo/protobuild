@@ -8,9 +8,9 @@ import (
 	"github.com/fatih/structtag"
 )
 
-type StructTags map[string]map[string]*structtag.Tags
+type structTags map[string]map[string]*structtag.Tags
 
-func (s StructTags) AddTagsToXXXFields(tags *structtag.Tags) {
+func (s structTags) AddTagsToXXXFields(tags *structtag.Tags) {
 	xtags := map[string]*structtag.Tags{
 		"XXX_NoUnkeyedLiteral": tags,
 		"XXX_unrecognized":     tags,
@@ -30,7 +30,7 @@ func (s StructTags) AddTagsToXXXFields(tags *structtag.Tags) {
 
 // Retag updates the existing tags with the map passed and modifies existing tags if any of the keys are matched.
 // First key to the tags argument is the name of the struct, the second key corresponds to field names.
-func Retag(n ast.Node, tags StructTags) error {
+func Retag(n ast.Node, tags structTags) error {
 	r := retag{}
 	f := func(n ast.Node) ast.Visitor {
 		if r.err != nil {

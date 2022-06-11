@@ -6,7 +6,7 @@ import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "retag/retag.proto";
 
-option go_package = "github.com/pubgo/protobuild/ormpb;ormpb";
+option go_package = "github.com/pubgo/protobuild/pkg/orm;ormpb";
 
 message Timestamp {
   google.protobuf.Timestamp timestamp = 1[

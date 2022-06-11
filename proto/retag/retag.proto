@@ -4,7 +4,7 @@ package retag;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/pubgo/protobuild/retag;retag";
+option go_package = "github.com/pubgo/protobuild/pkg/retag;retagpb";
 
 message Tag {
   string name = 1;

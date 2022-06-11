@@ -1,7 +1,9 @@
 package main
 
-import "github.com/pubgo/protobuild/protoc"
+import (
+	"github.com/pubgo/protobuild/cmd"
+)
 
 func main() {
-	protoc.Main()
+	cmd.Main()
 }

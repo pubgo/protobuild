@@ -5,8 +5,7 @@ package main
 import (
 	pgs "github.com/lyft/protoc-gen-star"
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
-
-	"github.com/pubgo/protobuild/protoc-gen-retag/retag"
+	"github.com/pubgo/protobuild/protoc-gen-retag/internal/retag"
 )
 
 func main() {

@@ -15,7 +15,7 @@ import (
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
 )
 
-var logs = log.New(os.Stderr, "", log.Llongfile|log.LstdFlags)
+var logger = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
 
 type mod struct {
 	*pgs.ModuleBase
@@ -59,12 +59,12 @@ func (m mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Packag
 
 		tags.AddTagsToXXXFields(xt)
 
-		gfname := m.Context.OutputPath(f).SetExt(".go").String()
+		gfName := m.Context.OutputPath(f).SetExt(".go").String()
 
-		outdir := m.Parameters().Str("outdir")
-		filename := gfname
-		if outdir != "" {
-			filename = filepath.Join(outdir, gfname)
+		output := m.Parameters().Str("output")
+		filename := gfName
+		if output != "" {
+			filename = filepath.Join(output, gfName)
 		}
 
 		if module != "" {
@@ -77,7 +77,7 @@ func (m mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Packag
 			filename = strings.TrimPrefix(filename, trim)
 		}
 
-		logs.Printf("filename=>%s", filename)
+		logger.Printf("filename=>%s", filename)
 
 		fs := token.NewFileSet()
 		fn, err := parser.ParseFile(fs, filename, nil, parser.ParseComments)

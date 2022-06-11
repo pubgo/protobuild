@@ -1,4 +1,4 @@
-package protoc
+package cmd
 
 import (
 	"fmt"
@@ -17,10 +17,10 @@ import (
 	"github.com/urfave/cli/v2"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/pubgo/protobuild/pkg/modutil"
-	"github.com/pubgo/protobuild/pkg/shutil"
-	"github.com/pubgo/protobuild/pkg/typex"
-	"github.com/pubgo/protobuild/pkg/utils"
+	"github.com/pubgo/protobuild/internal/modutil"
+	"github.com/pubgo/protobuild/internal/shutil"
+	"github.com/pubgo/protobuild/internal/typex"
+	"github.com/pubgo/protobuild/internal/utils"
 	"github.com/pubgo/protobuild/version"
 )
 
@@ -29,9 +29,11 @@ var (
 	protoCfg = "protobuf.yaml"
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd      = xerror.ExitErr(os.Getwd()).(string)
+	logger   = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
 )
 
 func Main() {
+	var force bool
 	var app = &cli.App{
 		Name:    "prototool",
 		Usage:   "protobuf generation, configuration and management",
@@ -120,8 +122,8 @@ func Main() {
 
 						var data = ""
 						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.ProtoPath, pwd)
-						for i := range cfg.Includes {
-							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
+						for i := range cfg.Root {
+							base += fmt.Sprintf(" -I %s", cfg.Root[i])
 						}
 						var retagOut = ""
 						var retagOpt = ""
@@ -179,12 +181,12 @@ func Main() {
 							}
 						}
 						data = base + data + " " + filepath.Join(in, "*.proto")
-						fmt.Println(data + "\n")
+						logger.Println(data)
 						xerror.Panic(shutil.Shell(data).Run(), data)
 						if retagOut != "" && retagOpt != "" {
 							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
 						}
-						fmt.Println(data + "\n")
+						logger.Println(data)
 						xerror.Panic(shutil.Shell(data).Run(), data)
 						return true
 					})
@@ -194,6 +196,15 @@ func Main() {
 			&cli.Command{
 				Name:  "vendor",
 				Usage: "同步项目protobuf依赖到.proto中",
+				Flags: typex.Flags{
+					&cli.BoolFlag{
+						Name:        "force",
+						Usage:       "protobuf force vendor",
+						Aliases:     []string{"f"},
+						Value:       force,
+						Destination: &force,
+					},
+				},
 				Action: func(ctx *cli.Context) error {
 					defer xerror.RecoverAndExit()
 
@@ -248,7 +259,7 @@ func Main() {
 					}
 					xerror.Panic(ioutil.WriteFile(protoCfg, xerror.PanicBytes(yaml.Marshal(cfg)), 0644))
 
-					if !changed && !cfg.changed {
+					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")
 						return nil
 					}
