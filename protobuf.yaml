@@ -3,7 +3,6 @@ vendor: .proto
 checksum: 0f7c5397b378b6024614c8edb8971e0c09a7b69f
 root:
 - proto
-- protoc-gen-retag
 deps:
 - name: google/protobuf
   url: /usr/local/include/google/protobuf

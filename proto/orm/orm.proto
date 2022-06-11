@@ -1,8 +1,7 @@
 syntax = "proto3";
 
-package orm;
+package orm.v1;
 
-import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "retag/retag.proto";
 

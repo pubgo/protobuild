@@ -52,8 +52,8 @@ func Main() {
 			content := xerror.PanicBytes(ioutil.ReadFile(protoCfg))
 			xerror.Panic(yaml.Unmarshal(content, &cfg))
 
-			cfg.ProtoPath = utils.FirstFnNotEmpty(func() string {
-				return cfg.ProtoPath
+			cfg.Vendor = utils.FirstFnNotEmpty(func() string {
+				return cfg.Vendor
 			}, func() string {
 				protoPath := filepath.Join(pwd, ".proto")
 				if pathutil.IsExist(protoPath) {
@@ -69,7 +69,7 @@ func Main() {
 				return filepath.Join(goModPath, ".proto")
 			})
 
-			xerror.Panic(pathutil.IsNotExistMkDir(cfg.ProtoPath))
+			xerror.Panic(pathutil.IsNotExistMkDir(cfg.Vendor))
 
 			// protobuf文件检查
 			for _, dep := range cfg.Depends {
@@ -121,7 +121,7 @@ func Main() {
 						var in = key.(string)
 
 						var data = ""
-						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.ProtoPath, pwd)
+						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
 						for i := range cfg.Root {
 							base += fmt.Sprintf(" -I %s", cfg.Root[i])
 						}
@@ -265,7 +265,7 @@ func Main() {
 					}
 
 					// 删除老的protobuf文件
-					_ = os.RemoveAll(cfg.ProtoPath)
+					_ = os.RemoveAll(cfg.Vendor)
 
 					for _, dep := range cfg.Depends {
 						if dep.Name == "" || dep.Url == "" {
@@ -290,7 +290,7 @@ func Main() {
 						fmt.Println(url)
 
 						url = xerror.PanicStr(filepath.Abs(url))
-						var newUrl = filepath.Join(cfg.ProtoPath, dep.Name)
+						var newUrl = filepath.Join(cfg.Vendor, dep.Name)
 						xerror.Panic(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
 							if err != nil {
 								return err
