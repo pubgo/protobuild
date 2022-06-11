@@ -8,7 +8,7 @@ import (
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
 	"github.com/pubgo/xerror"
 
-	retagpb "github.com/pubgo/protobuild/pkg/retag/v1"
+	retagpb "github.com/pubgo/protobuild/pkg/retag"
 )
 
 type tagExtractor struct {
@@ -80,7 +80,7 @@ func (v *tagExtractor) VisitField(f pgs.Field) (pgs.Visitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	msgName := v.Context.Name(f.Message()).String()
 	if f.InOneOf() && !f.Descriptor().GetProto3Optional() {
 		msgName = f.Message().Name().UpperCamelCase().String() + "_" + f.Name().UpperCamelCase().String()
