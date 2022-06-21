@@ -13,6 +13,7 @@ type Cfg struct {
 
 type plugin struct {
 	Name string      `yaml:"name,omitempty"`
+	Path string      `yaml:"path,omitempty"`
 	Out  string      `yaml:"out,omitempty"`
 	Opt  interface{} `yaml:"opt,omitempty"`
 }
