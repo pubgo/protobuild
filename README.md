@@ -11,3 +11,5 @@ protobuf build tool
 - google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 - github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
 - github.com/pubgo/protobuild/protoc-gen-retag@latest
+- https://github.com/bufbuild/protobuf-es
+- https://github.com/timostamm/protobuf-ts
