@@ -7,7 +7,6 @@ require (
 	github.com/emicklei/proto v1.11.0
 	github.com/emicklei/proto-contrib v0.11.0
 	github.com/fatih/structtag v1.2.0
-	github.com/flosch/pongo2/v5 v5.0.0
 	github.com/hashicorp/go-version v1.5.0
 	github.com/lyft/protoc-gen-star v0.6.0
 	github.com/pubgo/funk v0.5.2
@@ -27,8 +26,8 @@ require (
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 )
