@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/pubgo/xerror"
+	"github.com/pubgo/funk"
 )
 
 func Run(args ...string) (string, error) {
@@ -15,14 +15,14 @@ func Run(args ...string) (string, error) {
 	cmd := Shell(args...)
 	cmd.Stdout = b
 	if err := cmd.Run(); err != nil {
-		return "", xerror.Wrap(err, strings.Join(args, " "))
+		return "", funk.Wrap(err, strings.Join(args, " "))
 	}
 
 	return strings.TrimSpace(b.String()), nil
 }
 
 func MustRun(args ...string) string {
-	return xerror.PanicStr(Run(args...))
+	return funk.Must1(Run(args...))
 }
 
 func GoModGraph() (string, error) {

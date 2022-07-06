@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pubgo/xerror"
+	"github.com/pubgo/funk"
 )
 
 func CodeFormat(data ...string) string {
@@ -14,7 +14,7 @@ func CodeFormat(data ...string) string {
 		str += strings.TrimSpace(data[i]) + "\n"
 	}
 	str = strings.TrimSpace(str)
-	return string(xerror.PanicBytes(format.Source([]byte(str))))
+	return string(funk.Must1(format.Source([]byte(str))))
 }
 
 func DotJoin(str ...string) string {

@@ -1,12 +1,12 @@
 package modutil
 
 import (
-	"github.com/pubgo/protobuild/internal/utils"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/pubgo/xerror"
+	"github.com/pubgo/funk"
+	"github.com/pubgo/protobuild/internal/utils"
 	"golang.org/x/mod/modfile"
 )
 
@@ -24,18 +24,18 @@ func getFileByRecursion(file string, path string) string {
 }
 
 func GoModPath() string {
-	var pwd = xerror.PanicStr(os.Getwd())
+	var pwd = funk.Must1(os.Getwd())
 	return getFileByRecursion("go.mod", pwd)
 }
 
 func LoadVersions() map[string]string {
 	var path = GoModPath()
-	xerror.Assert(path == "", "go.mod not exists")
+	funk.Assert(path == "", "go.mod not exists")
 
-	var modBytes = xerror.PanicBytes(ioutil.ReadFile(path))
+	var modBytes = funk.Must1(ioutil.ReadFile(path))
 
 	var a, err = modfile.Parse("in", modBytes, nil)
-	xerror.Panic(err, "go.mod 解析失败")
+	funk.Must(err, "go.mod 解析失败")
 
 	var versions = make(map[string]string)
 

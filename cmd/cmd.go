@@ -12,8 +12,9 @@ import (
 	"sync"
 
 	"github.com/cnf/structhash"
+	"github.com/pubgo/funk"
+	"github.com/pubgo/funk/xerr"
 	"github.com/pubgo/x/pathutil"
-	"github.com/pubgo/xerror"
 	"github.com/urfave/cli/v2"
 	yaml "gopkg.in/yaml.v2"
 
@@ -28,11 +29,11 @@ var (
 	cfg      Cfg
 	protoCfg = "protobuf.yaml"
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
-	pwd      = xerror.ExitErr(os.Getwd()).(string)
+	pwd      = funk.Exit1(os.Getwd())
 	logger   = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
 )
 
-func Main() {
+func Main() *cli.App {
 	var force bool
 	var app = &cli.App{
 		Name:    "prototool",
@@ -47,10 +48,10 @@ func Main() {
 			},
 		},
 		Before: func(ctx *cli.Context) error {
-			defer xerror.RecoverAndExit()
+			defer funk.RecoverAndExit()
 
-			content := xerror.PanicBytes(ioutil.ReadFile(protoCfg))
-			xerror.Panic(yaml.Unmarshal(content, &cfg))
+			content := funk.Must1(ioutil.ReadFile(protoCfg))
+			funk.Must(yaml.Unmarshal(content, &cfg))
 
 			cfg.Vendor = utils.FirstFnNotEmpty(func() string {
 				return cfg.Vendor
@@ -69,11 +70,11 @@ func Main() {
 				return filepath.Join(goModPath, ".proto")
 			})
 
-			xerror.Panic(pathutil.IsNotExistMkDir(cfg.Vendor))
+			funk.Must(pathutil.IsNotExistMkDir(cfg.Vendor))
 
 			// protobuf文件检查
 			for _, dep := range cfg.Depends {
-				xerror.Assert(dep.Name == "" || dep.Url == "", "name和url都不能为空")
+				funk.Assert(dep.Name == "" || dep.Url == "", "name和url都不能为空")
 			}
 
 			checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))
@@ -85,11 +86,12 @@ func Main() {
 			return nil
 		},
 		Commands: cli.Commands{
+			fmtCmd(),
 			&cli.Command{
 				Name:  "gen",
 				Usage: "编译protobuf文件",
 				Action: func(ctx *cli.Context) error {
-					defer xerror.RecoverAndExit()
+					defer funk.RecoverAndExit()
 
 					var protoList sync.Map
 
@@ -99,7 +101,7 @@ func Main() {
 							continue
 						}
 
-						xerror.Panic(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
+						funk.Must(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
 							if err != nil {
 								return err
 							}
@@ -137,7 +139,7 @@ func Main() {
 								// 目录特殊处理
 								if name == "doc" {
 									var out = filepath.Join(plg.Out, in)
-									xerror.Panic(pathutil.IsNotExistMkDir(out))
+									funk.Must(pathutil.IsNotExistMkDir(out))
 									return out
 								}
 
@@ -181,13 +183,12 @@ func Main() {
 							}
 						}
 						data = base + data + " " + filepath.Join(in, "*.proto")
-						logger.Println(data)
-						xerror.Panic(shutil.Shell(data).Run(), data)
+						funk.Must(shutil.Shell(data).Run(), data)
 						if retagOut != "" && retagOpt != "" {
 							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
 						}
 						logger.Println(data)
-						xerror.Panic(shutil.Shell(data).Run(), data)
+						funk.Must(shutil.Shell(data).Run(), data)
 						return true
 					})
 					return nil
@@ -206,7 +207,7 @@ func Main() {
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					defer xerror.RecoverAndExit()
+					defer funk.RecoverAndExit()
 
 					var changed bool
 
@@ -228,7 +229,7 @@ func Main() {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
 							var localPkg, err = ioutil.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
-							xerror.Panic(err)
+							funk.Must(err)
 
 							var _, name = filepath.Split(url)
 							for j := range localPkg {
@@ -246,18 +247,18 @@ func Main() {
 						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
 							changed = true
 							fmt.Println("go", "get", "-d", url+"/...")
-							xerror.Panic(shutil.Shell("go", "get", "-d", url+"/...").Run())
+							funk.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
 
 							// 再次解析go.mod然后获取版本信息
 							versions = modutil.LoadVersions()
 							v = versions[url]
 
-							xerror.Assert(v == "", "%s version为空", url)
+							funk.Assert(v == "", "%s version为空", url)
 						}
 
 						cfg.Depends[i].Version = v
 					}
-					xerror.Panic(ioutil.WriteFile(protoCfg, xerror.PanicBytes(yaml.Marshal(cfg)), 0644))
+					funk.Must(ioutil.WriteFile(protoCfg, funk.Must1(yaml.Marshal(cfg)), 0644))
 
 					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")
@@ -289,14 +290,14 @@ func Main() {
 
 						fmt.Println(url)
 
-						url = xerror.PanicStr(filepath.Abs(url))
+						url = funk.Must1(filepath.Abs(url))
 						var newUrl = filepath.Join(cfg.Vendor, dep.Name)
-						xerror.Panic(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
+						funk.Must(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
 							if err != nil {
 								return err
 							}
 
-							defer xerror.RecoverErr(&gErr, func(err xerror.XErr) xerror.XErr {
+							defer funk.RecoverErr(&gErr, func(err xerr.XErr) xerr.XErr {
 								return err.WrapF("path=%s name=%s", path, info.Name())
 							})
 
@@ -309,8 +310,8 @@ func Main() {
 							}
 
 							var newPath = filepath.Join(newUrl, strings.TrimPrefix(path, url))
-							xerror.Panic(pathutil.IsNotExistMkDir(filepath.Dir(newPath)))
-							xerror.PanicErr(copyFile(newPath, path))
+							funk.Must(pathutil.IsNotExistMkDir(filepath.Dir(newPath)))
+							funk.Must1(copyFile(newPath, path))
 
 							return nil
 						}))
@@ -320,15 +321,15 @@ func Main() {
 			},
 		},
 	}
-	xerror.Exit(app.Run(os.Args))
+	return app
 }
 
 func copyFile(dstFilePath string, srcFilePath string) (written int64, err error) {
 	srcFile, err := os.Open(srcFilePath)
-	xerror.Panic(err, "打开源文件错误", srcFilePath)
+	funk.Must(err, "打开源文件错误", srcFilePath)
 
 	dstFile, err := os.OpenFile(dstFilePath, os.O_WRONLY|os.O_CREATE, 0444)
-	xerror.Panic(err, "打开目标文件错误", dstFilePath)
+	funk.Must(err, "打开目标文件错误", dstFilePath)
 
 	return io.Copy(dstFile, srcFile)
 }
