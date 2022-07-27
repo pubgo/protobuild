@@ -7,12 +7,12 @@ BuildTime=$(shell date "+%F %T")
 CommitID=$(shell git rev-parse --short=8 HEAD)
 
 LDFLAGS=-ldflags " \
--X '${Base}/version.BuildTime=${BuildTime}' \
--X '${Base}/version.CommitID=${CommitID}' \
--X '${Base}/version.Version=${Version}' \
--X '${Base}/version.Tag=${Tag}' \
--X '${Base}/version.Project=${Project}' \
--X '${Base}/version.Data=hello' \
+-X '${Base}/pkg/version.BuildTime=${BuildTime}' \
+-X '${Base}/pkg/version.CommitID=${CommitID}' \
+-X '${Base}/pkg/version.Version=${Version}' \
+-X '${Base}/pkg/version.Tag=${Tag}' \
+-X '${Base}/pkg/version.Project=${Project}' \
+-X '${Base}/pkg/version.Data=hello' \
 "
 
 .PHONY: build

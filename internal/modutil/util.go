@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pubgo/funk"
+	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/protobuild/internal/utils"
 	"golang.org/x/mod/modfile"
 )
@@ -24,18 +24,18 @@ func getFileByRecursion(file string, path string) string {
 }
 
 func GoModPath() string {
-	var pwd = funk.Must1(os.Getwd())
+	var pwd = assert.Must1(os.Getwd())
 	return getFileByRecursion("go.mod", pwd)
 }
 
 func LoadVersions() map[string]string {
 	var path = GoModPath()
-	funk.Assert(path == "", "go.mod not exists")
+	assert.Assert(path == "", "go.mod not exists")
 
-	var modBytes = funk.Must1(ioutil.ReadFile(path))
+	var modBytes = assert.Must1(ioutil.ReadFile(path))
 
 	var a, err = modfile.Parse("in", modBytes, nil)
-	funk.Must(err, "go.mod 解析失败")
+	assert.Must(err, "go.mod 解析失败")
 
 	var versions = make(map[string]string)
 

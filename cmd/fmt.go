@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -13,7 +14,7 @@ import (
 
 	"github.com/emicklei/proto"
 	"github.com/emicklei/proto-contrib/pkg/protofmt"
-	"github.com/pubgo/funk"
+	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/x/pathutil"
 	"github.com/urfave/cli/v2"
@@ -39,11 +40,11 @@ func fmtCmd() *cli.Command {
 
 			for i := range cfg.Root {
 				if pathutil.IsNotExist(cfg.Root[i]) {
-					logger.Printf("file %s not found", cfg.Root[i])
+					logger.Info(fmt.Sprintf("file %s not found", cfg.Root[i]))
 					continue
 				}
 
-				funk.Must(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
+				assert.Must(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
 					if err != nil {
 						return err
 					}
@@ -72,7 +73,7 @@ func fmtCmd() *cli.Command {
 
 func readFormatWrite(filename string) {
 	// open for read
-	file := funk.Must1(os.Open(filename))
+	file := assert.Must1(os.Open(filename))
 
 	// buffer before write
 	buf := new(bytes.Buffer)
@@ -80,11 +81,11 @@ func readFormatWrite(filename string) {
 
 	if overwrite {
 		// write back to input
-		funk.Must(ioutil.WriteFile(filename, buf.Bytes(), os.ModePerm))
+		assert.Must(ioutil.WriteFile(filename, buf.Bytes(), os.ModePerm))
 	} else {
 		// write to stdout
 		buf.WriteString("\n================================================================================================\n")
-		funk.Must1(io.Copy(os.Stdout, bytes.NewReader(buf.Bytes())))
+		assert.Must1(io.Copy(os.Stdout, bytes.NewReader(buf.Bytes())))
 
 	}
 }
@@ -92,6 +93,6 @@ func readFormatWrite(filename string) {
 func format(filename string, input io.Reader, output io.Writer) {
 	parser := proto.NewParser(input)
 	parser.Filename(filename)
-	def := funk.Must1(parser.Parse())
+	def := assert.Must1(parser.Parse())
 	protofmt.NewFormatter(output, "  ").Format(def) // 2 spaces
 }

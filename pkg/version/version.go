@@ -2,7 +2,7 @@ package version
 
 import (
 	ver "github.com/hashicorp/go-version"
-	"github.com/pubgo/funk"
+	"github.com/pubgo/funk/assert"
 )
 
 var CommitID = ""
@@ -18,6 +18,6 @@ func init() {
 	}
 
 	if _, err := ver.NewVersion(Version); err != nil {
-		funk.Exit(err, Version)
+		assert.Exit(err, Version)
 	}
 }

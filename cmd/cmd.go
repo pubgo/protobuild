@@ -12,7 +12,9 @@ import (
 	"sync"
 
 	"github.com/cnf/structhash"
-	"github.com/pubgo/funk"
+	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/xerr"
 	"github.com/pubgo/x/pathutil"
 	"github.com/urfave/cli/v2"
@@ -22,15 +24,15 @@ import (
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/protobuild/internal/utils"
-	"github.com/pubgo/protobuild/version"
+	"github.com/pubgo/protobuild/pkg/version"
 )
 
 var (
 	cfg      Cfg
 	protoCfg = "protobuf.yaml"
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
-	pwd      = funk.Exit1(os.Getwd())
-	logger   = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
+	pwd      = assert.Exit1(os.Getwd())
+	logger   = logx.WithName("proto-build")
 )
 
 func Main() *cli.App {
@@ -48,10 +50,10 @@ func Main() *cli.App {
 			},
 		},
 		Before: func(ctx *cli.Context) error {
-			defer funk.RecoverAndExit()
+			defer recovery.Exit()
 
-			content := funk.Must1(ioutil.ReadFile(protoCfg))
-			funk.Must(yaml.Unmarshal(content, &cfg))
+			content := assert.Must1(ioutil.ReadFile(protoCfg))
+			assert.Must(yaml.Unmarshal(content, &cfg))
 
 			cfg.Vendor = utils.FirstFnNotEmpty(func() string {
 				return cfg.Vendor
@@ -70,11 +72,11 @@ func Main() *cli.App {
 				return filepath.Join(goModPath, ".proto")
 			})
 
-			funk.Must(pathutil.IsNotExistMkDir(cfg.Vendor))
+			assert.Must(pathutil.IsNotExistMkDir(cfg.Vendor))
 
 			// protobuf文件检查
 			for _, dep := range cfg.Depends {
-				funk.Assert(dep.Name == "" || dep.Url == "", "name和url都不能为空")
+				assert.If(dep.Name == "" || dep.Url == "", "name和url都不能为空")
 			}
 
 			checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))
@@ -91,7 +93,7 @@ func Main() *cli.App {
 				Name:  "gen",
 				Usage: "编译protobuf文件",
 				Action: func(ctx *cli.Context) error {
-					defer funk.RecoverAndExit()
+					defer recovery.Exit()
 
 					var protoList sync.Map
 
@@ -101,7 +103,7 @@ func Main() *cli.App {
 							continue
 						}
 
-						funk.Must(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
+						assert.Must(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
 							if err != nil {
 								return err
 							}
@@ -139,7 +141,7 @@ func Main() *cli.App {
 								// 目录特殊处理
 								if name == "doc" {
 									var out = filepath.Join(plg.Out, in)
-									funk.Must(pathutil.IsNotExistMkDir(out))
+									assert.Must(pathutil.IsNotExistMkDir(out))
 									return out
 								}
 
@@ -183,12 +185,12 @@ func Main() *cli.App {
 							}
 						}
 						data = base + data + " " + filepath.Join(in, "*.proto")
-						funk.Must(shutil.Shell(data).Run(), data)
+						assert.Must(shutil.Shell(data).Run(), data)
 						if retagOut != "" && retagOpt != "" {
 							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
 						}
-						logger.Println(data)
-						funk.Must(shutil.Shell(data).Run(), data)
+						logger.Info(data)
+						assert.Must(shutil.Shell(data).Run(), data)
 						return true
 					})
 					return nil
@@ -207,7 +209,7 @@ func Main() *cli.App {
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					defer funk.RecoverAndExit()
+					defer recovery.Exit()
 
 					var changed bool
 
@@ -229,7 +231,7 @@ func Main() *cli.App {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
 							var localPkg, err = ioutil.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
-							funk.Must(err)
+							assert.Must(err)
 
 							var _, name = filepath.Split(url)
 							for j := range localPkg {
@@ -247,18 +249,18 @@ func Main() *cli.App {
 						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
 							changed = true
 							fmt.Println("go", "get", "-d", url+"/...")
-							funk.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
+							assert.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
 
 							// 再次解析go.mod然后获取版本信息
 							versions = modutil.LoadVersions()
 							v = versions[url]
 
-							funk.Assert(v == "", "%s version为空", url)
+							assert.If(v == "", "%s version为空", url)
 						}
 
 						cfg.Depends[i].Version = v
 					}
-					funk.Must(ioutil.WriteFile(protoCfg, funk.Must1(yaml.Marshal(cfg)), 0644))
+					assert.Must(ioutil.WriteFile(protoCfg, assert.Must1(yaml.Marshal(cfg)), 0644))
 
 					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")
@@ -290,14 +292,14 @@ func Main() *cli.App {
 
 						fmt.Println(url)
 
-						url = funk.Must1(filepath.Abs(url))
+						url = assert.Must1(filepath.Abs(url))
 						var newUrl = filepath.Join(cfg.Vendor, dep.Name)
-						funk.Must(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
+						assert.Must(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
 							if err != nil {
 								return err
 							}
 
-							defer funk.RecoverErr(&gErr, func(err xerr.XErr) xerr.XErr {
+							defer recovery.Err(&gErr, func(err xerr.XErr) xerr.XErr {
 								return err.WrapF("path=%s name=%s", path, info.Name())
 							})
 
@@ -310,8 +312,8 @@ func Main() *cli.App {
 							}
 
 							var newPath = filepath.Join(newUrl, strings.TrimPrefix(path, url))
-							funk.Must(pathutil.IsNotExistMkDir(filepath.Dir(newPath)))
-							funk.Must1(copyFile(newPath, path))
+							assert.Must(pathutil.IsNotExistMkDir(filepath.Dir(newPath)))
+							assert.Must1(copyFile(newPath, path))
 
 							return nil
 						}))
@@ -326,10 +328,10 @@ func Main() *cli.App {
 
 func copyFile(dstFilePath string, srcFilePath string) (written int64, err error) {
 	srcFile, err := os.Open(srcFilePath)
-	funk.Must(err, "打开源文件错误", srcFilePath)
+	assert.Must(err, "打开源文件错误", srcFilePath)
 
 	dstFile, err := os.OpenFile(dstFilePath, os.O_WRONLY|os.O_CREATE, 0444)
-	funk.Must(err, "打开目标文件错误", dstFilePath)
+	assert.Must(err, "打开目标文件错误", dstFilePath)
 
 	return io.Copy(dstFile, srcFile)
 }
