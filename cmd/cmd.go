@@ -136,6 +136,11 @@ func Main() *cli.App {
 
 							var name = plg.Name
 
+							// 指定plugin path
+							if plg.Path != "" {
+								data += fmt.Sprintf(" --plugin=%s=%s", name, plg.Path)
+							}
+
 							var out = func() string {
 								// https://github.com/pseudomuto/protoc-gen-doc
 								// 目录特殊处理
