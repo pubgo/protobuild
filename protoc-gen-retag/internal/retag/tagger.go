@@ -5,17 +5,16 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/fatih/structtag"
 	pgs "github.com/lyft/protoc-gen-star"
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
+	"github.com/pubgo/funk/logx"
 )
 
-var logger = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
+var logger = logx.WithName("retag")
 
 type mod struct {
 	*pgs.ModuleBase
@@ -77,7 +76,7 @@ func (m mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Packag
 			filename = strings.TrimPrefix(filename, trim)
 		}
 
-		logger.Printf("filename=>%s", filename)
+		logger.Info(fmt.Sprintf("filename=>%s", filename))
 
 		fs := token.NewFileSet()
 		fn, err := parser.ParseFile(fs, filename, nil, parser.ParseComments)

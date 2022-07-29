@@ -38,7 +38,7 @@ var (
 func Main() *cli.App {
 	var force bool
 	var app = &cli.App{
-		Name:    "prototool",
+		Name:    "protobuild",
 		Usage:   "protobuf generation, configuration and management",
 		Version: version.Version,
 		Flags: typex.Flags{
@@ -129,6 +129,7 @@ func Main() *cli.App {
 						for i := range cfg.Includes {
 							base += fmt.Sprintf(" -I %s", cfg.Root[i])
 						}
+
 						var retagOut = ""
 						var retagOpt = ""
 						for i := range cfg.Plugins {
@@ -190,6 +191,7 @@ func Main() *cli.App {
 							}
 						}
 						data = base + data + " " + filepath.Join(in, "*.proto")
+						logger.Info(data)
 						assert.Must(shutil.Shell(data).Run(), data)
 						if retagOut != "" && retagOpt != "" {
 							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")

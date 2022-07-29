@@ -6,7 +6,7 @@ import (
 	"github.com/fatih/structtag"
 	pgs "github.com/lyft/protoc-gen-star"
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
-	"github.com/pubgo/funk"
+	"github.com/pubgo/funk/assert"
 	retagpb "github.com/pubgo/protobuild/pkg/retag"
 )
 
@@ -67,7 +67,7 @@ func (v *tagExtractor) VisitOneOf(o pgs.OneOf) (pgs.Visitor, error) {
 
 	var tt = new(structtag.Tags)
 	for _, tag := range tval {
-		funk.Must(tt.Set(&structtag.Tag{Key: tag.Name, Name: tag.Value}))
+		assert.Must(tt.Set(&structtag.Tag{Key: tag.Name, Name: tag.Value}))
 	}
 	v.tags[msgName][v.Context.Name(o).String()] = tt
 	return v, nil
@@ -110,7 +110,7 @@ func (v *tagExtractor) VisitField(f pgs.Field) (pgs.Visitor, error) {
 
 	var tt = new(structtag.Tags)
 	for _, tag := range tval {
-		funk.Must(tt.Set(&structtag.Tag{Key: tag.Name, Name: tag.Value}))
+		assert.Must(tt.Set(&structtag.Tag{Key: tag.Name, Name: tag.Value}))
 	}
 	for _, tag := range tt.Tags() {
 		if err := tags.Set(tag); err != nil {

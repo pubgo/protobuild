@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/go-version v1.5.0
 	github.com/jhump/protoreflect v1.12.0
 	github.com/lyft/protoc-gen-star v0.6.0
-	github.com/pubgo/funk v0.5.3
+	github.com/pubgo/funk v0.5.4
 	github.com/pubgo/x v0.3.37
 	github.com/urfave/cli/v2 v2.8.0
 	golang.org/x/mod v0.5.1
