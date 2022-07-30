@@ -33,6 +33,7 @@ var (
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd      = assert.Exit1(os.Getwd())
 	logger   = logx.WithName("proto-build")
+	//binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
 func Main() *cli.App {
