@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/pubgo/lava/proto/lava"
 	"google.golang.org/protobuf/compiler/protogen"
 	gp "google.golang.org/protobuf/proto"
 )

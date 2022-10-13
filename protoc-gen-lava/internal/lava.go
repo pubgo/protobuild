@@ -3,7 +3,7 @@ package internal
 import (
 	"fmt"
 
-	"github.com/pubgo/lava/pkg/protoutil"
+	"github.com/pubgo/protobuild/internal/protoutil"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 

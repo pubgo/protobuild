@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package gorm.v1;
+option go_package = "github.com/pubgo/protobuild/pkg/orm;ormpb";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";

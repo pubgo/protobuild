@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/fatih/structtag"
-	pgs "github.com/lyft/protoc-gen-star"
-	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
+	pgs "github.com/lyft/protoc-gen-star/v2"
+	pgsgo "github.com/lyft/protoc-gen-star/v2/lang/go"
 	"github.com/pubgo/funk/logx"
 )
 
@@ -22,7 +22,9 @@ type mod struct {
 }
 
 func New() pgs.Module {
-	return &mod{ModuleBase: &pgs.ModuleBase{}}
+	return &mod{
+		ModuleBase: new(pgs.ModuleBase),
+	}
 }
 
 func (m *mod) InitContext(c pgs.BuildContext) {
@@ -30,11 +32,9 @@ func (m *mod) InitContext(c pgs.BuildContext) {
 	m.Context = pgsgo.InitContext(c.Parameters())
 }
 
-func (mod) Name() string {
-	return "retag"
-}
+func (*mod) Name() string { return "retag" }
 
-func (m mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Package) []pgs.Artifact {
+func (m *mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Package) []pgs.Artifact {
 
 	xtv := m.Parameters().Str("xxx")
 
@@ -76,7 +76,7 @@ func (m mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Packag
 			filename = strings.TrimPrefix(filename, trim)
 		}
 
-		logger.Info(fmt.Sprintf("filename=>%s", filename))
+		logger.Info(fmt.Sprintf("retag %s", filename))
 
 		fs := token.NewFileSet()
 		fn, err := parser.ParseFile(fs, filename, nil, parser.ParseComments)

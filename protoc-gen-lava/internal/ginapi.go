@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pubgo/lava/pkg/protoutil"
+	"github.com/pubgo/protobuild/internal/protoutil"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 

@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pubgo/lava/pkg/protoutil"
-	"github.com/pubgo/xerror"
+	"github.com/pubgo/funk/recovery"
+	"github.com/pubgo/funk/xerr"
+	"github.com/pubgo/protobuild/internal/protoutil"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -57,7 +58,10 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 }
 
 func genClient(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, srv *protogen.Service) (ret bool) {
-	defer xerror.RespRaise(func(err xerror.XErr) error { ret = false; return err })
+	defer recovery.Raise(func(err xerr.XErr) xerr.XErr {
+		ret = false
+		return err
+	})
 
 	clientName := srv.GoName + "Resty"
 	g.P("type ", clientName, " interface {")

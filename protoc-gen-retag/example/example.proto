@@ -25,6 +25,8 @@ message Example {
     string a = 5 [(retag.tags) = {name:"json",value:"A"}];
     int32 b_jk = 6 [(retag.tags) = {name:"json",value:"b_Jk"}];
   }
+
+  optional string ID = 4;
 }
 
 message SecondMessage {

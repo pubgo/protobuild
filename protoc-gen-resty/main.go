@@ -6,9 +6,6 @@ import (
 	"github.com/pubgo/xerror"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
-
-	"github.com/pubgo/lava/cmd/protoc-gen-resty/internal"
-	"github.com/pubgo/lava/pkg/protoutil"
 )
 
 func main() {

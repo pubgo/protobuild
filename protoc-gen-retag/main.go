@@ -3,14 +3,18 @@
 package main
 
 import (
-	pgs "github.com/lyft/protoc-gen-star"
-	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
+	pgs "github.com/lyft/protoc-gen-star/v2"
+	pgsgo "github.com/lyft/protoc-gen-star/v2/lang/go"
+	"github.com/pubgo/funk/generic"
 	"github.com/pubgo/protobuild/protoc-gen-retag/internal/retag"
 )
 
 func main() {
-	pgs.Init().
-		RegisterModule(retag.New()).
-		RegisterPostProcessor(pgsgo.GoFmt()).
-		Render()
+	pgs.Init(
+		pgs.SupportedFeatures(generic.Ptr(uint64(1))),
+	).RegisterModule(
+		retag.New(),
+	).RegisterPostProcessor(
+		pgsgo.GoFmt(),
+	).Render()
 }

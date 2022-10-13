@@ -11,14 +11,14 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/hashicorp/go-version v1.5.0
 	github.com/jhump/protoreflect v1.12.0
-	github.com/lyft/protoc-gen-star v0.6.0
+	github.com/lyft/protoc-gen-star/v2 v2.0.2-alpha
 	github.com/open2b/scriggo v0.56.1
-	github.com/pubgo/funk v0.5.4
+	github.com/pubgo/funk v0.5.26-4
 	github.com/pubgo/x v0.3.37
 	github.com/pubgo/xerror v0.4.32
 	github.com/urfave/cli/v2 v2.8.0
 	github.com/yuin/goldmark v1.4.12
-	golang.org/x/mod v0.5.1
+	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
 	google.golang.org/genproto v0.0.0-20210226172003-ab064af71705
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -34,6 +34,7 @@ require (
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

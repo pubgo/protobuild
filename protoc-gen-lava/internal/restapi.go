@@ -6,11 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pubgo/protobuild/internal/protoutil"
 	"github.com/pubgo/x/pathutil"
 	"github.com/pubgo/xerror"
 	"google.golang.org/protobuf/compiler/protogen"
-
-	"github.com/pubgo/lava/pkg/protoutil"
 )
 
 // gen rest.http from protobuf

@@ -1,16 +1,19 @@
-// Note: 本项目主要思路和代码来源于protoc-gen-gotag, 感谢srikrsna
-
 package main
 
 import (
-	pgs "github.com/lyft/protoc-gen-star"
-	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
-	"github.com/pubgo/protobuild/protoc-gen-retag/internal/retag"
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 func main() {
-	pgs.Init().
-		RegisterModule(retag.New()).
-		RegisterPostProcessor(pgsgo.GoFmt()).
-		Render()
+	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
+		gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
+		for _, f := range gen.Files {
+			if !f.Generate {
+				continue
+			}
+
+		}
+		return nil
+	})
 }
