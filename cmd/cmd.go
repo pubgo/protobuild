@@ -336,9 +336,11 @@ func Main() *cli.App {
 
 func copyFile(dstFilePath string, srcFilePath string) (written int64, err error) {
 	srcFile, err := os.Open(srcFilePath)
+	defer srcFile.Close()
 	assert.Must(err, "打开源文件错误", srcFilePath)
 
 	dstFile, err := os.OpenFile(dstFilePath, os.O_WRONLY|os.O_CREATE, 0444)
+	defer srcFile.Close()
 	assert.Must(err, "打开目标文件错误", dstFilePath)
 
 	return io.Copy(dstFile, srcFile)
