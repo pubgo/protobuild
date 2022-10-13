@@ -17,3 +17,6 @@ plugins:
   opt:
   - paths=source_relative
   - output=pkg
+- name: gorm
+  out: pkg
+  opt: paths=source_relative

@@ -1,19 +1,18 @@
 package main
 
 import (
-	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/types/pluginpb"
+	pgs "github.com/lyft/protoc-gen-star/v2"
+	pgsgo "github.com/lyft/protoc-gen-star/v2/lang/go"
+	"github.com/pubgo/funk/generic"
+	"github.com/pubgo/protobuild/protoc-gen-gorm/internal"
 )
 
 func main() {
-	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
-		gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
-		for _, f := range gen.Files {
-			if !f.Generate {
-				continue
-			}
-
-		}
-		return nil
-	})
+	pgs.Init(
+		pgs.SupportedFeatures(generic.Ptr(uint64(1))),
+	).RegisterModule(
+		internal.New(),
+	).RegisterPostProcessor(
+		pgsgo.GoFmt(),
+	).Render()
 }
