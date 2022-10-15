@@ -43,10 +43,14 @@ func (m *ExampleModel) ToProto() *Example {
 
 	x.ID = m.ID
 
-	x.Mm = m.Mm
+	if m.Mm != nil {
+		x.Mm = m.Mm.ToProto()
 
-	x.Mm2 = m.Mm2
+	}
+	if m.Mm2 != nil {
+		x.Mm2 = m.Mm2.ToProto()
 
+	}
 	return x
 }
 func (x *Example) ToModel() *ExampleModel {
@@ -121,8 +125,10 @@ func (m *ThirdExampleModel) ToProto() *ThirdExample {
 	}
 
 	var x = new(ThirdExample)
-	x.InnerExample = m.InnerExample
+	if m.InnerExample != nil {
+		x.InnerExample = m.InnerExample.ToProto()
 
+	}
 	return x
 }
 func (x *ThirdExample) ToModel() *ThirdExampleModel {

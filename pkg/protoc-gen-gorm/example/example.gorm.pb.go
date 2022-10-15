@@ -7,6 +7,7 @@
 package example
 
 import (
+	example "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example"
 	grpc "google.golang.org/grpc"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"time"
@@ -48,19 +49,33 @@ func (m *ExampleModel) ToProto() *Example {
 
 	x.BJk = m.BJk
 
-	x.Test_1 = m.Test_1
+	x.Test_1 = make([]*example.SecondMessage, len(m.Test_1))
+	for i := range m.Test_1 {
+		if m.Test_1[i] != nil {
+			x.Test_1[i] = m.Test_1[i].ToProto()
+		}
+	}
 
-	x.Test_2 = m.Test_2
+	if m.Test_2 != nil {
+		x.Test_2 = m.Test_2.ToProto()
 
+	}
 	if !m.Test_5.IsZero() {
 		x.Test_5 = timestamppb.New(m.Test_5)
 	}
 
-	x.Test_6 = m.Test_6
+	if m.Test_6 != nil {
+		x.Test_6 = m.Test_6.ToProto()
 
+	}
 	x.Test_3 = m.Test_3
 
-	x.Test_31 = m.Test_31
+	x.Test_31 = make(map[string]*example.SecondMessage, len(m.Test_31))
+	for i := range m.Test_31 {
+		if m.Test_31[i] != nil {
+			x.Test_31[i] = m.Test_31[i].ToProto()
+		}
+	}
 
 	return x
 }
@@ -145,8 +160,10 @@ func (m *ThirdExampleModel) ToProto() *ThirdExample {
 	}
 
 	var x = new(ThirdExample)
-	x.InnerExample = m.InnerExample
+	if m.InnerExample != nil {
+		x.InnerExample = m.InnerExample.ToProto()
 
+	}
 	x.Test = m.Test
 
 	return x
