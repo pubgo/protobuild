@@ -4,7 +4,7 @@ package example;
 
 import "retag/retag.proto";
 
-option go_package = "./;example";
+option go_package = "github.com/pubgo/protobuild/pkg/protoc-gen-retag/example;example";
 
 message Example {
   string with_new_tags = 1 [
@@ -27,6 +27,9 @@ message Example {
   }
 
   optional string ID = 4;
+
+  SecondMessage mm = 7;
+  optional SecondMessage mm2 = 8;
 }
 
 message SecondMessage {

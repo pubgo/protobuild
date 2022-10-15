@@ -3,8 +3,10 @@ syntax = "proto3";
 package example;
 
 import "retag/retag.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/descriptor.proto";
 
-option go_package = "./;example";
+option go_package = "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example;example";
 
 message Example {
   string with_new_tags = 1 [
@@ -20,11 +22,15 @@ message Example {
     (retag.tags) = {name:"json",value:"replacePrevious"}
   ] ;
 
-  oneof one_of {
-    option (retag.oneof_tags) = {name:"graphql",value:"withNewTags,optional"};
-    string a = 5 [(retag.tags) = {name:"json",value:"A"}];
-    int32 b_jk = 6 [(retag.tags) = {name:"json",value:"b_Jk"}];
-  }
+  string a = 5 [(retag.tags) = {name:"json",value:"A"}];
+  int32 b_jk = 6 [(retag.tags) = {name:"json",value:"b_Jk"}];
+
+  repeated SecondMessage test_1 = 10;
+  optional SecondMessage test_2 = 11;
+  google.protobuf.Timestamp test_5 = 15;
+  SecondMessage test_6 = 16;
+  map<string, google.protobuf.Timestamp> test_3 = 12;
+  map<string, SecondMessage> test_31 = 13;
 }
 
 message SecondMessage {
@@ -46,4 +52,6 @@ message ThirdExample {
   InnerExample inner_example = 1 [
     (retag.tags) = {name:"json",value:"inner"}
   ];
+
+  optional string  test = 2;
 }

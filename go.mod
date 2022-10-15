@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
+	github.com/dave/jennifer v1.6.0
 	github.com/emicklei/proto v1.11.0
 	github.com/emicklei/proto-contrib v0.11.0
 	github.com/fatih/structtag v1.2.0
@@ -20,8 +21,10 @@ require (
 	github.com/yuin/goldmark v1.4.12
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
 	google.golang.org/genproto v0.0.0-20210226172003-ab064af71705
+	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
+	gorm.io/gorm v1.24.0
 )
 
 require (
@@ -31,10 +34,14 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/iand/logfmtr v0.2.1 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

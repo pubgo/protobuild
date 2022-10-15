@@ -24,7 +24,7 @@ import (
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/protobuild/internal/utils"
-	"github.com/pubgo/protobuild/pkg/version"
+	"github.com/pubgo/protobuild/version"
 )
 
 var (
@@ -127,8 +127,9 @@ func Main() *cli.App {
 
 						var data = ""
 						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
+						logger.Info(fmt.Sprintf("%v", cfg.Includes))
 						for i := range cfg.Includes {
-							base += fmt.Sprintf(" -I %s", cfg.Root[i])
+							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
 						}
 
 						var retagOut = ""

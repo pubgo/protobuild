@@ -6,6 +6,7 @@ option go_package = "github.com/pubgo/protobuild/pkg/orm;ormpb";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";
 import "retag/retag.proto";
+import "orm/gorm.proto";
 
 message Model {
   uint64 id = 1 [

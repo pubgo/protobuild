@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -14,7 +12,6 @@ import (
 	pongo "github.com/flosch/pongo2/v5"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pubgo/xerror"
 	options "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -450,18 +447,6 @@ func httpPathsAdditionalBindings(m *descriptor.MethodDescriptorProto) []string {
 	}
 
 	return httpPaths
-}
-
-func ParseRequest(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
-	input, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read code generator request: %v", err)
-	}
-	req := new(plugin.CodeGeneratorRequest)
-	if err = proto.Unmarshal(input, req); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal code generator request: %v", err)
-	}
-	return req, nil
 }
 
 // CodeFormat go code format
