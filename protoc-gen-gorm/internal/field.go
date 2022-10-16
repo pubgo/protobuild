@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/dave/jennifer/jen"
+	"github.com/pubgo/funk/generic"
 	"github.com/pubgo/protobuild/internal/protoutil"
 	retagpb "github.com/pubgo/protobuild/pkg/retag"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -35,8 +36,11 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 		f.IsMessage = false
 		f.MapKeyType = protobufTypes[field.Desc.MapKey().Kind().String()]
 		f.OrmType = protobufTypes[field.Desc.MapValue().Kind().String()]
+		f.Type = field.Desc.MapValue().Kind().String()
 
+		// check timestamp
 		if f.OrmType.GoName == "" {
+			f.Type = string(field.Desc.MapValue().Message().FullName())
 			f.OrmType = protobufTypes[string(field.Desc.MapValue().Message().FullName())]
 		}
 
@@ -54,6 +58,8 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 		f.OrmType.GoImportPath = ""
 		f.IsSelfPackage = true
 	}
+
+	logger.Info(f.Type, "type", f.Type)
 
 	return f
 }
@@ -114,7 +120,6 @@ func (f *Field) genGoGormField() *jen.Statement {
 		} else {
 			g = g.Id(f.OrmType.GoName)
 		}
-
 	} else {
 		if f.IsMessage {
 			g = g.Qual(string(f.OrmType.GoImportPath), f.OrmType.GoName+"Model")
@@ -129,12 +134,43 @@ func (f *Field) genGoGormField() *jen.Statement {
 func (f *Field) genModel2Protobuf() *jen.Statement {
 	switch f.Type {
 	case "google.protobuf.Timestamp":
-		return jen.If(
-			jen.Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
-		).BlockFunc(func(g *jen.Group) {
-			g.Id("x").Dot(f.GoName).Op("=").
-				Qual("google.golang.org/protobuf/types/known/timestamppb", "New").Call(jen.Id("m").Dot(f.GoName))
-		}).Line()
+		if f.IsList || f.IsMap {
+			var v = jen.Op("*").Qual("google.golang.org/protobuf/types/known/timestamppb", "Timestamp")
+			var gen = jen.Id("x").Dot(f.GoName).
+				Op("=").
+				Make(generic.Ternary(f.IsMap, jen.Map(jen.Id(f.MapKeyType.GoName)), jen.Index()).Add(v), jen.Len(jen.Id("m").Dot(f.GoName))).Line()
+			return gen.For(
+				jen.Id("i").Op(":=").Range().Id("m").Dot(f.GoName),
+			).Block(
+				jen.If(
+					jen.Op("!").Id("m").Dot(f.GoName).Index(jen.Id("i")).Dot("IsZero").Call(),
+				).Block(
+					jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).
+						Op("=").
+						Qual("google.golang.org/protobuf/types/known/timestamppb", "New").Call(jen.Id("m").Dot(f.GoName).Index(jen.Id("i"))),
+				),
+			).Line()
+		}
+
+		if f.IsOptional {
+			return jen.If(
+				jen.Id("m").Dot(f.GoName).Op("!=").Nil(),
+			).Block(
+				jen.If(
+					jen.Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
+				).BlockFunc(func(g *jen.Group) {
+					g.Id("x").Dot(f.GoName).Op("=").
+						Qual("google.golang.org/protobuf/types/known/timestamppb", "New").Call(jen.Op("*").Id("m").Dot(f.GoName))
+				}),
+			).Line()
+		} else {
+			return jen.If(
+				jen.Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
+			).BlockFunc(func(g *jen.Group) {
+				g.Id("x").Dot(f.GoName).Op("=").
+					Qual("google.golang.org/protobuf/types/known/timestamppb", "New").Call(jen.Id("m").Dot(f.GoName))
+			}).Line()
+		}
 	case "google.protobuf.Duration":
 		return jen.If(
 			jen.Id("m").Dot(f.GoName).Op("==").Id("0"),

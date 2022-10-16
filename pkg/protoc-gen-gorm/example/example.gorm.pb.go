@@ -27,10 +27,12 @@ type ExampleModel struct {
 	BJk             int32                          `json:"b_Jk"`
 	Test_1          []*SecondMessageModel          `json:"test_1"`
 	Test_2          *SecondMessageModel            `json:"test_2"`
-	Test_5          time.Time                      `json:"test_5"`
 	Test_6          *SecondMessageModel            `json:"test_6"`
-	Test_3          map[string]time.Time           `json:"test_3"`
 	Test_31         map[string]*SecondMessageModel `json:"test_31"`
+	Test_5          time.Time                      `json:"test_5"`
+	Test_51         []time.Time                    `json:"test_51"`
+	Test_17         *time.Time                     `json:"test_17"`
+	Test_3          map[string]time.Time           `json:"test_3"`
 }
 
 func (m *ExampleModel) ToProto() *Example {
@@ -60,20 +62,38 @@ func (m *ExampleModel) ToProto() *Example {
 		x.Test_2 = m.Test_2.ToProto()
 
 	}
-	if !m.Test_5.IsZero() {
-		x.Test_5 = timestamppb.New(m.Test_5)
-	}
-
 	if m.Test_6 != nil {
 		x.Test_6 = m.Test_6.ToProto()
 
 	}
-	x.Test_3 = m.Test_3
-
 	x.Test_31 = make(map[string]*example.SecondMessage, len(m.Test_31))
 	for i := range m.Test_31 {
 		if m.Test_31[i] != nil {
 			x.Test_31[i] = m.Test_31[i].ToProto()
+		}
+	}
+
+	if !m.Test_5.IsZero() {
+		x.Test_5 = timestamppb.New(m.Test_5)
+	}
+
+	x.Test_51 = make([]*timestamppb.Timestamp, len(m.Test_51))
+	for i := range m.Test_51 {
+		if !m.Test_51[i].IsZero() {
+			x.Test_51[i] = timestamppb.New(m.Test_51[i])
+		}
+	}
+
+	if m.Test_17 != nil {
+		if !m.Test_17.IsZero() {
+			x.Test_17 = timestamppb.New(*m.Test_17)
+		}
+	}
+
+	x.Test_3 = make(map[string]*timestamppb.Timestamp, len(m.Test_3))
+	for i := range m.Test_3 {
+		if !m.Test_3[i].IsZero() {
+			x.Test_3[i] = timestamppb.New(m.Test_3[i])
 		}
 	}
 
@@ -99,15 +119,25 @@ func (x *Example) ToModel() *ExampleModel {
 
 	m.Test_2 = x.Test_2
 
+	m.Test_6 = x.Test_6
+
+	m.Test_31 = x.Test_31
+
 	if x.Test_5 != nil {
 		m.Test_5 = x.Test_5.AsTime()
 	}
 
-	m.Test_6 = x.Test_6
+	if x.Test_51 != nil {
+		m.Test_51 = x.Test_51.AsTime()
+	}
 
-	m.Test_3 = x.Test_3
+	if x.Test_17 != nil {
+		m.Test_17 = x.Test_17.AsTime()
+	}
 
-	m.Test_31 = x.Test_31
+	if x.Test_3 != nil {
+		m.Test_3 = x.Test_3.AsTime()
+	}
 
 	return m
 }

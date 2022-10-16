@@ -27,10 +27,13 @@ message Example {
 
   repeated SecondMessage test_1 = 10;
   optional SecondMessage test_2 = 11;
-  google.protobuf.Timestamp test_5 = 15;
   SecondMessage test_6 = 16;
-  map<string, google.protobuf.Timestamp> test_3 = 12;
   map<string, SecondMessage> test_31 = 13;
+
+  google.protobuf.Timestamp test_5 = 15;
+  repeated google.protobuf.Timestamp test_51 = 18;
+  optional google.protobuf.Timestamp test_17 = 17;
+  map<string, google.protobuf.Timestamp> test_3 = 12;
 }
 
 message SecondMessage {
