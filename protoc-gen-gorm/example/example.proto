@@ -27,13 +27,16 @@ message Example {
 
   repeated SecondMessage test_1 = 10;
   optional SecondMessage test_2 = 11;
-  SecondMessage test_6 = 16;
+  SecondMessage test_61 = 19;
   map<string, SecondMessage> test_31 = 13;
 
   google.protobuf.Timestamp test_5 = 15;
   repeated google.protobuf.Timestamp test_51 = 18;
   optional google.protobuf.Timestamp test_17 = 17;
   map<string, google.protobuf.Timestamp> test_3 = 12;
+
+  repeated string list_test20 = 20;
+  map<string, string> list_test21 = 21;
 }
 
 message SecondMessage {
@@ -47,14 +50,14 @@ message SecondMessage {
 }
 
 message ThirdExample {
-  message InnerExample {
-    string id = 1 [(retag.tags) = {name:"json",value:"yes"}];
-    int32 yes = 2 [(retag.tags) = {name:"json",value:"id"}];
-  }
+//  message InnerExample {
+//    string id = 1 [(retag.tags) = {name:"json",value:"yes"}];
+//    int32 yes = 2 [(retag.tags) = {name:"json",value:"id"}];
+//  }
 
-  InnerExample inner_example = 1 [
-    (retag.tags) = {name:"json",value:"inner"}
-  ];
+//  InnerExample inner_example = 1 [
+//    (retag.tags) = {name:"json",value:"inner"}
+//  ];
 
   optional string  test = 2;
 }

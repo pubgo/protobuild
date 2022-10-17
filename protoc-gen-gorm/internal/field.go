@@ -132,6 +132,10 @@ func (f *Field) genGormField() *jen.Statement {
 }
 
 func (f *Field) genModel2Protobuf() *jen.Statement {
+	if !f.IsMessage {
+		return jen.Id("x").Dot(f.GoName).Op("=").Id("m").Dot(f.GoName).Line()
+	}
+
 	switch f.Type {
 	case "google.protobuf.Timestamp":
 		if f.IsList || f.IsMap {
@@ -152,25 +156,13 @@ func (f *Field) genModel2Protobuf() *jen.Statement {
 			).Line()
 		}
 
-		if f.IsOptional {
-			return jen.If(
-				jen.Id("m").Dot(f.GoName).Op("!=").Nil(),
-			).Block(
-				jen.If(
-					jen.Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
-				).BlockFunc(func(g *jen.Group) {
-					g.Id("x").Dot(f.GoName).Op("=").
-						Qual("google.golang.org/protobuf/types/known/timestamppb", "New").Call(jen.Op("*").Id("m").Dot(f.GoName))
-				}),
-			).Line()
-		} else {
-			return jen.If(
-				jen.Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
-			).BlockFunc(func(g *jen.Group) {
-				g.Id("x").Dot(f.GoName).Op("=").
-					Qual("google.golang.org/protobuf/types/known/timestamppb", "New").Call(jen.Id("m").Dot(f.GoName))
-			}).Line()
-		}
+		return jen.If(
+			jen.Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
+		).BlockFunc(func(g *jen.Group) {
+			g.Id("x").Dot(f.GoName).
+				Op("=").
+				Qual("google.golang.org/protobuf/types/known/timestamppb", "New").Call(generic.Ternary(f.IsOptional, jen.Op("*"), jen.Empty()).Id("m").Dot(f.GoName))
+		}).Line()
 	case "google.protobuf.Duration":
 		return jen.If(
 			jen.Id("m").Dot(f.GoName).Op("==").Id("0"),
@@ -178,70 +170,93 @@ func (f *Field) genModel2Protobuf() *jen.Statement {
 			g.Id("x").Dot(f.GoName).Op("=").
 				Qual("google.golang.org/protobuf/types/known/durationpb", "New").Call(jen.Id("m").Dot(f.GoName))
 		}).Line()
-	}
-
-	if f.IsList && f.IsMessage {
-		var gen = jen.Id("x").Dot(f.GoName).
-			Op("=").
-			Make(jen.Index().Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName), jen.Len(jen.Id("m").Dot(f.GoName))).Line()
-		return gen.For(
-			jen.Id("i").Op(":=").Range().Id("m").Dot(f.GoName),
-		).Block(
-			jen.If(
-				jen.Id("m").Dot(f.GoName).Index(jen.Id("i")).Op("!=").Nil(),
+	default:
+		if f.IsList || f.IsMap {
+			var gen = jen.Id("x").Dot(f.GoName).
+				Op("=").
+				Make(generic.Ternary(f.IsList, jen.Index(), jen.Map(jen.Id(f.MapKeyType.GoName))).Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName), jen.Len(jen.Id("m").Dot(f.GoName))).Line()
+			return gen.For(
+				jen.Id("i").Op(":=").Range().Id("m").Dot(f.GoName),
 			).Block(
-				jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).
-					Op("=").
-					Id("m").Dot(f.GoName).Index(jen.Id("i")).Dot("ToProto").Call(),
-			),
-		).Line()
-	}
+				jen.If(
+					jen.Id("m").Dot(f.GoName).Index(jen.Id("i")).Op("!=").Nil(),
+				).Block(
+					jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).
+						Op("=").
+						Id("m").Dot(f.GoName).Index(jen.Id("i")).Dot("ToProto").Call(),
+				),
+			).Line()
+		}
 
-	if f.IsMap && f.IsMessage {
-		var gen = jen.Id("x").Dot(f.GoName).
-			Op("=").
-			Make(jen.Map(jen.Id(f.MapKeyType.GoName)).Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName), jen.Len(jen.Id("m").Dot(f.GoName))).Line()
-		return gen.For(
-			jen.Id("i").Op(":=").Range().Id("m").Dot(f.GoName),
-		).Block(
-			jen.If(
-				jen.Id("m").Dot(f.GoName).Index(jen.Id("i")).Op("!=").Nil(),
-			).Block(
-				jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).
-					Op("=").
-					Id("m").Dot(f.GoName).Index(jen.Id("i")).Dot("ToProto").Call(),
-			),
-		).Line()
-	}
-
-	if f.IsMessage {
 		return jen.If(
 			jen.Id("m").Dot(f.GoName).Op("!=").Nil(),
 		).Block(
-			jen.Id("x").Dot(f.GoName).Op("=").Id("m").Dot(f.GoName).Dot("ToProto").Call().Line(),
-		)
+			jen.Id("x").Dot(f.GoName).Op("=").Id("m").Dot(f.GoName).Dot("ToProto").Call(),
+		).Line()
 	}
-
-	return jen.Id("x").Dot(f.GoName).Op("=").Id("m").Dot(f.GoName).Line()
 }
 
 func (f *Field) genProtobuf2Model() *jen.Statement {
+	if !f.IsMessage {
+		return jen.Id("m").Dot(f.GoName).Op("=").Id("x").Dot(f.GoName).Line()
+	}
+
 	switch f.Type {
 	case "google.protobuf.Timestamp":
+		if f.IsList || f.IsMap {
+			var v = jen.Qual("time", "Time")
+			var gen = jen.Id("m").Dot(f.GoName).
+				Op("=").
+				Make(generic.Ternary(f.IsMap, jen.Map(jen.Id(f.MapKeyType.GoName)), jen.Index()).Add(v), jen.Len(jen.Id("x").Dot(f.GoName))).Line()
+			return gen.For(
+				jen.Id("i").Op(":=").Range().Id("x").Dot(f.GoName),
+			).Block(
+				jen.If(
+					jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).Dot("IsValid").Call(),
+				).Block(
+					jen.Id("m").Dot(f.GoName).Index(jen.Id("i")).
+						Op("=").
+						Id("x").Dot(f.GoName).Index(jen.Id("i")).Dot("AsTime").Call(),
+				),
+			).Line()
+		}
+
 		return jen.If(
-			jen.Id("x").Dot(f.GoName).Op("!=").Nil(),
+			jen.Id("x").Dot(f.GoName).Dot("IsValid").Call(),
 		).BlockFunc(func(g *jen.Group) {
-			g.Id("m").Dot(f.GoName).Op("=").
-				Id("x").Dot(f.GoName).Dot("AsTime").Call()
+			g.Id("m").Dot(f.GoName).
+				Op("=").
+				Add(generic.Ternary(f.IsOptional, jen.Qual("github.com/pubgo/funk/generic", "Ptr").Call(jen.Id("x").Dot(f.GoName).Dot("AsTime").Call()), jen.Id("x").Dot(f.GoName).Dot("AsTime").Call()))
 		}).Line()
 	case "google.protobuf.Duration":
 		return jen.If(
-			jen.Id("x").Dot(f.GoName).Op("!=").Nil(),
+			jen.Id("m").Dot(f.GoName).Op("==").Id("0"),
 		).BlockFunc(func(g *jen.Group) {
-			g.Id("m").Dot(f.GoName).Op("=").
-				Id("x").Dot(f.GoName).Dot("AsDuration").Call()
+			g.Id("x").Dot(f.GoName).Op("=").
+				Qual("google.golang.org/protobuf/types/known/durationpb", "New").Call(jen.Id("m").Dot(f.GoName))
 		}).Line()
 	default:
-		return jen.Id("m").Dot(f.GoName).Op("=").Id("x").Dot(f.GoName).Line()
+		if f.IsList || f.IsMap {
+			var gen = jen.Id("x").Dot(f.GoName).
+				Op("=").
+				Make(generic.Ternary(f.IsList, jen.Index(), jen.Map(jen.Id(f.MapKeyType.GoName))).Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName), jen.Len(jen.Id("x").Dot(f.GoName))).Line()
+			return gen.For(
+				jen.Id("i").Op(":=").Range().Id("x").Dot(f.GoName),
+			).Block(
+				jen.If(
+					jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).Op("!=").Nil(),
+				).Block(
+					jen.Id("m").Dot(f.GoName).Index(jen.Id("i")).
+						Op("=").
+						Id("x").Dot(f.GoName).Index(jen.Id("i")).Dot("ToModel").Call(),
+				),
+			).Line()
+		}
+
+		return jen.If(
+			jen.Id("x").Dot(f.GoName).Op("!=").Nil(),
+		).Block(
+			jen.Id("m").Dot(f.GoName).Op("=").Id("x").Dot(f.GoName).Dot("ToModel").Call(),
+		).Line()
 	}
 }

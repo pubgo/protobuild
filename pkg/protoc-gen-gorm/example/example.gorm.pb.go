@@ -7,6 +7,7 @@
 package example
 
 import (
+	generic "github.com/pubgo/funk/generic"
 	grpc "google.golang.org/grpc"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"time"
@@ -26,12 +27,14 @@ type ExampleModel struct {
 	BJk             int32                          `json:"b_Jk"`
 	Test_1          []*SecondMessageModel          `json:"test_1"`
 	Test_2          *SecondMessageModel            `json:"test_2"`
-	Test_6          *SecondMessageModel            `json:"test_6"`
+	Test_61         *SecondMessageModel            `json:"test_61"`
 	Test_31         map[string]*SecondMessageModel `json:"test_31"`
 	Test_5          time.Time                      `json:"test_5"`
 	Test_51         []time.Time                    `json:"test_51"`
 	Test_17         *time.Time                     `json:"test_17"`
 	Test_3          map[string]time.Time           `json:"test_3"`
+	ListTest20      []string                       `json:"list_test_20"`
+	ListTest21      map[string]string              `json:"list_test_21"`
 }
 
 func (m *ExampleModel) ToProto() *Example {
@@ -59,12 +62,12 @@ func (m *ExampleModel) ToProto() *Example {
 
 	if m.Test_2 != nil {
 		x.Test_2 = m.Test_2.ToProto()
-
 	}
-	if m.Test_6 != nil {
-		x.Test_6 = m.Test_6.ToProto()
 
+	if m.Test_61 != nil {
+		x.Test_61 = m.Test_61.ToProto()
 	}
+
 	x.Test_31 = make(map[string]*SecondMessage, len(m.Test_31))
 	for i := range m.Test_31 {
 		if m.Test_31[i] != nil {
@@ -83,10 +86,8 @@ func (m *ExampleModel) ToProto() *Example {
 		}
 	}
 
-	if m.Test_17 != nil {
-		if !m.Test_17.IsZero() {
-			x.Test_17 = timestamppb.New(*m.Test_17)
-		}
+	if !m.Test_17.IsZero() {
+		x.Test_17 = timestamppb.New(*m.Test_17)
 	}
 
 	x.Test_3 = make(map[string]*timestamppb.Timestamp, len(m.Test_3))
@@ -95,6 +96,10 @@ func (m *ExampleModel) ToProto() *Example {
 			x.Test_3[i] = timestamppb.New(m.Test_3[i])
 		}
 	}
+
+	x.ListTest20 = m.ListTest20
+
+	x.ListTest21 = m.ListTest21
 
 	return x
 }
@@ -114,29 +119,53 @@ func (x *Example) ToModel() *ExampleModel {
 
 	m.BJk = x.BJk
 
-	m.Test_1 = x.Test_1
+	x.Test_1 = make([]*SecondMessage, len(x.Test_1))
+	for i := range x.Test_1 {
+		if x.Test_1[i] != nil {
+			m.Test_1[i] = x.Test_1[i].ToModel()
+		}
+	}
 
-	m.Test_2 = x.Test_2
+	if x.Test_2 != nil {
+		m.Test_2 = x.Test_2.ToModel()
+	}
 
-	m.Test_6 = x.Test_6
+	if x.Test_61 != nil {
+		m.Test_61 = x.Test_61.ToModel()
+	}
 
-	m.Test_31 = x.Test_31
+	x.Test_31 = make(map[string]*SecondMessage, len(x.Test_31))
+	for i := range x.Test_31 {
+		if x.Test_31[i] != nil {
+			m.Test_31[i] = x.Test_31[i].ToModel()
+		}
+	}
 
-	if x.Test_5 != nil {
+	if x.Test_5.IsValid() {
 		m.Test_5 = x.Test_5.AsTime()
 	}
 
-	if x.Test_51 != nil {
-		m.Test_51 = x.Test_51.AsTime()
+	m.Test_51 = make([]time.Time, len(x.Test_51))
+	for i := range x.Test_51 {
+		if x.Test_51[i].IsValid() {
+			m.Test_51[i] = x.Test_51[i].AsTime()
+		}
 	}
 
-	if x.Test_17 != nil {
-		m.Test_17 = x.Test_17.AsTime()
+	if x.Test_17.IsValid() {
+		m.Test_17 = generic.Ptr(x.Test_17.AsTime())
 	}
 
-	if x.Test_3 != nil {
-		m.Test_3 = x.Test_3.AsTime()
+	m.Test_3 = make(map[string]time.Time, len(x.Test_3))
+	for i := range x.Test_3 {
+		if x.Test_3[i].IsValid() {
+			m.Test_3[i] = x.Test_3[i].AsTime()
+		}
 	}
+
+	m.ListTest20 = x.ListTest20
+
+	m.ListTest21 = x.ListTest21
 
 	return m
 }
@@ -179,8 +208,7 @@ func (x *SecondMessage) ToModel() *SecondMessageModel {
 
 // ThirdExampleModel gen from github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example.ThirdExample
 type ThirdExampleModel struct {
-	InnerExample *ThirdExample_InnerExampleModel `json:"inner"`
-	Test         *string                         `json:"test"`
+	Test *string `json:"test"`
 }
 
 func (m *ThirdExampleModel) ToProto() *ThirdExample {
@@ -189,10 +217,6 @@ func (m *ThirdExampleModel) ToProto() *ThirdExample {
 	}
 
 	var x = new(ThirdExample)
-	if m.InnerExample != nil {
-		x.InnerExample = m.InnerExample.ToProto()
-
-	}
 	x.Test = m.Test
 
 	return x
@@ -203,8 +227,6 @@ func (x *ThirdExample) ToModel() *ThirdExampleModel {
 	}
 
 	var m = new(ThirdExampleModel)
-	m.InnerExample = x.InnerExample
-
 	m.Test = x.Test
 
 	return m
