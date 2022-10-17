@@ -86,7 +86,7 @@ func (m *ExampleModel) ToProto() *Example {
 		}
 	}
 
-	if !m.Test_17.IsZero() {
+	if m.Test_17 != nil && !m.Test_17.IsZero() {
 		x.Test_17 = timestamppb.New(*m.Test_17)
 	}
 
@@ -119,7 +119,7 @@ func (x *Example) ToModel() *ExampleModel {
 
 	m.BJk = x.BJk
 
-	x.Test_1 = make([]*SecondMessage, len(x.Test_1))
+	m.Test_1 = make([]*SecondMessageModel, len(x.Test_1))
 	for i := range x.Test_1 {
 		if x.Test_1[i] != nil {
 			m.Test_1[i] = x.Test_1[i].ToModel()
@@ -134,31 +134,31 @@ func (x *Example) ToModel() *ExampleModel {
 		m.Test_61 = x.Test_61.ToModel()
 	}
 
-	x.Test_31 = make(map[string]*SecondMessage, len(x.Test_31))
+	m.Test_31 = make(map[string]*SecondMessageModel, len(x.Test_31))
 	for i := range x.Test_31 {
 		if x.Test_31[i] != nil {
 			m.Test_31[i] = x.Test_31[i].ToModel()
 		}
 	}
 
-	if x.Test_5.IsValid() {
+	if x.Test_5 != nil && x.Test_5.IsValid() {
 		m.Test_5 = x.Test_5.AsTime()
 	}
 
 	m.Test_51 = make([]time.Time, len(x.Test_51))
 	for i := range x.Test_51 {
-		if x.Test_51[i].IsValid() {
+		if x.Test_51[i] != nil && x.Test_51[i].IsValid() {
 			m.Test_51[i] = x.Test_51[i].AsTime()
 		}
 	}
 
-	if x.Test_17.IsValid() {
+	if x.Test_17 != nil && x.Test_17.IsValid() {
 		m.Test_17 = generic.Ptr(x.Test_17.AsTime())
 	}
 
 	m.Test_3 = make(map[string]time.Time, len(x.Test_3))
 	for i := range x.Test_3 {
-		if x.Test_3[i].IsValid() {
+		if x.Test_3[i] != nil && x.Test_3[i].IsValid() {
 			m.Test_3[i] = x.Test_3[i].AsTime()
 		}
 	}

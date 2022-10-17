@@ -157,7 +157,7 @@ func (f *Field) genModel2Protobuf() *jen.Statement {
 		}
 
 		return jen.If(
-			jen.Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
+			generic.Ternary(f.IsOptional, jen.Id("m").Dot(f.GoName).Op("!=").Nil().Op("&&"), jen.Empty()).Op("!").Id("m").Dot(f.GoName).Dot("IsZero").Call(),
 		).BlockFunc(func(g *jen.Group) {
 			g.Id("x").Dot(f.GoName).
 				Op("=").
@@ -212,7 +212,8 @@ func (f *Field) genProtobuf2Model() *jen.Statement {
 				jen.Id("i").Op(":=").Range().Id("x").Dot(f.GoName),
 			).Block(
 				jen.If(
-					jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).Dot("IsValid").Call(),
+					jen.Id("x").Dot(f.GoName).Index(jen.Id("i")).Op("!=").Nil().
+						Op("&&").Id("x").Dot(f.GoName).Index(jen.Id("i")).Dot("IsValid").Call(),
 				).Block(
 					jen.Id("m").Dot(f.GoName).Index(jen.Id("i")).
 						Op("=").
@@ -222,7 +223,9 @@ func (f *Field) genProtobuf2Model() *jen.Statement {
 		}
 
 		return jen.If(
-			jen.Id("x").Dot(f.GoName).Dot("IsValid").Call(),
+			jen.Id("x").Dot(f.GoName).Op("!=").Nil().
+				Op("&&").
+				Id("x").Dot(f.GoName).Dot("IsValid").Call(),
 		).BlockFunc(func(g *jen.Group) {
 			g.Id("m").Dot(f.GoName).
 				Op("=").
@@ -230,16 +233,16 @@ func (f *Field) genProtobuf2Model() *jen.Statement {
 		}).Line()
 	case "google.protobuf.Duration":
 		return jen.If(
-			jen.Id("m").Dot(f.GoName).Op("==").Id("0"),
+			jen.Id("x").Dot(f.GoName).Op("==").Id("0"),
 		).BlockFunc(func(g *jen.Group) {
-			g.Id("x").Dot(f.GoName).Op("=").
+			g.Id("m").Dot(f.GoName).Op("=").
 				Qual("google.golang.org/protobuf/types/known/durationpb", "New").Call(jen.Id("m").Dot(f.GoName))
 		}).Line()
 	default:
 		if f.IsList || f.IsMap {
-			var gen = jen.Id("x").Dot(f.GoName).
+			var gen = jen.Id("m").Dot(f.GoName).
 				Op("=").
-				Make(generic.Ternary(f.IsList, jen.Index(), jen.Map(jen.Id(f.MapKeyType.GoName))).Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName), jen.Len(jen.Id("x").Dot(f.GoName))).Line()
+				Make(generic.Ternary(f.IsList, jen.Index(), jen.Map(jen.Id(f.MapKeyType.GoName))).Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName+"Model"), jen.Len(jen.Id("x").Dot(f.GoName))).Line()
 			return gen.For(
 				jen.Id("i").Op(":=").Range().Id("x").Dot(f.GoName),
 			).Block(
