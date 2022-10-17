@@ -46,7 +46,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		_gen = _gen.Type().Id(ormName).StructFunc(func(group *jen.Group) {
 			for j := range m.Fields {
 				var ff = NewField(m.Fields[j], gen)
-				group.Add(ff.genGoGormField())
+				group.Add(ff.genGormField())
 			}
 		}).Line()
 

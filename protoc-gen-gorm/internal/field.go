@@ -79,7 +79,7 @@ func getTags(field *protogen.Field) map[string]string {
 	return tagMap
 }
 
-func (f *Field) genGoGormField() *jen.Statement {
+func (f *Field) genGormField() *jen.Statement {
 	switch f.Type {
 	case "google.protobuf.Timestamp", "google.protobuf.Duration":
 	}
