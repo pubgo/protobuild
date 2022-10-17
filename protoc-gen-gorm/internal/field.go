@@ -21,7 +21,7 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 	f.GoTag = getTags(field)
 
 	f.Type = field.Desc.Kind().String()
-	f.GoType = field.GoIdent
+	f.GoType = protobufTypes[f.Type]
 
 	if f.IsMessage {
 		f.Type = string(field.Message.Desc.FullName())
@@ -49,6 +49,7 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 	}
 
 	logger.Info(f.Type, "type", f.Type)
+	logger.Info(f.Type, "go-type", f.GoType.GoName, "import", f.GoType.GoImportPath)
 
 	return f
 }
@@ -100,17 +101,17 @@ func (f *Field) genGoGormField() *jen.Statement {
 		g = g.Op("*")
 	}
 
-	if f.OrmType.GoImportPath == "" {
+	if f.GoType.GoImportPath == "" {
 		if f.IsSelfPackage {
-			g = g.Id(f.OrmType.GoName + "Model")
+			g = g.Id(f.GoType.GoName + "Model")
 		} else {
-			g = g.Id(f.OrmType.GoName)
+			g = g.Id(f.GoType.GoName)
 		}
 	} else {
 		if f.IsMessage {
-			g = g.Qual(string(f.OrmType.GoImportPath), f.OrmType.GoName+"Model")
+			g = g.Qual(string(f.GoType.GoImportPath), f.GoType.GoName+"Model")
 		} else {
-			g = g.Qual(string(f.OrmType.GoImportPath), f.OrmType.GoName)
+			g = g.Qual(string(f.GoType.GoImportPath), f.GoType.GoName)
 		}
 	}
 

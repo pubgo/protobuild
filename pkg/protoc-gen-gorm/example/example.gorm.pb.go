@@ -7,10 +7,8 @@
 package example
 
 import (
-	example "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example"
 	grpc "google.golang.org/grpc"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	"time"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,19 +18,19 @@ const _ = grpc.SupportPackageIsVersion7
 
 // ExampleModel gen from github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example.Example
 type ExampleModel struct {
-	WithNewTags     string                         `graphql:"withNewTags,optional" json:"with_new_tags"`
-	WithNewMultiple string                         `graphql:"withNewTags,optional" json:"with_new_multiple" xml:"multi,omitempty"`
-	ReplaceDefault  string                         `json:"replacePrevious"`
-	A               string                         `json:"A"`
-	BJk             int32                          `json:"b_Jk"`
-	Test_1          []*SecondMessageModel          `json:"test_1"`
-	Test_2          *SecondMessageModel            `json:"test_2"`
-	Test_6          *SecondMessageModel            `json:"test_6"`
-	Test_31         map[string]*SecondMessageModel `json:"test_31"`
-	Test_5          time.Time                      `json:"test_5"`
-	Test_51         []time.Time                    `json:"test_51"`
-	Test_17         *time.Time                     `json:"test_17"`
-	Test_3          map[string]time.Time           `json:"test_3"`
+	WithNewTags     string                                 `graphql:"withNewTags,optional" json:"with_new_tags"`
+	WithNewMultiple string                                 `graphql:"withNewTags,optional" json:"with_new_multiple" xml:"multi,omitempty"`
+	ReplaceDefault  string                                 `json:"replacePrevious"`
+	A               string                                 `json:"A"`
+	BJk             int32                                  `json:"b_Jk"`
+	Test_1          []*SecondMessageModel                  `json:"test_1"`
+	Test_2          *SecondMessageModel                    `json:"test_2"`
+	Test_6          *SecondMessageModel                    `json:"test_6"`
+	Test_31         map[string]*SecondMessageModel         `json:"test_31"`
+	Test_5          *timestamppb.TimestampModel            `json:"test_5"`
+	Test_51         []*timestamppb.TimestampModel          `json:"test_51"`
+	Test_17         *timestamppb.TimestampModel            `json:"test_17"`
+	Test_3          map[string]*timestamppb.TimestampModel `json:"test_3"`
 }
 
 func (m *ExampleModel) ToProto() *Example {
@@ -51,7 +49,7 @@ func (m *ExampleModel) ToProto() *Example {
 
 	x.BJk = m.BJk
 
-	x.Test_1 = make([]*example.SecondMessage, len(m.Test_1))
+	x.Test_1 = make([]*SecondMessage, len(m.Test_1))
 	for i := range m.Test_1 {
 		if m.Test_1[i] != nil {
 			x.Test_1[i] = m.Test_1[i].ToProto()
@@ -66,7 +64,7 @@ func (m *ExampleModel) ToProto() *Example {
 		x.Test_6 = m.Test_6.ToProto()
 
 	}
-	x.Test_31 = make(map[string]*example.SecondMessage, len(m.Test_31))
+	x.Test_31 = make(map[string]*SecondMessage, len(m.Test_31))
 	for i := range m.Test_31 {
 		if m.Test_31[i] != nil {
 			x.Test_31[i] = m.Test_31[i].ToProto()
