@@ -10,52 +10,41 @@ import (
 )
 
 func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
-	var f = &Field{OrmTag: make(map[string]string)}
-	f.Name = field.Desc.TextName()
-	f.GoName = field.GoName
+	var f = &Field{GoTag: make(map[string]string)}
 	f.IsList = field.Desc.IsList()
 	f.IsOptional = field.Desc.HasOptionalKeyword()
 	f.IsMap = field.Desc.IsMap()
 	f.IsMessage = field.Message != nil
-	f.OrmTag = getTags(field)
+
+	f.Name = field.Desc.TextName()
+	f.GoName = field.GoName
+	f.GoTag = getTags(field)
+
 	f.Type = field.Desc.Kind().String()
 	f.GoType = field.GoIdent
-	f.OrmType = protobufTypes[f.Type]
 
 	if f.IsMessage {
 		f.Type = string(field.Message.Desc.FullName())
 		f.GoType = field.Message.GoIdent
-		f.IsMessage = protobufTypes[f.Type].GoName == ""
-		f.OrmType = protobufTypes[f.Type]
-		if f.OrmType.GoName == "" {
-			f.OrmType = field.Message.GoIdent
-		}
 	}
 
 	if f.IsMap {
-		f.IsMessage = false
+		f.IsMessage = field.Desc.MapValue().Message() != nil
 		f.MapKeyType = protobufTypes[field.Desc.MapKey().Kind().String()]
-		f.OrmType = protobufTypes[field.Desc.MapValue().Kind().String()]
 		f.Type = field.Desc.MapValue().Kind().String()
+		f.GoType = protobufTypes[f.Type]
 
-		// check timestamp
-		if f.OrmType.GoName == "" {
+		if f.IsMessage {
 			f.Type = string(field.Desc.MapValue().Message().FullName())
-			f.OrmType = protobufTypes[string(field.Desc.MapValue().Message().FullName())]
-		}
-
-		if f.OrmType.GoName == "" {
-			f.IsMessage = true
-			f.OrmType = protogen.GoIdent{
+			f.GoType = protogen.GoIdent{
 				GoName:       protoutil.Name(field.Desc.MapValue().Message().Name()).UpperCamelCase().String(),
 				GoImportPath: gen.FilesByPath[field.Desc.MapValue().Message().ParentFile().Path()].GoImportPath,
 			}
-			f.GoType = f.OrmType
 		}
 	}
 
-	if f.OrmType.GoImportPath == field.GoIdent.GoImportPath {
-		f.OrmType.GoImportPath = ""
+	if f.GoType.GoImportPath == field.GoIdent.GoImportPath {
+		f.GoType.GoImportPath = ""
 		f.IsSelfPackage = true
 	}
 
@@ -70,16 +59,13 @@ type Field struct {
 	IsMap         bool
 	IsOptional    bool
 	IsSelfPackage bool
-	Name          string
-	Type          string
 
+	Name       string
+	Type       string
 	MapKeyType protogen.GoIdent
-
-	GoName string
-	GoType protogen.GoIdent
-
-	OrmType protogen.GoIdent
-	OrmTag  map[string]string
+	GoName     string
+	GoType     protogen.GoIdent
+	GoTag      map[string]string
 }
 
 func getTags(field *protogen.Field) map[string]string {
@@ -128,7 +114,7 @@ func (f *Field) genGoGormField() *jen.Statement {
 		}
 	}
 
-	return g.Tag(f.OrmTag)
+	return g.Tag(f.GoTag)
 }
 
 func (f *Field) genModel2Protobuf() *jen.Statement {
