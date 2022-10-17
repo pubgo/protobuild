@@ -48,8 +48,7 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 		f.IsSelfPackage = true
 	}
 
-	logger.Info(f.Type, "type", f.Type)
-	logger.Info(f.Type, "go-type", f.GoType.GoName, "import", f.GoType.GoImportPath)
+	logger.Info(f.Type, "go-type", f.GoType.GoName, "import", f.GoType.GoImportPath, "map", f.IsMap, "list", f.IsList, "message", f.IsMessage, "optional", f.IsOptional)
 
 	return f
 }
@@ -80,39 +79,53 @@ func getTags(field *protogen.Field) map[string]string {
 }
 
 func (f *Field) genGormField() *jen.Statement {
-	switch f.Type {
-	case "google.protobuf.Timestamp", "google.protobuf.Duration":
-	}
-
 	var g = jen.Id(f.GoName)
 	if f.IsList {
 		g = g.Index()
 	}
 
 	if f.IsMap {
-		if f.MapKeyType.GoImportPath == "" {
-			g = g.Map(jen.Id(f.MapKeyType.GoName))
-		} else {
-			g = g.Map(jen.Qual(string(f.MapKeyType.GoImportPath), f.MapKeyType.GoName))
+		g = g.Map(jen.Id(f.MapKeyType.GoName))
+	}
+
+	if f.IsMessage {
+		var ormType = f.GoType
+		switch f.Type {
+		case "google.protobuf.Timestamp":
+			if f.IsOptional {
+				g = g.Op("*")
+			}
+			ormType = protogen.GoIdent{
+				GoName:       "Time",
+				GoImportPath: "time",
+			}
+		case "google.protobuf.Duration":
+			if f.IsOptional {
+				g = g.Op("*")
+			}
+			ormType = protogen.GoIdent{
+				GoName:       "Duration",
+				GoImportPath: "time",
+			}
+		default:
+			g = g.Op("*")
+			ormType = protogen.GoIdent{
+				GoName:       ormType.GoName + "Model",
+				GoImportPath: ormType.GoImportPath,
+			}
 		}
-	}
 
-	if f.IsOptional || f.IsMessage {
-		g = g.Op("*")
-	}
-
-	if f.GoType.GoImportPath == "" {
 		if f.IsSelfPackage {
-			g = g.Id(f.GoType.GoName + "Model")
+			g = g.Id(ormType.GoName)
 		} else {
-			g = g.Id(f.GoType.GoName)
+			g = g.Qual(string(ormType.GoImportPath), ormType.GoName)
 		}
 	} else {
-		if f.IsMessage {
-			g = g.Qual(string(f.GoType.GoImportPath), f.GoType.GoName+"Model")
-		} else {
-			g = g.Qual(string(f.GoType.GoImportPath), f.GoType.GoName)
+		if f.IsOptional {
+			g = g.Op("*")
 		}
+
+		g = g.Id(f.GoType.GoName)
 	}
 
 	return g.Tag(f.GoTag)
