@@ -38,13 +38,13 @@ var protobufTypes = map[string]protogen.GoIdent{
 	protoreflect.Uint32Kind.String(): {GoName: "uint32"},
 	protoreflect.BoolKind.String():   {GoName: "bool"},
 	protoreflect.StringKind.String(): {GoName: "string"},
-	protoreflect.BytesKind.String():  {GoName: "[]byte"},
-	"google.protobuf.Timestamp": {
-		GoName:       "Time",
-		GoImportPath: "time",
-	},
-	"google.protobuf.Duration": {
-		GoName:       "Duration",
-		GoImportPath: "time",
-	},
+	//protoreflect.BytesKind.String():  {GoName: "[]byte"},
+	//"google.protobuf.Timestamp": {
+	//	GoName:       "Time",
+	//	GoImportPath: "time",
+	//},
+	//"google.protobuf.Duration": {
+	//	GoName:       "Duration",
+	//	GoImportPath: "time",
+	//},
 }
