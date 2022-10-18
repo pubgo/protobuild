@@ -11,6 +11,10 @@ extend google.protobuf.MessageOptions {
   GormMessageOptions opts = 100001;
 }
 
+extend google.protobuf.ServiceOptions {
+  GormMessageOptions server = 100001;
+}
+
 message GormMessageOptions {
   bool enabled = 1;
   string table = 2;

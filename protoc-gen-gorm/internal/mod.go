@@ -7,11 +7,10 @@ import (
 	"github.com/pubgo/protobuild/internal/protoutil"
 	ormpb "github.com/pubgo/protobuild/pkg/orm"
 	"google.golang.org/protobuf/compiler/protogen"
-	gp "google.golang.org/protobuf/proto"
-	"gorm.io/gorm/schema"
-
 	_ "google.golang.org/protobuf/encoding/protojson"
+	gp "google.golang.org/protobuf/proto"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm/schema"
 )
 
 func init() {
@@ -47,10 +46,33 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 			continue
 		}
 
+		var name = protoutil.Name(srv.Desc.Name()).UpperCamelCase().String()
+
 		logger.Info(string(srv.Desc.FullName()))
-		var opts, ok = gp.GetExtension(srv.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
+		var opts, ok = gp.GetExtension(srv.Desc.Options(), ormpb.E_Server).(*ormpb.GormMessageOptions)
 		if !ok || opts == nil || !opts.Service {
 			continue
+		}
+
+		genFile.Add(
+			jen.Func().
+				Id(fmt.Sprintf("New%sGormHandler", name)).
+				Params().Id(fmt.Sprintf("%sServer", name)).BlockFunc(func(g *jen.Group) {
+				g.Return(jen.Op("&").Id(fmt.Sprintf("_%sGormHandler", name)).Block())
+			}),
+		)
+
+		genFile.Add(
+			jen.Type().
+				Id(fmt.Sprintf("_%sGormHandler", name)).
+				Struct(
+					jen.Id("db").Op("*").Qual("gorm.io/gorm", "DB"),
+				),
+		)
+
+		for j := range srv.Methods {
+			var m = srv.Methods[j]
+			_ = m
 		}
 
 	}

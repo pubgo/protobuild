@@ -78,6 +78,10 @@ message ThirdExample {
 
 
 service ExampleService {
+  option (gorm.server) = {
+    service : true
+  };
+
   rpc Create(CreateExampleRequest)returns (CreateExampleResponse){}
 }
 

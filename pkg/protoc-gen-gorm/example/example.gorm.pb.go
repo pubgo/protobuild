@@ -10,6 +10,7 @@ import (
 	generic "github.com/pubgo/funk/generic"
 	grpc "google.golang.org/grpc"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	gorm "gorm.io/gorm"
 	"time"
 )
 
@@ -17,6 +18,14 @@ import (
 // is compatible with the grpc package it is being compiled against.
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
+
+func NewExampleServiceGormHandler() ExampleServiceServer {
+	return &_ExampleServiceGormHandler{}
+}
+
+type _ExampleServiceGormHandler struct {
+	db *gorm.DB
+}
 
 // ExampleModel gen from github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example.Example
 type ExampleModel struct {
