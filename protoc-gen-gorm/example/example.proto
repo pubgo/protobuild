@@ -81,9 +81,9 @@ service ExampleService {
 }
 
 message CreateExampleRequest {
-
+  string name = 1;
 }
 
 message CreateExampleResponse {
-
+  string name = 1;
 }
