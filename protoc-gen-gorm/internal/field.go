@@ -1,12 +1,14 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/dave/jennifer/jen"
 	"github.com/pubgo/funk/generic"
 	"github.com/pubgo/protobuild/internal/protoutil"
 	retagpb "github.com/pubgo/protobuild/pkg/retag"
 	"google.golang.org/protobuf/compiler/protogen"
 	gp "google.golang.org/protobuf/proto"
+	"strings"
 )
 
 func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
@@ -129,6 +131,25 @@ func (f *Field) genGormField() *jen.Statement {
 	}
 
 	return g.Tag(f.GoTag)
+}
+
+func (f *Field) genGormCond() string {
+	var name = f.Name
+	if strings.HasSuffix(name, "_from") {
+		name = strings.TrimSuffix(name, "_from")
+		return fmt.Sprintf("%s >= ?", name)
+	}
+
+	if strings.HasSuffix(name, "_to") {
+		name = strings.TrimSuffix(name, "_to")
+		return fmt.Sprintf("%s < ?", name)
+	}
+
+	if f.IsList {
+		return fmt.Sprintf("%s in ?", name)
+	}
+
+	return fmt.Sprintf("%s = ?", name)
 }
 
 func (f *Field) genModel2Protobuf() *jen.Statement {

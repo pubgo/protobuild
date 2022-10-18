@@ -61,6 +61,7 @@ message SecondMessage {
 message ThirdExample {
   option (gorm.opts) = {
     enabled : true;
+    table : "sys_third_example"
   };
 
   //  message InnerExample {

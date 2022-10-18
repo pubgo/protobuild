@@ -14,6 +14,7 @@ extend google.protobuf.MessageOptions {
 message GormMessageOptions {
   bool enabled = 1;
   string table = 2;
+  bool service = 3;
 }
 
 message ExtraField {

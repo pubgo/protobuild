@@ -220,7 +220,7 @@ type ThirdExampleModel struct {
 }
 
 func (m *ThirdExampleModel) TableName() string {
-	return "third_example"
+	return "sys_third_example"
 }
 
 func (m *ThirdExampleModel) ToProto() *ThirdExample {

@@ -41,6 +41,20 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	genFile.Comment("Requires gRPC-Go v1.32.0 or later.")
 	genFile.Id("const _ =").Qual("google.golang.org/grpc", "SupportPackageIsVersion7")
 
+	for i := range file.Services {
+		srv := file.Services[i]
+		if srv.Desc.Options() == nil {
+			continue
+		}
+
+		logger.Info(string(srv.Desc.FullName()))
+		var opts, ok = gp.GetExtension(srv.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
+		if !ok || opts == nil || !opts.Service {
+			continue
+		}
+
+	}
+
 	for i := range file.Messages {
 		m := file.Messages[i]
 
