@@ -44,8 +44,12 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	for i := range file.Messages {
 		m := file.Messages[i]
 
-		if enabled, ok := gp.GetExtension(m.Desc.Options(), ormpb.E_Enabled).(bool); !ok || !enabled {
-			continue
+		logger.Info(string(m.Desc.FullName()))
+		if m.Desc.Options() != nil {
+			var opts, ok = gp.GetExtension(m.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
+			if !ok || opts == nil || !opts.Enabled {
+				continue
+			}
 		}
 
 		var ormName = protoutil.Name(string(m.Desc.Name()) + "Model").UpperCamelCase().String()

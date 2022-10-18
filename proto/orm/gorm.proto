@@ -8,14 +8,12 @@ import "google/protobuf/descriptor.proto";
 import "retag/retag.proto";
 
 extend google.protobuf.MessageOptions {
-  bool enabled = 100001;
+  GormMessageOptions opts = 100001;
 }
 
 message GormMessageOptions {
   bool enabled = 1;
-  repeated ExtraField include = 2;
-  string table = 3;
-  bool multi_account = 4;
+  string table = 2;
 }
 
 message ExtraField {

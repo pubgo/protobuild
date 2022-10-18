@@ -3,8 +3,6 @@ vendor: .proto
 checksum: 85da3b3146c7021097b973c086b0a12dae70c023
 root:
 - proto
-- protoc-gen-gorm
-- protoc-gen-retag
 includes:
 - proto
 deps:

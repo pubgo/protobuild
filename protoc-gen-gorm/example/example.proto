@@ -10,7 +10,9 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example;example";
 
 message Example {
-  option(gorm.enabled) = true;
+  option (gorm.opts) = {
+    enabled : true;
+  };
 
   string with_new_tags = 1 [
     (retag.tags) = {name:"graphql",value:"withNewTags,optional"}
@@ -43,7 +45,9 @@ message Example {
 }
 
 message SecondMessage {
-  option(gorm.enabled) = true;
+  option (gorm.opts) = {
+    enabled : true;
+  };
 
   string with_new_tags = 1 [(retag.tags) = {name:"graphql",value:"withNewTags,optional"}];
   string with_new_multiple = 2 [
@@ -55,7 +59,10 @@ message SecondMessage {
 }
 
 message ThirdExample {
-  option(gorm.enabled) = true;
+  option (gorm.opts) = {
+    enabled : true;
+  };
+
   //  message InnerExample {
   //    string id = 1 [(retag.tags) = {name:"json",value:"yes"}];
   //    int32 yes = 2 [(retag.tags) = {name:"json",value:"id"}];
