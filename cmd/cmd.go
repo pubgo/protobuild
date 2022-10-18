@@ -39,12 +39,13 @@ var (
 func Main() *cli.App {
 	var force bool
 	var app = &cli.App{
-		Name:    "protobuild",
+		Name:    "protobuf build",
 		Usage:   "protobuf generation, configuration and management",
 		Version: version.Version,
 		Flags: typex.Flags{
 			&cli.StringFlag{
 				Name:        "conf",
+				Aliases:     typex.Strs{"c"},
 				Usage:       "protobuf config path",
 				Value:       protoCfg,
 				Destination: &protoCfg,

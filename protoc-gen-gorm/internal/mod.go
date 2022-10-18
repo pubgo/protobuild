@@ -5,7 +5,9 @@ import (
 	"github.com/dave/jennifer/jen"
 	"github.com/pubgo/funk/logx"
 	"github.com/pubgo/protobuild/internal/protoutil"
+	ormpb "github.com/pubgo/protobuild/pkg/orm"
 	"google.golang.org/protobuf/compiler/protogen"
+	gp "google.golang.org/protobuf/proto"
 	"gorm.io/gorm/schema"
 
 	_ "google.golang.org/protobuf/encoding/protojson"
@@ -41,6 +43,11 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 	for i := range file.Messages {
 		m := file.Messages[i]
+
+		if enabled, ok := gp.GetExtension(m.Desc.Options(), ormpb.E_Enabled).(bool); !ok || !enabled {
+			continue
+		}
+
 		var ormName = protoutil.Name(string(m.Desc.Name()) + "Model").UpperCamelCase().String()
 		_gen := jen.Commentf("%s gen from %s.%s", ormName, string(m.GoIdent.GoImportPath), m.GoIdent.GoName).Line()
 		_gen = _gen.Type().Id(ormName).StructFunc(func(group *jen.Group) {

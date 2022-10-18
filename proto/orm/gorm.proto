@@ -1,11 +1,55 @@
 syntax = "proto3";
 
-package gorm.v1;
+package gorm;
 option go_package = "github.com/pubgo/protobuild/pkg/orm;ormpb";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";
 import "retag/retag.proto";
+
+extend google.protobuf.MessageOptions {
+  bool enabled = 100001;
+}
+
+message GormMessageOptions {
+  bool enabled = 1;
+  repeated ExtraField include = 2;
+  string table = 3;
+  bool multi_account = 4;
+}
+
+message ExtraField {
+  string type = 1;
+  string name = 2;
+  GormTag tag = 3;
+  string package = 4;
+}
+
+message GormTag {
+  string column = 1;
+  string type = 2;
+  int32 size = 3;
+  int32 precision = 4;
+  bool primary_key = 5;
+  bool unique = 6;
+  string default = 7;
+  bool not_null = 8;
+  bool auto_increment = 9;
+  string index = 10;
+  string unique_index = 11;
+  bool embedded = 12;
+  string embedded_prefix = 13;
+  bool ignore = 14;
+  string foreignkey = 15;
+  string association_foreignkey = 16;
+  string many_to_many = 17;
+  string jointable_foreignkey = 18;
+  string association_jointable_foreignkey = 19;
+  bool association_autoupdate = 20;
+  bool association_autocreate = 21;
+  bool association_save_reference = 22;
+  bool preload = 23;
+}
 
 message Timestamp {
   google.protobuf.Timestamp timestamp = 1[
@@ -16,28 +60,4 @@ message Timestamp {
 message protobuf {
   int32 number = 1;
   string name = 2;
-}
-
-extend google.protobuf.MessageOptions {
-  // enabled generate, default is false
-  bool enabled = 75000;
-  // generate primary key -- Not Implemented Now --
-  protobuf generate_primary_key = 75001;
-  // generate create at -- Not Implemented Now --
-  protobuf generate_create_at = 75002;
-  // generate update at -- Not Implemented Now --
-  protobuf generate_update_at = 75003;
-  // generate delete at -- Not Implemented Now --
-  protobuf generate_delete_at = 75004;
-}
-
-extend google.protobuf.FieldOptions {
-  // primary key field, default is false
-  bool primary_key = 76001;
-  // createAt field, default is false
-  bool create_at = 76002;
-  // updateAt field, default is false
-  bool update_at = 76003;
-  // deleteAt field, default is false
-  bool delete_at = 76004;
 }
