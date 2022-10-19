@@ -17,6 +17,7 @@ require (
 	github.com/pubgo/funk v0.5.26-4
 	github.com/pubgo/x v0.3.37
 	github.com/pubgo/xerror v0.4.32
+	github.com/spf13/cast v1.5.0
 	github.com/urfave/cli/v2 v2.8.0
 	github.com/yuin/goldmark v1.4.12
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3

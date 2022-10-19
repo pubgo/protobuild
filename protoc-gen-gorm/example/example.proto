@@ -82,13 +82,13 @@ service ExampleService {
     service : true
   };
 
-  rpc Create(CreateExampleRequest)returns (CreateExampleResponse){}
+  rpc Create(CreateExampleRequest) returns (CreateExampleResponse){}
 }
 
 message CreateExampleRequest {
-  string name = 1;
+  optional string name = 1;
 }
 
 message CreateExampleResponse {
-  string name = 1;
+  optional string name = 1;
 }

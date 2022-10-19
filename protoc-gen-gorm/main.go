@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/pubgo/protobuild/protoc-gen-gorm/internal"
+	_ "github.com/spf13/cast"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )
