@@ -19,6 +19,10 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExampleServiceClient interface {
 	Create(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
+	Delete(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
+	Update(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
+	Get(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
+	List(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
 }
 
 type exampleServiceClient struct {
@@ -38,11 +42,51 @@ func (c *exampleServiceClient) Create(ctx context.Context, in *CreateExampleRequ
 	return out, nil
 }
 
+func (c *exampleServiceClient) Delete(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error) {
+	out := new(CreateExampleResponse)
+	err := c.cc.Invoke(ctx, "/example.ExampleService/Delete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *exampleServiceClient) Update(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error) {
+	out := new(CreateExampleResponse)
+	err := c.cc.Invoke(ctx, "/example.ExampleService/Update", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *exampleServiceClient) Get(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error) {
+	out := new(CreateExampleResponse)
+	err := c.cc.Invoke(ctx, "/example.ExampleService/Get", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *exampleServiceClient) List(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error) {
+	out := new(CreateExampleResponse)
+	err := c.cc.Invoke(ctx, "/example.ExampleService/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExampleServiceServer is the server API for ExampleService service.
 // All implementations should embed UnimplementedExampleServiceServer
 // for forward compatibility
 type ExampleServiceServer interface {
 	Create(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
+	Delete(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
+	Update(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
+	Get(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
+	List(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
 }
 
 // UnimplementedExampleServiceServer should be embedded to have forward compatible implementations.
@@ -51,6 +95,18 @@ type UnimplementedExampleServiceServer struct {
 
 func (UnimplementedExampleServiceServer) Create(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedExampleServiceServer) Delete(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedExampleServiceServer) Update(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedExampleServiceServer) Get(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedExampleServiceServer) List(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 
 // UnsafeExampleServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -82,6 +138,78 @@ func _ExampleService_Create_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ExampleService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateExampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExampleServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/example.ExampleService/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExampleServiceServer).Delete(ctx, req.(*CreateExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ExampleService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateExampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExampleServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/example.ExampleService/Update",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExampleServiceServer).Update(ctx, req.(*CreateExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ExampleService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateExampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExampleServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/example.ExampleService/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExampleServiceServer).Get(ctx, req.(*CreateExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ExampleService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateExampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExampleServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/example.ExampleService/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExampleServiceServer).List(ctx, req.(*CreateExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ExampleService_ServiceDesc is the grpc.ServiceDesc for ExampleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -92,6 +220,22 @@ var ExampleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Create",
 			Handler:    _ExampleService_Create_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _ExampleService_Delete_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _ExampleService_Update_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _ExampleService_Get_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _ExampleService_List_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

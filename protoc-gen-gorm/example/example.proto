@@ -83,10 +83,16 @@ service ExampleService {
   };
 
   rpc Create(CreateExampleRequest) returns (CreateExampleResponse){}
+  rpc Delete(CreateExampleRequest) returns (CreateExampleResponse){}
+  rpc Update(CreateExampleRequest) returns (CreateExampleResponse){}
+  rpc Get(CreateExampleRequest) returns (CreateExampleResponse){}
+  rpc List(CreateExampleRequest) returns (CreateExampleResponse){}
 }
 
 message CreateExampleRequest {
-  optional string name = 1;
+  optional string name = 1 [
+    json_name = "name_123"
+  ];
 }
 
 message CreateExampleResponse {

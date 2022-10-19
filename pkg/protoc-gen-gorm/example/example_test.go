@@ -17,6 +17,9 @@ func TestName(t *testing.T) {
 	// 2022-10-19T03:49:42.240649Z
 	logx.Info(string(dd))
 
+	mm, _ := json.Marshal(pb.Test_5.AsTime())
+	logx.Info(string(mm))
+
 	d2, err := json.Marshal(pb.ToModel())
 	assert.Must(err)
 	// 2022-10-19T03:49:42.240649Z
