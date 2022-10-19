@@ -91,7 +91,7 @@ service ExampleService {
 
 message CreateExampleRequest {
   optional string name = 1 [
-    json_name = "name_123"
+    json_name = "name"
   ];
 }
 
