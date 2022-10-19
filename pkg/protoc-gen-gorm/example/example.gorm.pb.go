@@ -19,10 +19,6 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-func NewExampleServiceGormHandler() ExampleServiceServer {
-	return &_ExampleServiceGormHandler{}
-}
-
 type _ExampleServiceGormHandler struct {
 	db *gorm.DB
 }

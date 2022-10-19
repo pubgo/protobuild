@@ -54,13 +54,13 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 			continue
 		}
 
-		genFile.Add(
-			jen.Func().
-				Id(fmt.Sprintf("New%sGormHandler", name)).
-				Params().Id(fmt.Sprintf("%sServer", name)).BlockFunc(func(g *jen.Group) {
-				g.Return(jen.Op("&").Id(fmt.Sprintf("_%sGormHandler", name)).Block())
-			}),
-		)
+		//genFile.Add(
+		//	jen.Func().
+		//		Id(fmt.Sprintf("New%sGormHandler", name)).
+		//		Params().Id(fmt.Sprintf("%sServer", name)).BlockFunc(func(g *jen.Group) {
+		//		g.Return(jen.Op("&").Id(fmt.Sprintf("_%sGormHandler", name)).Block())
+		//	}),
+		//)
 
 		genFile.Add(
 			jen.Type().
