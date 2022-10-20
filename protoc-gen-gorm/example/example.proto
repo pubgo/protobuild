@@ -79,14 +79,15 @@ message ThirdExample {
 
 service ExampleService {
   option (gorm.server) = {
-    service : true
+    service : true,
+    table : "example"
   };
 
   rpc Create(CreateExampleRequest) returns (CreateExampleResponse){}
   rpc Delete(CreateExampleRequest) returns (CreateExampleResponse){}
   rpc Update(CreateExampleRequest) returns (CreateExampleResponse){}
   rpc Get(CreateExampleRequest) returns (CreateExampleResponse){}
-  rpc List(CreateExampleRequest) returns (CreateExampleResponse){}
+  rpc List(ListExampleRequest) returns (ListExampleResponse){}
 }
 
 message CreateExampleRequest {
@@ -97,4 +98,12 @@ message CreateExampleRequest {
 
 message CreateExampleResponse {
   optional string name = 1;
+}
+
+message ListExampleRequest {
+
+}
+
+message ListExampleResponse {
+  repeated Example data = 1;
 }

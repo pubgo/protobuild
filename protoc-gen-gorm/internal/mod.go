@@ -11,6 +11,7 @@ import (
 	gp "google.golang.org/protobuf/proto"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm/schema"
+	"strings"
 )
 
 func init() {
@@ -40,6 +41,49 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	genFile.Comment("Requires gRPC-Go v1.32.0 or later.")
 	genFile.Id("const _ =").Qual("google.golang.org/grpc", "SupportPackageIsVersion7")
 
+	type table struct {
+		name   string
+		fields map[string]*Field
+	}
+
+	var tables = make(map[string]*table)
+	for i := range file.Messages {
+		m := file.Messages[i]
+
+		if m.Desc.Options() == nil {
+			continue
+		}
+
+		var opts, ok = gp.GetExtension(m.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
+		if !ok || opts == nil || !opts.Enabled {
+			continue
+		}
+
+		var tableName = string(m.Desc.Name())
+		if opts.Table != "" {
+			tableName = opts.Table
+		}
+		tableName = protoutil.Name(tableName).LowerSnakeCase().String()
+
+		if tables[tableName] == nil {
+			tables[tableName] = &table{
+				name:   protoutil.Name(string(m.Desc.Name()) + "Model").UpperCamelCase().String(),
+				fields: make(map[string]*Field),
+			}
+		}
+
+		for j := range m.Fields {
+			var ff = NewField(m.Fields[j], gen)
+			tables[tableName].fields[ff.GoName] = ff
+		}
+	}
+
+	for name, fields := range tables {
+		for field := range fields.fields {
+			logger.Info("table info", "table", name, "field", field)
+		}
+	}
+
 	for i := range file.Services {
 		srv := file.Services[i]
 		if srv.Desc.Options() == nil {
@@ -54,17 +98,64 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 			continue
 		}
 
-		//genFile.Add(
-		//	jen.Func().
-		//		Id(fmt.Sprintf("New%sGormHandler", name)).
-		//		Params().Id(fmt.Sprintf("%sServer", name)).BlockFunc(func(g *jen.Group) {
-		//		g.Return(jen.Op("&").Id(fmt.Sprintf("_%sGormHandler", name)).Block())
-		//	}),
-		//)
+		if tables[opts.Table] == nil {
+			panic(fmt.Sprintf("table [%s] not found", opts.Table))
+		}
+
+		var srvName = fmt.Sprintf("%sGormHandler", name)
+
+		genFile.Add(
+			jen.Type().Id(srvName).InterfaceFunc(func(g *jen.Group) {
+				for j := range srv.Methods {
+					var m = srv.Methods[j]
+					var code = jen.Id(m.GoName).
+						Params(
+							jen.Id("ctx").Qual("context", "Context"),
+							jen.Id("req").Op("*").Id(m.Input.GoIdent.GoName),
+							jen.Id("where").Op("...").Id("func(db *gorm.DB)*gorm.DB"),
+						)
+
+					if strings.HasPrefix(m.GoName, "Create") {
+						code.Id("error")
+					}
+
+					if strings.HasPrefix(m.GoName, "Delete") {
+						code.Id("error")
+					}
+
+					if strings.HasPrefix(m.GoName, "Update") {
+						code.Id("error")
+					}
+
+					if strings.HasPrefix(m.GoName, "Get") {
+						code.Params(jen.Op("*").Id(tables[opts.Table].name), jen.Id("error"))
+					}
+
+					if strings.HasPrefix(m.GoName, "List") {
+						code.Params(jen.Index().Op("*").Id(tables[opts.Table].name), jen.Id("error"))
+					}
+
+					g.Add(code)
+				}
+			}).Line(),
+		)
+
+		genFile.Add(
+			jen.Func().
+				Id(fmt.Sprintf("New%s", srvName)).
+				Params(
+					jen.Id("db").Op("*").Qual("gorm.io/gorm", "DB"),
+				).Id(fmt.Sprintf("%sServer", name)).BlockFunc(func(g *jen.Group) {
+				g.If(jen.Id("db == nil")).Block(jen.Id(`panic("gorm handler panic: db is nil")`)).Line()
+				g.Return(jen.Op("&").Id(protoutil.Name(srvName).LowerCamelCase().String()).Block(
+					jen.Id("db:db,"),
+				))
+			}),
+		)
 
 		genFile.Add(
 			jen.Type().
-				Id(fmt.Sprintf("_%sGormHandler", name)).
+				Id(protoutil.Name(srvName).LowerCamelCase().String()).
 				Struct(
 					jen.Id("db").Op("*").Qual("gorm.io/gorm", "DB"),
 				),
@@ -72,7 +163,53 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 		for j := range srv.Methods {
 			var m = srv.Methods[j]
-			_ = m
+
+			logger.Info("service method", "name", m.GoName)
+
+			genFile.Add(
+				jen.Func().
+					Params(
+						jen.Id("h").Op("*").Id(protoutil.Name(srvName).LowerCamelCase().String()),
+					).
+					Id(m.GoName).
+					Params(
+						jen.Id("ctx").Qual("context", "Context"),
+						jen.Id("req").Op("*").Id(m.Input.GoIdent.GoName),
+					).
+					Params(
+						jen.Op("*").Id(m.Output.GoIdent.GoName),
+						jen.Id("error"),
+					).
+					BlockFunc(func(g *jen.Group) {
+						g.Id("var db = h.db.WithContext(ctx)")
+						g.Id("_ = db")
+
+						g.Var().Id("rsp").Op("=").New(jen.Id(m.Output.GoIdent.GoName))
+
+						if strings.HasPrefix(m.GoName, "Create") {
+
+						}
+
+						if strings.HasPrefix(m.GoName, "Delete") {
+
+						}
+
+						if strings.HasPrefix(m.GoName, "Update") {
+
+						}
+
+						if strings.HasPrefix(m.GoName, "Get") {
+
+						}
+
+						if strings.HasPrefix(m.GoName, "List") {
+							g.Var().Id("err = db.Find(&rsp.Data).Error")
+							g.If(jen.Id("err").Op("!=").Nil()).Block(jen.Return(jen.Id("nil,err"))).Line()
+						}
+
+						g.Return(jen.Id("rsp"), jen.Nil())
+					}).Line(),
+			)
 		}
 
 	}

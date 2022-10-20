@@ -13,3 +13,4 @@ protobuf build tool
 - github.com/pubgo/protobuild/protoc-gen-retag@latest
 - https://github.com/bufbuild/protobuf-es
 - https://github.com/timostamm/protobuf-ts
+- https://github.com/bufbuild/protoc-gen-validate

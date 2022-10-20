@@ -7,6 +7,7 @@
 package example
 
 import (
+	"context"
 	generic "github.com/pubgo/funk/generic"
 	grpc "google.golang.org/grpc"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -19,8 +20,66 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-type _ExampleServiceGormHandler struct {
+type ExampleServiceGormHandler interface {
+	Create(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) error
+	Delete(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) error
+	Update(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) error
+	Get(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) (*ExampleModel, error)
+	List(ctx context.Context, req *ListExampleRequest, where ...func(db *gorm.DB) *gorm.DB) ([]*ExampleModel, error)
+}
+
+func NewExampleServiceGormHandler(db *gorm.DB) ExampleServiceServer {
+	if db == nil {
+		panic("gorm handler panic: db is nil")
+	}
+
+	return &exampleServiceGormHandler{
+		db: db,
+	}
+}
+
+type exampleServiceGormHandler struct {
 	db *gorm.DB
+}
+
+func (h *exampleServiceGormHandler) Create(ctx context.Context, req *CreateExampleRequest) (*CreateExampleResponse, error) {
+	var db = h.db.WithContext(ctx)
+	_ = db
+	var rsp = new(CreateExampleResponse)
+	return rsp, nil
+}
+
+func (h *exampleServiceGormHandler) Delete(ctx context.Context, req *CreateExampleRequest) (*CreateExampleResponse, error) {
+	var db = h.db.WithContext(ctx)
+	_ = db
+	var rsp = new(CreateExampleResponse)
+	return rsp, nil
+}
+
+func (h *exampleServiceGormHandler) Update(ctx context.Context, req *CreateExampleRequest) (*CreateExampleResponse, error) {
+	var db = h.db.WithContext(ctx)
+	_ = db
+	var rsp = new(CreateExampleResponse)
+	return rsp, nil
+}
+
+func (h *exampleServiceGormHandler) Get(ctx context.Context, req *CreateExampleRequest) (*CreateExampleResponse, error) {
+	var db = h.db.WithContext(ctx)
+	_ = db
+	var rsp = new(CreateExampleResponse)
+	return rsp, nil
+}
+
+func (h *exampleServiceGormHandler) List(ctx context.Context, req *ListExampleRequest) (*ListExampleResponse, error) {
+	var db = h.db.WithContext(ctx)
+	_ = db
+	var rsp = new(ListExampleResponse)
+	var err = db.Find(&rsp.Data).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp, nil
 }
 
 // ExampleModel gen from github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example.Example

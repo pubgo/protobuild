@@ -22,7 +22,7 @@ type ExampleServiceClient interface {
 	Delete(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
 	Update(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
 	Get(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
-	List(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
+	List(ctx context.Context, in *ListExampleRequest, opts ...grpc.CallOption) (*ListExampleResponse, error)
 }
 
 type exampleServiceClient struct {
@@ -69,8 +69,8 @@ func (c *exampleServiceClient) Get(ctx context.Context, in *CreateExampleRequest
 	return out, nil
 }
 
-func (c *exampleServiceClient) List(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error) {
-	out := new(CreateExampleResponse)
+func (c *exampleServiceClient) List(ctx context.Context, in *ListExampleRequest, opts ...grpc.CallOption) (*ListExampleResponse, error) {
+	out := new(ListExampleResponse)
 	err := c.cc.Invoke(ctx, "/example.ExampleService/List", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ type ExampleServiceServer interface {
 	Delete(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
 	Update(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
 	Get(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
-	List(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
+	List(context.Context, *ListExampleRequest) (*ListExampleResponse, error)
 }
 
 // UnimplementedExampleServiceServer should be embedded to have forward compatible implementations.
@@ -105,7 +105,7 @@ func (UnimplementedExampleServiceServer) Update(context.Context, *CreateExampleR
 func (UnimplementedExampleServiceServer) Get(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedExampleServiceServer) List(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
+func (UnimplementedExampleServiceServer) List(context.Context, *ListExampleRequest) (*ListExampleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 
@@ -193,7 +193,7 @@ func _ExampleService_Get_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _ExampleService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateExampleRequest)
+	in := new(ListExampleRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func _ExampleService_List_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/example.ExampleService/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExampleServiceServer).List(ctx, req.(*CreateExampleRequest))
+		return srv.(ExampleServiceServer).List(ctx, req.(*ListExampleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
