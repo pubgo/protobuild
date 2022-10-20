@@ -43,6 +43,8 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 	type table struct {
 		name   string
+		pkName string
+		pkType protogen.GoIdent
 		fields map[string]*Field
 	}
 
@@ -75,6 +77,11 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		for j := range m.Fields {
 			var ff = NewField(m.Fields[j], gen)
 			tables[tableName].fields[ff.GoName] = ff
+
+			if ff.tag != nil && ff.tag.Pk {
+				tables[tableName].pkName = ff.Name
+				tables[tableName].pkType = ff.GoType
+			}
 		}
 	}
 
@@ -98,7 +105,8 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 			continue
 		}
 
-		if tables[opts.Table] == nil {
+		var tb = tables[opts.Table]
+		if tb == nil {
 			panic(fmt.Sprintf("table [%s] not found", opts.Table))
 		}
 
@@ -216,30 +224,70 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 	for i := range file.Messages {
 		m := file.Messages[i]
-
-		if m.Desc.Options() == nil {
-			continue
-		}
-
-		logger.Info(string(m.Desc.FullName()))
 		var opts, ok = gp.GetExtension(m.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
 		if !ok || opts == nil || !opts.Enabled {
 			continue
 		}
 
 		var ormName = protoutil.Name(string(m.Desc.Name()) + "Model").UpperCamelCase().String()
+
+		logger.Info(string(m.Desc.FullName()), "orm", ormName)
+		var tb = &table{fields: map[string]*Field{}, name: ormName}
+		for j := range m.Fields {
+			var ff = NewField(m.Fields[j], gen)
+			tb.fields[ff.GoName] = ff
+			if ff.tag != nil && ff.tag.Pk {
+				tb.pkName = ff.Name
+				tb.pkType = ff.GoType
+			}
+		}
+
 		_gen := jen.Commentf("%s gen from %s.%s", ormName, string(m.GoIdent.GoImportPath), m.GoIdent.GoName).Line()
 		_gen = _gen.Type().Id(ormName).StructFunc(func(group *jen.Group) {
 			for j := range m.Fields {
 				var ff = NewField(m.Fields[j], gen)
 				group.Add(ff.genGormField())
 			}
-		}).Line()
+		}).Line().Line()
 
 		var tableName = string(m.Desc.Name())
 		if opts.Table != "" {
 			tableName = opts.Table
 		}
+
+		_gen.Add(
+			jen.Type().Id(ormName + "Srv").InterfaceFunc(func(g *jen.Group) {
+				if tb.pkName != "" {
+					g.Add(
+						jen.Id("PkName").Params().String(),
+					)
+
+					g.Add(
+						jen.Id("PkType").Params().Id(tb.pkType.GoName),
+					)
+
+					g.Add(
+						jen.Id("CreateByPk").Params().Id(tb.pkType.GoName),
+					)
+
+					g.Add(
+						jen.Id("DeleteByPk").Params().Id(tb.pkType.GoName),
+					)
+
+					g.Add(
+						jen.Id("UpdateByPk").Params().Id(tb.pkType.GoName),
+					)
+
+					g.Add(
+						jen.Id("GetByPk").Params().Id(tb.pkType.GoName),
+					)
+
+					g.Add(
+						jen.Id("ListByPk").Params().Id(tb.pkType.GoName),
+					)
+				}
+			}).Line(),
+		)
 
 		_gen = _gen.Func().
 			Params(jen.Id("m").Op("*").Id(ormName)).

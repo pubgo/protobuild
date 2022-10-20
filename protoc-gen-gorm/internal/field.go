@@ -5,6 +5,7 @@ import (
 	"github.com/dave/jennifer/jen"
 	"github.com/pubgo/funk/generic"
 	"github.com/pubgo/protobuild/internal/protoutil"
+	ormpb "github.com/pubgo/protobuild/pkg/orm"
 	retagpb "github.com/pubgo/protobuild/pkg/retag"
 	"google.golang.org/protobuf/compiler/protogen"
 	gp "google.golang.org/protobuf/proto"
@@ -17,6 +18,11 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 	f.IsOptional = field.Desc.HasOptionalKeyword()
 	f.IsMap = field.Desc.IsMap()
 	f.IsMessage = field.Message != nil
+
+	var tag, ok = gp.GetExtension(field.Desc.Options(), ormpb.E_Tag).(*ormpb.GormTag)
+	if !ok || tag != nil {
+		f.tag = tag
+	}
 
 	f.Name = field.Desc.TextName()
 	f.GoName = field.GoName
@@ -56,6 +62,7 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 }
 
 type Field struct {
+	tag           *ormpb.GormTag
 	IsMessage     bool
 	IsList        bool
 	IsMap         bool

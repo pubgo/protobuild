@@ -82,6 +82,78 @@ func (h *exampleServiceGormHandler) List(ctx context.Context, req *ListExampleRe
 	return rsp, nil
 }
 
+// UserModel gen from github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example.User
+type UserModel struct {
+	Id        uint64    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Birthday  time.Time `json:"birthday"`
+	Num       uint32    `json:"num"`
+}
+
+type UserModelSrv interface {
+	PkName() string
+	PkType() uint64
+	CreateByPk() uint64
+	DeleteByPk() uint64
+	UpdateByPk() uint64
+	GetByPk() uint64
+	ListByPk() uint64
+}
+
+func (m *UserModel) TableName() string {
+	return "user"
+}
+
+func (m *UserModel) ToProto() *User {
+	if m == nil {
+		return nil
+	}
+
+	var x = new(User)
+	x.Id = m.Id
+
+	if !m.CreatedAt.IsZero() {
+		x.CreatedAt = timestamppb.New(m.CreatedAt)
+	}
+
+	if !m.UpdatedAt.IsZero() {
+		x.UpdatedAt = timestamppb.New(m.UpdatedAt)
+	}
+
+	if !m.Birthday.IsZero() {
+		x.Birthday = timestamppb.New(m.Birthday)
+	}
+
+	x.Num = m.Num
+
+	return x
+}
+func (x *User) ToModel() *UserModel {
+	if x == nil {
+		return nil
+	}
+
+	var m = new(UserModel)
+	m.Id = x.Id
+
+	if x.CreatedAt != nil && x.CreatedAt.IsValid() {
+		m.CreatedAt = x.CreatedAt.AsTime()
+	}
+
+	if x.UpdatedAt != nil && x.UpdatedAt.IsValid() {
+		m.UpdatedAt = x.UpdatedAt.AsTime()
+	}
+
+	if x.Birthday != nil && x.Birthday.IsValid() {
+		m.Birthday = x.Birthday.AsTime()
+	}
+
+	m.Num = x.Num
+
+	return m
+}
+
 // ExampleModel gen from github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example.Example
 type ExampleModel struct {
 	WithNewTags     string                         `graphql:"withNewTags,optional" json:"with_new_tags"`
@@ -100,6 +172,8 @@ type ExampleModel struct {
 	ListTest20      []string                       `json:"list_test_20"`
 	ListTest21      map[string]string              `json:"list_test_21"`
 }
+
+type ExampleModelSrv interface{}
 
 func (m *ExampleModel) TableName() string {
 	return "example"
@@ -245,6 +319,8 @@ type SecondMessageModel struct {
 	ReplaceDefault  string `json:"replacePrevious"`
 }
 
+type SecondMessageModelSrv interface{}
+
 func (m *SecondMessageModel) TableName() string {
 	return "second_message"
 }
@@ -282,6 +358,8 @@ func (x *SecondMessage) ToModel() *SecondMessageModel {
 type ThirdExampleModel struct {
 	Test *string `json:"test"`
 }
+
+type ThirdExampleModelSrv interface{}
 
 func (m *ThirdExampleModel) TableName() string {
 	return "sys_third_example"

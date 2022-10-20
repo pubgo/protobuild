@@ -7,6 +7,10 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";
 import "retag/retag.proto";
 
+extend google.protobuf.FieldOptions {
+  GormTag tag = 100001;
+}
+
 extend google.protobuf.MessageOptions {
   GormMessageOptions opts = 100001;
 }
@@ -33,7 +37,9 @@ message GormTag {
   string type = 2;
   int32 size = 3;
   int32 precision = 4;
-  bool primary_key = 5;
+
+  // primary_key
+  bool pk = 5;
   bool unique = 6;
   string default = 7;
   bool not_null = 8;

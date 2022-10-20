@@ -9,6 +9,21 @@ import "google/protobuf/descriptor.proto";
 
 option go_package = "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example;example";
 
+message User {
+  option (gorm.opts) = {
+    enabled: true,
+  };
+
+  uint64 id = 1 [
+    (gorm.tag) = {pk: true}
+  ];
+
+  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  google.protobuf.Timestamp birthday = 4;
+  uint32 num = 6;
+}
+
 message Example {
   option (gorm.opts) = {
     enabled : true;
