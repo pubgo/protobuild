@@ -94,11 +94,11 @@ type UserModel struct {
 type UserModelSrv interface {
 	PkName() string
 	PkType() uint64
-	CreateByPk() uint64
-	DeleteByPk() uint64
-	UpdateByPk() uint64
-	GetByPk() uint64
-	ListByPk() uint64
+	CreateByPk(db *gorm.DB, x *User) (*User, error)
+	DeleteByPk(db *gorm.DB, id uint64) (uint64, error)
+	UpdateByPk(db *gorm.DB, x *User) (int64, error)
+	GetByPk(db *gorm.DB, id uint64) (*User, error)
+	ListByPk(db *gorm.DB) ([]*User, error)
 }
 
 func (m *UserModel) TableName() string {
