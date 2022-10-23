@@ -12,6 +12,7 @@ option go_package = "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example;exa
 message User {
   option (gorm.opts) = {
     enabled: true,
+    allow_create: true,
   };
 
   uint64 id = 1 [

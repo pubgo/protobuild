@@ -23,6 +23,10 @@ message GormMessageOptions {
   bool enabled = 1;
   string table = 2;
   bool service = 3;
+  bool allow_create = 4;
+  bool allow_update = 5;
+  bool allow_detail = 6;
+  bool allow_list = 7;
 }
 
 message ExtraField {
@@ -60,6 +64,10 @@ message GormTag {
   bool association_save_reference = 22;
   bool preload = 23;
   string serializer = 24;
+  bool allow_create = 25;
+  bool allow_update = 26;
+  bool allow_detail = 27;
+  bool allow_list = 28;
 }
 
 message Timestamp {
