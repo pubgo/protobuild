@@ -12,17 +12,40 @@ option go_package = "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example;exa
 message User {
   option (gorm.opts) = {
     enabled: true,
-    allow_create: true,
   };
 
   uint64 id = 1 [
-    (gorm.tag) = {pk: true}
+    (gorm.field) = {
+      pk: true,
+      allow_detail: true,
+      allow_list: true,
+    }
   ];
 
-  google.protobuf.Timestamp created_at = 2;
-  google.protobuf.Timestamp updated_at = 3;
-  google.protobuf.Timestamp birthday = 4;
-  uint32 num = 6;
+  google.protobuf.Timestamp created_at = 2 [
+    (gorm.field) = {
+      allow_list: true,
+      allow_detail: true,
+    }
+  ];
+
+  google.protobuf.Timestamp updated_at = 3[
+    (gorm.field) = {
+      allow_list: true,
+      allow_detail: true,
+    }
+  ];
+  google.protobuf.Timestamp birthday = 4[
+    (gorm.field) = {
+      allow_all: true,
+    }
+  ];
+
+  uint32 num = 6 [
+    (gorm.field) = {
+      allow_all: true,
+    }
+  ];
 }
 
 message Example {

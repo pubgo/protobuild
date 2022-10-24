@@ -19,7 +19,7 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 	f.IsMap = field.Desc.IsMap()
 	f.IsMessage = field.Message != nil
 
-	var tag, ok = gp.GetExtension(field.Desc.Options(), ormpb.E_Tag).(*ormpb.GormTag)
+	var tag, ok = gp.GetExtension(field.Desc.Options(), ormpb.E_Field).(*ormpb.GormTag)
 	if !ok || tag != nil {
 		f.tag = tag
 	}

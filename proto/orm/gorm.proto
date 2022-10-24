@@ -8,7 +8,7 @@ import "google/protobuf/descriptor.proto";
 import "retag/retag.proto";
 
 extend google.protobuf.FieldOptions {
-  GormTag tag = 100001;
+  GormTag field = 100001;
 }
 
 extend google.protobuf.MessageOptions {
@@ -23,17 +23,6 @@ message GormMessageOptions {
   bool enabled = 1;
   string table = 2;
   bool service = 3;
-  bool allow_create = 4;
-  bool allow_update = 5;
-  bool allow_detail = 6;
-  bool allow_list = 7;
-}
-
-message ExtraField {
-  string type = 1;
-  string name = 2;
-  GormTag tag = 3;
-  string package = 4;
 }
 
 message GormTag {
@@ -68,6 +57,7 @@ message GormTag {
   bool allow_update = 26;
   bool allow_detail = 27;
   bool allow_list = 28;
+  bool allow_all = 29;
 }
 
 message Timestamp {
