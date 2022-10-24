@@ -97,6 +97,7 @@ type UserCreateModel struct {
 }
 
 type UserUpdateModel struct {
+	Id       uint64    `json:"id"`
 	Birthday time.Time `json:"birthday"`
 	Num      uint32    `json:"num"`
 }

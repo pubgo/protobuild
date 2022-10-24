@@ -19,6 +19,7 @@ message User {
       pk: true,
       allow_detail: true,
       allow_list: true,
+      allow_update: true,
     }
   ];
 
@@ -35,6 +36,7 @@ message User {
       allow_detail: true,
     }
   ];
+  
   google.protobuf.Timestamp birthday = 4[
     (gorm.field) = {
       allow_all: true,
