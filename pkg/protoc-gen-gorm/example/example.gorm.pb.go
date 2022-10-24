@@ -91,6 +91,32 @@ type UserModel struct {
 	Num       uint32    `json:"num"`
 }
 
+type UserCreateModel struct {
+	Birthday time.Time `json:"birthday"`
+	Num      uint32    `json:"num"`
+}
+
+type UserUpdateModel struct {
+	Birthday time.Time `json:"birthday"`
+	Num      uint32    `json:"num"`
+}
+
+type UserDetailModel struct {
+	Id        uint64    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Birthday  time.Time `json:"birthday"`
+	Num       uint32    `json:"num"`
+}
+
+type UserListModel struct {
+	Id        uint64    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Birthday  time.Time `json:"birthday"`
+	Num       uint32    `json:"num"`
+}
+
 type UserModelSrv interface {
 	PkName() string
 	PkType() uint64
@@ -172,6 +198,14 @@ type ExampleModel struct {
 	ListTest20      []string                       `json:"list_test_20"`
 	ListTest21      map[string]string              `json:"list_test_21"`
 }
+
+type ExampleCreateModel struct{}
+
+type ExampleUpdateModel struct{}
+
+type ExampleDetailModel struct{}
+
+type ExampleListModel struct{}
 
 type ExampleModelSrv interface{}
 
@@ -319,6 +353,14 @@ type SecondMessageModel struct {
 	ReplaceDefault  string `json:"replacePrevious"`
 }
 
+type SecondMessageCreateModel struct{}
+
+type SecondMessageUpdateModel struct{}
+
+type SecondMessageDetailModel struct{}
+
+type SecondMessageListModel struct{}
+
 type SecondMessageModelSrv interface{}
 
 func (m *SecondMessageModel) TableName() string {
@@ -358,6 +400,14 @@ func (x *SecondMessage) ToModel() *SecondMessageModel {
 type ThirdExampleModel struct {
 	Test *string `json:"test"`
 }
+
+type ThirdExampleCreateModel struct{}
+
+type ThirdExampleUpdateModel struct{}
+
+type ThirdExampleDetailModel struct{}
+
+type ThirdExampleListModel struct{}
 
 type ThirdExampleModelSrv interface{}
 

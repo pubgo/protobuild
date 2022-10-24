@@ -250,6 +250,54 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 			}
 		}).Line().Line()
 
+		var createModel = protoutil.Name(string(m.Desc.Name()) + "CreateModel").UpperCamelCase().String()
+		_gen = _gen.Type().Id(createModel).StructFunc(func(group *jen.Group) {
+			for j := range m.Fields {
+				var ff = NewField(m.Fields[j], gen)
+				if ff.tag == nil || (!ff.tag.AllowCreate && !ff.tag.AllowAll) {
+					continue
+				}
+
+				group.Add(ff.genGormField())
+			}
+		}).Line().Line()
+
+		var updateModel = protoutil.Name(string(m.Desc.Name()) + "UpdateModel").UpperCamelCase().String()
+		_gen = _gen.Type().Id(updateModel).StructFunc(func(group *jen.Group) {
+			for j := range m.Fields {
+				var ff = NewField(m.Fields[j], gen)
+				if ff.tag == nil || (!ff.tag.AllowUpdate && !ff.tag.AllowAll) {
+					continue
+				}
+
+				group.Add(ff.genGormField())
+			}
+		}).Line().Line()
+
+		var detailModel = protoutil.Name(string(m.Desc.Name()) + "DetailModel").UpperCamelCase().String()
+		_gen = _gen.Type().Id(detailModel).StructFunc(func(group *jen.Group) {
+			for j := range m.Fields {
+				var ff = NewField(m.Fields[j], gen)
+				if ff.tag == nil || (!ff.tag.AllowDetail && !ff.tag.AllowAll) {
+					continue
+				}
+
+				group.Add(ff.genGormField())
+			}
+		}).Line().Line()
+
+		var listModel = protoutil.Name(string(m.Desc.Name()) + "ListModel").UpperCamelCase().String()
+		_gen = _gen.Type().Id(listModel).StructFunc(func(group *jen.Group) {
+			for j := range m.Fields {
+				var ff = NewField(m.Fields[j], gen)
+				if ff.tag == nil || (!ff.tag.AllowList && !ff.tag.AllowAll) {
+					continue
+				}
+
+				group.Add(ff.genGormField())
+			}
+		}).Line().Line()
+
 		var tableName = string(m.Desc.Name())
 		if opts.Table != "" {
 			tableName = opts.Table
