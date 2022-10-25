@@ -37,3 +37,13 @@ func TestName(t *testing.T) {
 	assert.Must(err)
 	fmt.Println(t1.String())
 }
+
+func TestName2(t *testing.T) {
+	var req = new(AllSrvReq)
+	req.Req = append(req.Req, &Req{Req: &Req_Req1{}})
+
+	var rsp = new(AllSrvRsp)
+	for i := range rsp.Rsp {
+		rsp.Rsp[i].GetRsp()
+	}
+}

@@ -21,8 +21,9 @@ type ExampleServiceClient interface {
 	Create(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
 	Delete(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
 	Update(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
-	Get(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
+	Detail(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error)
 	List(ctx context.Context, in *ListExampleRequest, opts ...grpc.CallOption) (*ListExampleResponse, error)
+	All(ctx context.Context, in *AllSrvReq, opts ...grpc.CallOption) (*AllSrvRsp, error)
 }
 
 type exampleServiceClient struct {
@@ -60,9 +61,9 @@ func (c *exampleServiceClient) Update(ctx context.Context, in *CreateExampleRequ
 	return out, nil
 }
 
-func (c *exampleServiceClient) Get(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error) {
+func (c *exampleServiceClient) Detail(ctx context.Context, in *CreateExampleRequest, opts ...grpc.CallOption) (*CreateExampleResponse, error) {
 	out := new(CreateExampleResponse)
-	err := c.cc.Invoke(ctx, "/example.ExampleService/Get", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/example.ExampleService/Detail", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +79,15 @@ func (c *exampleServiceClient) List(ctx context.Context, in *ListExampleRequest,
 	return out, nil
 }
 
+func (c *exampleServiceClient) All(ctx context.Context, in *AllSrvReq, opts ...grpc.CallOption) (*AllSrvRsp, error) {
+	out := new(AllSrvRsp)
+	err := c.cc.Invoke(ctx, "/example.ExampleService/All", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExampleServiceServer is the server API for ExampleService service.
 // All implementations should embed UnimplementedExampleServiceServer
 // for forward compatibility
@@ -85,8 +95,9 @@ type ExampleServiceServer interface {
 	Create(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
 	Delete(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
 	Update(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
-	Get(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
+	Detail(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error)
 	List(context.Context, *ListExampleRequest) (*ListExampleResponse, error)
+	All(context.Context, *AllSrvReq) (*AllSrvRsp, error)
 }
 
 // UnimplementedExampleServiceServer should be embedded to have forward compatible implementations.
@@ -102,11 +113,14 @@ func (UnimplementedExampleServiceServer) Delete(context.Context, *CreateExampleR
 func (UnimplementedExampleServiceServer) Update(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
-func (UnimplementedExampleServiceServer) Get(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedExampleServiceServer) Detail(context.Context, *CreateExampleRequest) (*CreateExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Detail not implemented")
 }
 func (UnimplementedExampleServiceServer) List(context.Context, *ListExampleRequest) (*ListExampleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedExampleServiceServer) All(context.Context, *AllSrvReq) (*AllSrvRsp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
 }
 
 // UnsafeExampleServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -174,20 +188,20 @@ func _ExampleService_Update_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ExampleService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ExampleService_Detail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateExampleRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ExampleServiceServer).Get(ctx, in)
+		return srv.(ExampleServiceServer).Detail(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/example.ExampleService/Get",
+		FullMethod: "/example.ExampleService/Detail",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExampleServiceServer).Get(ctx, req.(*CreateExampleRequest))
+		return srv.(ExampleServiceServer).Detail(ctx, req.(*CreateExampleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -206,6 +220,24 @@ func _ExampleService_List_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ExampleServiceServer).List(ctx, req.(*ListExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ExampleService_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AllSrvReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExampleServiceServer).All(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/example.ExampleService/All",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExampleServiceServer).All(ctx, req.(*AllSrvReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -230,12 +262,16 @@ var ExampleService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ExampleService_Update_Handler,
 		},
 		{
-			MethodName: "Get",
-			Handler:    _ExampleService_Get_Handler,
+			MethodName: "Detail",
+			Handler:    _ExampleService_Detail_Handler,
 		},
 		{
 			MethodName: "List",
 			Handler:    _ExampleService_List_Handler,
+		},
+		{
+			MethodName: "All",
+			Handler:    _ExampleService_All_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

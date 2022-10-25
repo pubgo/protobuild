@@ -24,8 +24,9 @@ type ExampleServiceGormHandler interface {
 	Create(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) error
 	Delete(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) error
 	Update(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) error
-	Get(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB) (*ExampleModel, error)
+	Detail(ctx context.Context, req *CreateExampleRequest, where ...func(db *gorm.DB) *gorm.DB)
 	List(ctx context.Context, req *ListExampleRequest, where ...func(db *gorm.DB) *gorm.DB) ([]*ExampleModel, error)
+	All(ctx context.Context, req *AllSrvReq, where ...func(db *gorm.DB) *gorm.DB)
 }
 
 func NewExampleServiceGormHandler(db *gorm.DB) ExampleServiceServer {
@@ -63,7 +64,7 @@ func (h *exampleServiceGormHandler) Update(ctx context.Context, req *CreateExamp
 	return rsp, nil
 }
 
-func (h *exampleServiceGormHandler) Get(ctx context.Context, req *CreateExampleRequest) (*CreateExampleResponse, error) {
+func (h *exampleServiceGormHandler) Detail(ctx context.Context, req *CreateExampleRequest) (*CreateExampleResponse, error) {
 	var db = h.db.WithContext(ctx)
 	_ = db
 	var rsp = new(CreateExampleResponse)
@@ -79,6 +80,13 @@ func (h *exampleServiceGormHandler) List(ctx context.Context, req *ListExampleRe
 		return nil, err
 	}
 
+	return rsp, nil
+}
+
+func (h *exampleServiceGormHandler) All(ctx context.Context, req *AllSrvReq) (*AllSrvRsp, error) {
+	var db = h.db.WithContext(ctx)
+	_ = db
+	var rsp = new(AllSrvRsp)
 	return rsp, nil
 }
 

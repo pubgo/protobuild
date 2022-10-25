@@ -36,7 +36,7 @@ message User {
       allow_detail: true,
     }
   ];
-  
+
   google.protobuf.Timestamp birthday = 4[
     (gorm.field) = {
       allow_all: true,
@@ -127,8 +127,31 @@ service ExampleService {
   rpc Create(CreateExampleRequest) returns (CreateExampleResponse){}
   rpc Delete(CreateExampleRequest) returns (CreateExampleResponse){}
   rpc Update(CreateExampleRequest) returns (CreateExampleResponse){}
-  rpc Get(CreateExampleRequest) returns (CreateExampleResponse){}
+  rpc Detail(CreateExampleRequest) returns (CreateExampleResponse){}
   rpc List(ListExampleRequest) returns (ListExampleResponse){}
+  rpc All(AllSrvReq) returns (AllSrvRsp) {}
+}
+
+message Req {
+  oneof req {
+    CreateExampleRequest req1 = 1;
+    ListExampleRequest req2 = 2;
+  }
+}
+
+message AllSrvReq {
+  repeated Req req = 1;
+}
+
+message Rsp {
+  oneof rsp {
+    CreateExampleResponse rsq1 = 1;
+    ListExampleResponse rsq2 = 2;
+  }
+}
+
+message AllSrvRsp {
+  repeated Rsp rsp = 1;
 }
 
 message CreateExampleRequest {
