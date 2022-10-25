@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/logx"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"testing"
 	"time"
@@ -46,4 +47,6 @@ func TestName2(t *testing.T) {
 	for i := range rsp.Rsp {
 		rsp.Rsp[i].GetRsp()
 	}
+
+	anypb.Any{}
 }

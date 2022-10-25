@@ -6,6 +6,7 @@ import "retag/retag.proto";
 import "orm/gorm.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";
+import "google/protobuf/any.proto";
 
 option go_package = "github.com/pubgo/protobuild/pkg/protoc-gen-gorm/example;example";
 
@@ -165,7 +166,7 @@ message CreateExampleResponse {
 }
 
 message ListExampleRequest {
-
+  google.protobuf.Any any = 1;
 }
 
 message ListExampleResponse {
