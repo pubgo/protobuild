@@ -1,5 +1,5 @@
 // Refer: https://github.com/emicklei/proto-contrib/tree/master/cmd/protofmt
-
+// clang-format -style=google *.proto
 package cmd
 
 import (
