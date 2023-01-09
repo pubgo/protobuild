@@ -2,8 +2,10 @@ package internal
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dave/jennifer/jen"
-	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/log"
 	"github.com/pubgo/protobuild/internal/protoutil"
 	ormpb "github.com/pubgo/protobuild/pkg/orm"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -11,14 +13,13 @@ import (
 	gp "google.golang.org/protobuf/proto"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm/schema"
-	"strings"
 )
 
 func init() {
 	_ = schema.ParseTagSetting
 }
 
-var logger = logx.WithName("gorm")
+var logger = log.GetLogger("gorm")
 
 // GenerateFile generates a .lava.pb.go file containing service definitions.
 func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.GeneratedFile {

@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,9 +12,9 @@ import (
 
 	"github.com/cnf/structhash"
 	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/errors"
+	"github.com/pubgo/funk/log"
 	"github.com/pubgo/funk/recovery"
-	"github.com/pubgo/funk/xerr"
 	"github.com/pubgo/x/pathutil"
 	"github.com/urfave/cli/v2"
 	yaml "gopkg.in/yaml.v2"
@@ -32,7 +31,7 @@ var (
 	protoCfg = "protobuf.yaml"
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd      = assert.Exit1(os.Getwd())
-	logger   = logx.WithName("proto-build")
+	logger   = log.GetLogger("proto-build")
 	//binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
@@ -128,7 +127,7 @@ func Main() *cli.App {
 
 						var data = ""
 						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
-						logger.Info(fmt.Sprintf("%v", cfg.Includes))
+						logger.Info().Msgf("includes=%q", cfg.Includes)
 						for i := range cfg.Includes {
 							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
 						}
@@ -194,12 +193,12 @@ func Main() *cli.App {
 							}
 						}
 						data = base + data + " " + filepath.Join(in, "*.proto")
-						logger.Info(data)
+						logger.Info().Msg(data)
 						assert.Must(shutil.Shell(data).Run(), data)
 						if retagOut != "" && retagOpt != "" {
 							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
 						}
-						logger.Info(data)
+						logger.Info().Msg(data)
 						assert.Must(shutil.Shell(data).Run(), data)
 						return true
 					})
@@ -309,8 +308,9 @@ func Main() *cli.App {
 								return err
 							}
 
-							defer recovery.Err(&gErr, func(err xerr.XErr) xerr.XErr {
-								return err.WrapF("path=%s name=%s", path, info.Name())
+							defer recovery.Err(&gErr, func(err errors.XErr) {
+								err.AddTag("path", path)
+								err.AddTag("name", info.Name())
 							})
 
 							if info.IsDir() {

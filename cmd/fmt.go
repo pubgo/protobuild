@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -40,7 +39,7 @@ func fmtCmd() *cli.Command {
 
 			for i := range cfg.Root {
 				if pathutil.IsNotExist(cfg.Root[i]) {
-					logger.Info(fmt.Sprintf("file %s not found", cfg.Root[i]))
+					logger.Info().Msgf("file %s not found", cfg.Root[i])
 					continue
 				}
 

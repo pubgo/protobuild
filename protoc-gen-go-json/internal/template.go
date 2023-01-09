@@ -1,11 +1,10 @@
 package internal
 
 import (
-	"fmt"
 	"io"
 	"text/template"
 
-	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/log"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
@@ -33,11 +32,11 @@ func applyMessages(w io.Writer, msgs []*protogen.Message, opts Options) error {
 	for _, m := range msgs {
 
 		if m.Desc.IsMapEntry() {
-			logx.Info(fmt.Sprintf("Skipping %s, mapentry message", m.GoIdent.GoName))
+			log.Info().Msgf("Skipping %s, mapentry message", m.GoIdent.GoName)
 			continue
 		}
 
-		logx.Info(fmt.Sprintf("Processing %s", m.GoIdent.GoName))
+		log.Info().Msgf("Processing %s", m.GoIdent.GoName)
 		if err := messageTemplate.Execute(w, tplMessage{
 			Message: m,
 			Options: opts,

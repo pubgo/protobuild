@@ -3,11 +3,12 @@ package example
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/logx"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"testing"
 	"time"
+
+	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/log"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestName(t *testing.T) {
@@ -15,15 +16,15 @@ func TestName(t *testing.T) {
 	var dd, err = json.Marshal(pb)
 	assert.Must(err)
 	// 2022-10-19T03:49:42.240649Z
-	logx.Info(string(dd))
+	log.Print(string(dd))
 
 	mm, _ := json.Marshal(pb.Test_5.AsTime())
-	logx.Info(string(mm))
+	log.Print(string(mm))
 
 	d2, err := json.Marshal(pb.ToModel())
 	assert.Must(err)
 	// 2022-10-19T03:49:42.240649Z
-	logx.Info(string(d2))
+	log.Print(string(d2))
 
 	var pb1 *Example
 	assert.Must(json.Unmarshal(dd, &pb1))

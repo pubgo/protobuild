@@ -1,6 +1,6 @@
 module github.com/pubgo/protobuild
 
-go 1.18
+go 1.19
 
 require (
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
@@ -10,17 +10,17 @@ require (
 	github.com/fatih/structtag v1.2.0
 	github.com/flosch/pongo2/v5 v5.0.0
 	github.com/golang/protobuf v1.5.2
-	github.com/hashicorp/go-version v1.5.0
+	github.com/hashicorp/go-version v1.6.0
 	github.com/jhump/protoreflect v1.12.0
 	github.com/lyft/protoc-gen-star/v2 v2.0.2-alpha
 	github.com/open2b/scriggo v0.56.1
-	github.com/pubgo/funk v0.5.26-4
+	github.com/pubgo/funk v0.5.26
 	github.com/pubgo/x v0.3.37
 	github.com/pubgo/xerror v0.4.32
 	github.com/spf13/cast v1.5.0
 	github.com/urfave/cli/v2 v2.8.0
 	github.com/yuin/goldmark v1.4.12
-	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
+	golang.org/x/mod v0.6.0
 	google.golang.org/genproto v0.0.0-20210226172003-ab064af71705
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.28.0
@@ -31,19 +31,20 @@ require (
 require (
 	github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
-	github.com/go-kit/log v0.2.1 // indirect
-	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-logr/logr v1.2.2 // indirect
-	github.com/iand/logfmtr v0.2.1 // indirect
+	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
+	github.com/k0kubun/pp/v3 v3.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/phuslu/goid v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
+	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
-	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/exp v0.0.0-20221114191408-850992195362 // indirect
+	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

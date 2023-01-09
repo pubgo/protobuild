@@ -2,14 +2,16 @@ package internal
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dave/jennifer/jen"
 	"github.com/pubgo/funk/generic"
+	"github.com/pubgo/funk/log"
 	"github.com/pubgo/protobuild/internal/protoutil"
 	ormpb "github.com/pubgo/protobuild/pkg/orm"
 	retagpb "github.com/pubgo/protobuild/pkg/retag"
 	"google.golang.org/protobuf/compiler/protogen"
 	gp "google.golang.org/protobuf/proto"
-	"strings"
 )
 
 func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
@@ -56,7 +58,14 @@ func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
 		f.IsSelfPackage = true
 	}
 
-	logger.Info(f.Type, "go-type", f.GoType.GoName, "import", f.GoType.GoImportPath, "map", f.IsMap, "list", f.IsList, "message", f.IsMessage, "optional", f.IsOptional)
+	logger.WithFields(log.Map{
+		"go-type":  f.GoType.GoName,
+		"import":   f.GoType.GoImportPath,
+		"map":      f.IsMap,
+		"list":     f.IsList,
+		"message":  f.IsMessage,
+		"optional": f.IsOptional,
+	}).Info().Msg(f.Type)
 
 	return f
 }

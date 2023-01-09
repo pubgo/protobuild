@@ -2,6 +2,8 @@ package internal
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dave/jennifer/jen"
 	"github.com/pubgo/funk/generic"
 	"github.com/pubgo/protobuild/internal/protoutil"
@@ -9,7 +11,6 @@ import (
 	retagpb "github.com/pubgo/protobuild/pkg/retag"
 	"google.golang.org/protobuf/compiler/protogen"
 	gp "google.golang.org/protobuf/proto"
-	"strings"
 )
 
 func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {

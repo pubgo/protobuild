@@ -3,13 +3,15 @@ package main
 import (
 	"flag"
 
-	"github.com/pubgo/xerror"
+	"github.com/pubgo/funk/recovery"
+	"github.com/pubgo/protobuild/internal/protoutil"
+	"github.com/pubgo/protobuild/protoc-gen-resty/internal"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
 func main() {
-	defer xerror.RespExit()
+	defer recovery.Exit()
 
 	var flags flag.FlagSet
 	flags.StringVar(&internal.PathTag, "path-tag", internal.PathTag, "router path params tag")

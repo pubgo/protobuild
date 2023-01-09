@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/xerr"
+	"github.com/pubgo/funk/errors"
 )
 
 func Run(args ...string) (string, error) {
@@ -16,7 +16,7 @@ func Run(args ...string) (string, error) {
 	cmd := Shell(args...)
 	cmd.Stdout = b
 	if err := cmd.Run(); err != nil {
-		return "", xerr.Wrap(err, strings.Join(args, " "))
+		return "", errors.Wrap(err, strings.Join(args, " "))
 	}
 
 	return strings.TrimSpace(b.String()), nil
