@@ -14,15 +14,15 @@ import (
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/log"
+	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
-	"github.com/pubgo/x/pathutil"
+	"github.com/pubgo/funk/utils"
 	"github.com/urfave/cli/v2"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
-	"github.com/pubgo/protobuild/internal/utils"
 	"github.com/pubgo/protobuild/version"
 )
 
@@ -295,7 +295,7 @@ func Main() *cli.App {
 						// 加载路径
 						url = filepath.Join(url, dep.Path)
 
-						if !utils.DirExists(url) {
+						if pathutil.IsNotExist(url) {
 							url = filepath.Join(modPath, url)
 						}
 

@@ -1,3 +1,4 @@
+// Package cmd
 // Refer: https://github.com/emicklei/proto-contrib/tree/master/cmd/protofmt
 // clang-format -style=google *.proto
 package cmd
@@ -14,8 +15,8 @@ import (
 	"github.com/emicklei/proto"
 	"github.com/emicklei/proto-contrib/pkg/protofmt"
 	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/protobuild/internal/typex"
-	"github.com/pubgo/x/pathutil"
 	"github.com/urfave/cli/v2"
 )
 

@@ -2,13 +2,12 @@ package internal
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/protobuild/internal/protoutil"
-	"github.com/pubgo/x/pathutil"
-	"github.com/pubgo/xerror"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
@@ -32,8 +31,8 @@ func genRestApiTest(gen *protogen.Plugin, file *protogen.File, g *protogen.Gener
 		data = append(data, fmt.Sprintf("%s http://localhost:8080%s\n", method, url))
 		data = append(data, fmt.Sprintf("Content-Type: application/json\n\n"))
 	}
-	xerror.Panic(pathutil.IsNotExistMkDir(testDir))
-	xerror.Panic(ioutil.WriteFile(filepath.Join(testDir, genPath), []byte(strings.Join(data, "")), 0755))
+	assert.If(!utils.DirExists(testDir), "dir %s not found", testDir)
+	assert.Must(os.WriteFile(filepath.Join(testDir, genPath), []byte(strings.Join(data, "")), 0755))
 }
 
 //func genRestRouter(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, service *protogen.Service) {

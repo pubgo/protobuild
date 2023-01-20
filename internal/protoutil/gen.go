@@ -12,7 +12,7 @@ import (
 	pongo "github.com/flosch/pongo2/v5"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/pubgo/xerror"
+	"github.com/pubgo/funk/assert"
 	options "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
 	gp "google.golang.org/protobuf/proto"
@@ -204,9 +204,9 @@ func CamelCase(s string) string {
 // This generates an HttpRule that matches the gRPC mapping to HTTP/2 described in
 // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
 // i.e.:
-//   * method is POST
-//   * path is "<pkg name>/<service name>/<method name>"
-//   * body should contain the serialized request message
+//   - method is POST
+//   - path is "<pkg name>/<service name>/<method name>"
+//   - body should contain the serialized request message
 func DefaultAPIOptions(pkg string, srv string, mth string) *options.HttpRule {
 	return &options.HttpRule{
 		Pattern: &options.HttpRule_Post{
@@ -316,19 +316,19 @@ func Gen(g *protogen.GeneratedFile, tpl string, m pongo.Context) {
 	m["unExport"] = UnExport
 
 	temp, err := pongo.FromString(tpl)
-	xerror.PanicF(err, tpl)
+	assert.Must(err)
 
-	xerror.PanicF(temp.ExecuteWriter(m, g), tpl)
+	assert.Must(temp.ExecuteWriter(m, g))
 }
 
 func Template(tpl string, m pongo.Context) string {
 	m["unExport"] = UnExport
 
 	temp, err := pongo.FromString(strings.TrimSpace(tpl))
-	xerror.PanicF(err, tpl)
+	assert.Must(err)
 
 	var g = bytes.NewBuffer(nil)
-	xerror.PanicF(temp.ExecuteWriter(m, g), tpl)
+	assert.Must(temp.ExecuteWriter(m, g))
 	return g.String()
 }
 
