@@ -16,7 +16,7 @@ import (
 	"github.com/pubgo/funk/log"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
-	"github.com/pubgo/funk/utils"
+	"github.com/pubgo/funk/strutil"
 	"github.com/urfave/cli/v2"
 	yaml "gopkg.in/yaml.v2"
 
@@ -53,10 +53,10 @@ func Main() *cli.App {
 		Before: func(ctx *cli.Context) error {
 			defer recovery.Exit()
 
-			content := assert.Must1(ioutil.ReadFile(protoCfg))
+			content := assert.Must1(os.ReadFile(protoCfg))
 			assert.Must(yaml.Unmarshal(content, &cfg))
 
-			cfg.Vendor = utils.FirstFnNotEmpty(func() string {
+			cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
 				return cfg.Vendor
 			}, func() string {
 				protoPath := filepath.Join(pwd, ".proto")
@@ -232,7 +232,7 @@ func Main() *cli.App {
 							continue
 						}
 
-						var v = utils.FirstFnNotEmpty(func() string {
+						var v = strutil.FirstFnNotEmpty(func() string {
 							return versions[url]
 						}, func() string {
 							return dep.Version
