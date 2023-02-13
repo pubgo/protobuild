@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/lyft/protoc-gen-star/v2 v2.0.2-alpha
 	github.com/open2b/scriggo v0.56.1
-	github.com/pubgo/funk v0.5.28-13
+	github.com/pubgo/funk v0.5.28
 	github.com/spf13/cast v1.5.0
 	github.com/urfave/cli/v2 v2.8.0
 	github.com/yuin/goldmark v1.4.12
