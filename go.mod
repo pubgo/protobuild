@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/lyft/protoc-gen-star/v2 v2.0.2-alpha
 	github.com/open2b/scriggo v0.56.1
-	github.com/pubgo/funk v0.5.28
+	github.com/pubgo/funk v0.5.29-12
 	github.com/spf13/cast v1.5.0
 	github.com/urfave/cli/v2 v2.8.0
 	github.com/yuin/goldmark v1.4.12
@@ -39,6 +39,8 @@ require (
 	github.com/rs/zerolog v1.29.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasttemplate v1.2.2 // indirect
 	golang.org/x/exp v0.0.0-20221114191408-850992195362 // indirect
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect

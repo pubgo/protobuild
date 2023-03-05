@@ -308,9 +308,9 @@ func Main() *cli.App {
 								return err
 							}
 
-							defer recovery.Err(&gErr, func(err errors.XErr) {
-								err.AddTag("path", path)
-								err.AddTag("name", info.Name())
+							defer recovery.Err(&gErr, func(err *errors.Event) {
+								err.Str("path", path)
+								err.Str("name", info.Name())
 							})
 
 							if info.IsDir() {
