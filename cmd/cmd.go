@@ -100,7 +100,7 @@ func Main() *cli.App {
 
 					for i := range cfg.Root {
 						if pathutil.IsNotExist(cfg.Root[i]) {
-							log.Printf("file %s not flund", cfg.Root[i])
+							log.Printf("file %s not found", cfg.Root[i])
 							continue
 						}
 
