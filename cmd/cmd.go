@@ -81,17 +81,6 @@ func Main() *cli.App {
 				assert.If(dep.Name == "" || dep.Url == "", "name和url都不能为空")
 			}
 
-			// plugin 检查
-			for _, p := range cfg.Plugins {
-				if p.Out == "" {
-					p.Out = cfg.BasePlugin.Out
-				}
-
-				if p.Opt == nil {
-					p.Opt = cfg.BasePlugin.Opt
-				}
-			}
-
 			checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))
 			if cfg.Checksum != checksum {
 				cfg.Checksum = checksum
@@ -174,23 +163,7 @@ func Main() *cli.App {
 
 							_ = pathutil.IsNotExistMkDir(out)
 
-							var opts = func(dt interface{}) []string {
-								switch _dt := dt.(type) {
-								case string:
-									if _dt != "" {
-										return []string{_dt}
-									}
-								case []string:
-									return _dt
-								case []interface{}:
-									var dtList []string
-									for i := range _dt {
-										dtList = append(dtList, _dt[i].(string))
-									}
-									return dtList
-								}
-								return nil
-							}(plg.Opt)
+							var opts = plg.Opt
 
 							if name == "retag" {
 								retagOut = fmt.Sprintf(" --%s_out=%s", name, out)
