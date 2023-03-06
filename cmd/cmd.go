@@ -27,7 +27,8 @@ import (
 )
 
 var (
-	cfg      Cfg
+	cfg Cfg
+
 	protoCfg = "protobuf.yaml"
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd      = assert.Exit1(os.Getwd())
@@ -78,6 +79,17 @@ func Main() *cli.App {
 			// protobuf文件检查
 			for _, dep := range cfg.Depends {
 				assert.If(dep.Name == "" || dep.Url == "", "name和url都不能为空")
+			}
+
+			// plugin 检查
+			for _, p := range cfg.Plugins {
+				if p.Out == "" {
+					p.Out = cfg.BasePlugin.Out
+				}
+
+				if p.Opt == nil {
+					p.Opt = cfg.BasePlugin.Opt
+				}
 			}
 
 			checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))

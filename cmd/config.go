@@ -1,15 +1,14 @@
 package cmd
 
 type Cfg struct {
-	Version  string   `yaml:"version,omitempty" hash:"-"`
-	Checksum string   `yaml:"checksum,omitempty" hash:"-"`
-	BaseDir  string   `yaml:"base_dir" hash:"-"`
-	Root     []string `yaml:"root,omitempty" hash:"-"`
-	Includes []string `yaml:"includes,omitempty" hash:"-"`
-	Plugins  []plugin `yaml:"plugins,omitempty" hash:"-"`
-	Depends  []depend `yaml:"deps,omitempty"`
-	Vendor   string   `yaml:"vendor,omitempty"`
-	changed  bool
+	Checksum   string   `yaml:"checksum,omitempty" hash:"-"`
+	Vendor     string   `yaml:"vendor,omitempty"`
+	BasePlugin plugin   `yaml:"base_plugin" hash:"-"`
+	Root       []string `yaml:"root,omitempty" hash:"-"`
+	Includes   []string `yaml:"includes,omitempty" hash:"-"`
+	Plugins    []plugin `yaml:"plugins,omitempty" hash:"-"`
+	Depends    []depend `yaml:"deps,omitempty"`
+	changed    bool
 }
 
 type plugin struct {
