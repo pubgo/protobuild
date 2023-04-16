@@ -1,10 +1,10 @@
-// Package cmd
 // Refer: https://github.com/emicklei/proto-contrib/tree/master/cmd/protofmt
-// clang-format -style=google *.proto
+// https://github.com/bufbuild/buf/blob/main/private/buf/bufformat/bufformat.go
 package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -16,6 +16,7 @@ import (
 	"github.com/emicklei/proto-contrib/pkg/protofmt"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/pathutil"
+	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/urfave/cli/v2"
 )
@@ -63,7 +64,8 @@ func fmtCmd() *cli.Command {
 			}
 
 			for name := range protoList {
-				readFormatWrite(name)
+				_ = shutil.MustRun("clang-format", "-i", fmt.Sprintf("-style=google %s", name))
+				//readFormatWrite(name)
 			}
 
 			return nil
