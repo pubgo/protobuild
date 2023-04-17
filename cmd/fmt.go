@@ -4,7 +4,7 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
+	"github.com/pubgo/protobuild/cmd/format"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -16,7 +16,6 @@ import (
 	"github.com/emicklei/proto-contrib/pkg/protofmt"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/pathutil"
-	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/urfave/cli/v2"
 )
@@ -64,8 +63,9 @@ func fmtCmd() *cli.Command {
 			}
 
 			for name := range protoList {
-				_ = shutil.MustRun("clang-format", "-i", fmt.Sprintf("-style=google %s", name))
+				//_ = shutil.MustRun("clang-format", "-i", fmt.Sprintf("-style=google %s", name))
 				//readFormatWrite(name)
+				format.Format(name)
 			}
 
 			return nil
@@ -79,7 +79,7 @@ func readFormatWrite(filename string) {
 
 	// buffer before write
 	buf := new(bytes.Buffer)
-	format(filename, file, buf)
+	format1(filename, file, buf)
 
 	if overwrite {
 		// write back to input
@@ -92,7 +92,7 @@ func readFormatWrite(filename string) {
 	}
 }
 
-func format(filename string, input io.Reader, output io.Writer) {
+func format1(filename string, input io.Reader, output io.Writer) {
 	parser := proto.NewParser(input)
 	parser.Filename(filename)
 	def := assert.Must1(parser.Parse())
