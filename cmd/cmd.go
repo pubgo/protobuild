@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
@@ -18,7 +19,7 @@ import (
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
 	"github.com/urfave/cli/v2"
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
@@ -98,7 +99,7 @@ func Main() *cli.App {
 					defer recovery.Exit()
 
 					var protoList sync.Map
-
+					var basePlugin = cfg.BasePlugin
 					for i := range cfg.Root {
 						if pathutil.IsNotExist(cfg.Root[i]) {
 							log.Printf("file %s not found", cfg.Root[i])
@@ -158,12 +159,30 @@ func Main() *cli.App {
 									return plg.Out
 								}
 
+								if basePlugin != nil && basePlugin.Out != "" {
+									return basePlugin.Out
+								}
+
 								return "."
 							}()
 
 							_ = pathutil.IsNotExistMkDir(out)
 
 							var opts = plg.Opt
+							if basePlugin != nil && basePlugin.Opt != "" {
+								var hasPath = func() bool {
+									for _, opt := range opts {
+										if strings.HasPrefix(opt, "paths=") {
+											return true
+										}
+									}
+									return false
+								}
+
+								if !hasPath() {
+									opts = append(opts, basePlugin.Opt)
+								}
+							}
 
 							if name == "retag" {
 								retagOut = fmt.Sprintf(" --%s_out=%s", name, out)
@@ -254,7 +273,13 @@ func Main() *cli.App {
 
 						cfg.Depends[i].Version = v
 					}
-					assert.Must(ioutil.WriteFile(protoCfg, assert.Must1(yaml.Marshal(cfg)), 0644))
+
+					var buf bytes.Buffer
+					var enc = yaml.NewEncoder(&buf)
+					enc.SetIndent(2)
+					defer enc.Close()
+					assert.Must(enc.Encode(cfg))
+					assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0666))
 
 					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")
@@ -262,6 +287,7 @@ func Main() *cli.App {
 					}
 
 					// 删除老的protobuf文件
+					logger.Info().Str("vendor", cfg.Vendor).Msg("delete old vendor")
 					_ = os.RemoveAll(cfg.Vendor)
 
 					for _, dep := range cfg.Depends {
@@ -326,7 +352,7 @@ func copyFile(dstFilePath string, srcFilePath string) (written int64, err error)
 	defer srcFile.Close()
 	assert.Must(err, "打开源文件错误", srcFilePath)
 
-	dstFile, err := os.OpenFile(dstFilePath, os.O_WRONLY|os.O_CREATE, 0444)
+	dstFile, err := os.Create(dstFilePath)
 	defer srcFile.Close()
 	assert.Must(err, "打开目标文件错误", dstFilePath)
 

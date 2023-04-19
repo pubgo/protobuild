@@ -2,50 +2,51 @@ package cmd
 
 import (
 	"github.com/pubgo/funk/errors"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var _ yaml.Unmarshaler = (*pluginOpts)(nil)
 
 type pluginOpts []string
 
-func (p *pluginOpts) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var dt interface{}
-	if err := unmarshal(&dt); err != nil {
-		return err
+func (p *pluginOpts) UnmarshalYAML(value *yaml.Node) error {
+	if value.IsZero() {
+		return nil
 	}
 
-	switch _dt := dt.(type) {
-	case string:
-		if _dt != "" {
-			*p = []string{_dt}
+	switch value.Kind {
+	case yaml.ScalarNode:
+		if value.Value != "" {
+			*p = []string{value.Value}
 			return nil
 		}
 		return nil
-	case []string:
-		*p = _dt
-		return nil
-	case []interface{}:
-		var dtList []string
-		for i := range _dt {
-			dtList = append(dtList, _dt[i].(string))
+	case yaml.SequenceNode:
+		var data []string
+		if err := value.Decode(&data); err != nil {
+			return err
 		}
-		*p = dtList
+		*p = data
 		return nil
 	default:
-		return errors.New("yaml kind type error, data=%#v", dt)
+		return errors.New("yaml kind type error, data=%s", value.Value)
 	}
 }
 
 type Cfg struct {
-	Checksum      string   `yaml:"checksum,omitempty" hash:"-"`
-	Vendor        string   `yaml:"vendor,omitempty"`
-	BasePluginOut plugin   `yaml:"base_plugin_out" hash:"-"`
-	Root          []string `yaml:"root,omitempty" hash:"-"`
-	Includes      []string `yaml:"includes,omitempty" hash:"-"`
-	Plugins       []plugin `yaml:"plugins,omitempty" hash:"-"`
-	Depends       []depend `yaml:"deps,omitempty"`
-	changed       bool
+	Checksum   string         `yaml:"checksum,omitempty" hash:"-"`
+	Vendor     string         `yaml:"vendor,omitempty"`
+	BasePlugin *basePluginCfg `yaml:"base,omitempty" hash:"-"`
+	Root       []string       `yaml:"root,omitempty" hash:"-"`
+	Includes   []string       `yaml:"includes,omitempty" hash:"-"`
+	Depends    []depend       `yaml:"deps,omitempty"`
+	Plugins    []plugin       `yaml:"plugins,omitempty" hash:"-"`
+	changed    bool
+}
+
+type basePluginCfg struct {
+	Out string `yaml:"out,omitempty"`
+	Opt string `yaml:"opt,omitempty"`
 }
 
 type plugin struct {
