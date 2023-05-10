@@ -36,10 +36,11 @@ func (p *pluginOpts) UnmarshalYAML(value *yaml.Node) error {
 type Cfg struct {
 	Checksum   string         `yaml:"checksum,omitempty" hash:"-"`
 	Vendor     string         `yaml:"vendor,omitempty"`
+	Depends    []depend       `yaml:"deps,omitempty"`
 	BasePlugin *basePluginCfg `yaml:"base,omitempty" hash:"-"`
 	Root       []string       `yaml:"root,omitempty" hash:"-"`
 	Includes   []string       `yaml:"includes,omitempty" hash:"-"`
-	Depends    []depend       `yaml:"deps,omitempty"`
+	Excludes   []string       `yaml:"excludes,omitempty" hash:"-"`
 	Plugins    []plugin       `yaml:"plugins,omitempty" hash:"-"`
 	changed    bool
 }

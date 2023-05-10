@@ -154,6 +154,11 @@ func Main() *cli.App {
 							}
 
 							if info.IsDir() {
+								for _, e := range cfg.Excludes {
+									if strings.HasPrefix(path, e) {
+										return filepath.SkipDir
+									}
+								}
 								return nil
 							}
 
