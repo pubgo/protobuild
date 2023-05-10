@@ -84,7 +84,7 @@ func Main() *cli.App {
 				log.Printf("%#v\n", p)
 
 				if p.Shell != "" {
-					cccc := shutil.Shell(p.Shell)
+					cccc := shutil.Shell(strings.TrimSpace(p.Shell))
 					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
 					assert.Must(cccc.Run())
 				}
