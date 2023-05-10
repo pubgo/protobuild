@@ -16,4 +16,4 @@ plugins:
     opt:
       - paths=source_relative
       - output=pkg
-  - name: python
+  - name: test

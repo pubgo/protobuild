@@ -58,6 +58,8 @@ func Main() *cli.App {
 			content := assert.Must1(os.ReadFile(protoCfg))
 			assert.Must(yaml.Unmarshal(content, &cfg))
 
+			os.Setenv("protobuf_config_path", protoCfg)
+
 			cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
 				return cfg.Vendor
 			}, func() string {
