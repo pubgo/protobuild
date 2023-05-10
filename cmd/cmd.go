@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -14,11 +15,14 @@ import (
 	"github.com/cnf/structhash"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
+	"github.com/pubgo/funk/generic"
 	"github.com/pubgo/funk/log"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/pluginpb"
 	yaml "gopkg.in/yaml.v3"
 
 	"github.com/pubgo/protobuild/internal/modutil"
@@ -52,13 +56,49 @@ func Main() *cli.App {
 				Destination: &protoCfg,
 			},
 		},
+		Action: func(context *cli.Context) error {
+			in := assert.Must1(io.ReadAll(os.Stdin))
+			req := &pluginpb.CodeGeneratorRequest{}
+			assert.Must(proto.Unmarshal(in, req))
+
+			var params []string
+			var plgName string
+			for _, p := range strings.Split(req.GetParameter(), ",") {
+				if strings.HasPrefix(p, "__wrapper") {
+					names := strings.Split(p, "=")
+					plgName = strings.TrimSpace(names[len(names)-1])
+				} else {
+					params = append(params, p)
+				}
+			}
+
+			if len(params) > 0 {
+				req.Parameter = generic.Ptr(strings.Join(params, ","))
+			}
+
+			for _, p := range cfg.Plugins {
+				if p.Name != plgName {
+					continue
+				}
+
+				log.Printf("%#v\n", p)
+
+				if p.Shell != "" {
+					cccc := shutil.Shell(p.Shell)
+					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cccc.Run())
+				}
+
+				break
+			}
+
+			return nil
+		},
 		Before: func(ctx *cli.Context) error {
 			defer recovery.Exit()
 
 			content := assert.Must1(os.ReadFile(protoCfg))
 			assert.Must(yaml.Unmarshal(content, &cfg))
-
-			os.Setenv("protobuf_config_path", protoCfg)
 
 			cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
 				return cfg.Vendor
@@ -145,7 +185,9 @@ func Main() *cli.App {
 
 							// 指定plugin path
 							if plg.Path != "" {
-								data += fmt.Sprintf(" --plugin=%s=%s", name, plg.Path)
+								plg.Path = assert.Must1(exec.LookPath(plg.Path))
+								assert.If(pathutil.IsNotExist(plg.Path), "plugin path notfound, path=%s", plg.Path)
+								data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, plg.Path)
 							}
 
 							var out = func() string {
@@ -183,6 +225,11 @@ func Main() *cli.App {
 
 								if !hasPath() {
 									opts = append(opts, basePlugin.Opt)
+								}
+
+								if plg.Shell != "" {
+									opts = append(opts, "__wrapper="+name)
+									data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, assert.Must1(exec.LookPath(os.Args[0])))
 								}
 							}
 
