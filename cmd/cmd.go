@@ -87,9 +87,15 @@ func Main() *cli.App {
 					cccc := shutil.Shell(strings.TrimSpace(p.Shell))
 					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
 					assert.Must(cccc.Run())
+					break
 				}
 
-				break
+				if p.Docker != "" {
+					cccc := shutil.Shell("docker run -i --rm " + p.Docker)
+					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cccc.Run())
+					break
+				}
 			}
 
 			return nil
@@ -232,7 +238,7 @@ func Main() *cli.App {
 									opts = append(opts, basePlugin.Opt)
 								}
 
-								if plg.Shell != "" {
+								if plg.Shell != "" || plg.Docker != "" {
 									opts = append(opts, "__wrapper="+name)
 									data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, assert.Must1(exec.LookPath(os.Args[0])))
 								}
