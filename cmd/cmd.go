@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"google.golang.org/protobuf/compiler/protogen"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -60,6 +61,16 @@ func Main() *cli.App {
 			in := assert.Must1(io.ReadAll(os.Stdin))
 			req := &pluginpb.CodeGeneratorRequest{}
 			assert.Must(proto.Unmarshal(in, req))
+
+			var opts protogen.Options
+			plg := assert.Must1(opts.New(req))
+			for _, f := range plg.Files {
+				if !f.Generate {
+					continue
+				}
+
+				log.Printf("%s\n", f.GeneratedFilenamePrefix)
+			}
 
 			var params []string
 			var plgName string
