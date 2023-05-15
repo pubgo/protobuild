@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"reflect"
 	"unicode"
 
 	"google.golang.org/protobuf/types/pluginpb"
