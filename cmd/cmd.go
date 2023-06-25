@@ -235,7 +235,7 @@ func Main() *cli.App {
 							_ = pathutil.IsNotExistMkDir(out)
 
 							var opts = plg.Opt
-							if basePlugin != nil && basePlugin.Opt != "" {
+							if basePlugin != nil && basePlugin.Paths != "" {
 								var hasPath = func() bool {
 									for _, opt := range opts {
 										if strings.HasPrefix(opt, "paths=") {
@@ -246,7 +246,7 @@ func Main() *cli.App {
 								}
 
 								if !hasPath() {
-									opts = append(opts, basePlugin.Opt)
+									opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
 								}
 
 								if plg.Shell != "" || plg.Docker != "" {
