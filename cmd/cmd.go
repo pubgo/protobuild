@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"google.golang.org/protobuf/compiler/protogen"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -22,6 +21,7 @@ import (
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 	yaml "gopkg.in/yaml.v3"
