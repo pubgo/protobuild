@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -314,7 +313,7 @@ func Main() *cli.App {
 						}, func() string {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
-							var localPkg, err = ioutil.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
+							var localPkg, err = os.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
 							assert.Must(err)
 
 							var _, name = filepath.Split(url)
@@ -332,13 +331,18 @@ func Main() *cli.App {
 
 						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
 							changed = true
-							fmt.Println("go", "get", "-d", url+"/...")
-							assert.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
+							if v == "" {
+								fmt.Println("go", "get", "-d", url+"/...")
+								assert.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
+
+							} else if pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
+								fmt.Println("go", "get", "-d", fmt.Sprintf("%s@%s", url, v))
+								assert.Must(shutil.Shell("go", "get", "-d", fmt.Sprintf("%s@%s", url, v)).Run())
+							}
 
 							// 再次解析go.mod然后获取版本信息
 							versions = modutil.LoadVersions()
 							v = versions[url]
-
 							assert.If(v == "", "%s version为空", url)
 						}
 
