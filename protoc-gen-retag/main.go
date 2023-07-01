@@ -2,6 +2,8 @@
 
 package main
 
+// https://github.com/searKing/golang/blob/master/tools/protoc-gen-go-tag/main.go
+
 import (
 	pgs "github.com/lyft/protoc-gen-star/v2"
 	pgsgo "github.com/lyft/protoc-gen-star/v2/lang/go"

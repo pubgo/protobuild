@@ -1,38 +1,43 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
-	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/cnf/structhash"
 	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/errors"
+	"github.com/pubgo/funk/generic"
+	"github.com/pubgo/funk/log"
+	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
-	"github.com/pubgo/funk/xerr"
-	"github.com/pubgo/x/pathutil"
+	"github.com/pubgo/funk/strutil"
 	"github.com/urfave/cli/v2"
-	yaml "gopkg.in/yaml.v2"
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/pluginpb"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
-	"github.com/pubgo/protobuild/internal/utils"
 	"github.com/pubgo/protobuild/version"
 )
 
 var (
-	cfg      Cfg
+	cfg Cfg
+
 	protoCfg = "protobuf.yaml"
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd      = assert.Exit1(os.Getwd())
-	logger   = logx.WithName("proto-build")
+	logger   = log.GetLogger("proto-build")
 	//binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
@@ -51,13 +56,67 @@ func Main() *cli.App {
 				Destination: &protoCfg,
 			},
 		},
+		Action: func(context *cli.Context) error {
+			in := assert.Must1(io.ReadAll(os.Stdin))
+			req := &pluginpb.CodeGeneratorRequest{}
+			assert.Must(proto.Unmarshal(in, req))
+
+			var opts protogen.Options
+			plg := assert.Must1(opts.New(req))
+			for _, f := range plg.Files {
+				if !f.Generate {
+					continue
+				}
+
+				log.Printf("%s\n", f.GeneratedFilenamePrefix)
+			}
+
+			var params []string
+			var plgName string
+			for _, p := range strings.Split(req.GetParameter(), ",") {
+				if strings.HasPrefix(p, "__wrapper") {
+					names := strings.Split(p, "=")
+					plgName = strings.TrimSpace(names[len(names)-1])
+				} else {
+					params = append(params, p)
+				}
+			}
+
+			if len(params) > 0 {
+				req.Parameter = generic.Ptr(strings.Join(params, ","))
+			}
+
+			for _, p := range cfg.Plugins {
+				if p.Name != plgName {
+					continue
+				}
+
+				log.Printf("%#v\n", p)
+
+				if p.Shell != "" {
+					cccc := shutil.Shell(strings.TrimSpace(p.Shell))
+					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cccc.Run())
+					break
+				}
+
+				if p.Docker != "" {
+					cccc := shutil.Shell("docker run -i --rm " + p.Docker)
+					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cccc.Run())
+					break
+				}
+			}
+
+			return nil
+		},
 		Before: func(ctx *cli.Context) error {
 			defer recovery.Exit()
 
-			content := assert.Must1(ioutil.ReadFile(protoCfg))
+			content := assert.Must1(os.ReadFile(protoCfg))
 			assert.Must(yaml.Unmarshal(content, &cfg))
 
-			cfg.Vendor = utils.FirstFnNotEmpty(func() string {
+			cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
 				return cfg.Vendor
 			}, func() string {
 				protoPath := filepath.Join(pwd, ".proto")
@@ -98,10 +157,10 @@ func Main() *cli.App {
 					defer recovery.Exit()
 
 					var protoList sync.Map
-
+					var basePlugin = cfg.BasePlugin
 					for i := range cfg.Root {
 						if pathutil.IsNotExist(cfg.Root[i]) {
-							log.Printf("file %s not flund", cfg.Root[i])
+							log.Printf("file %s not found", cfg.Root[i])
 							continue
 						}
 
@@ -111,6 +170,11 @@ func Main() *cli.App {
 							}
 
 							if info.IsDir() {
+								for _, e := range cfg.Excludes {
+									if strings.HasPrefix(path, e) {
+										return filepath.SkipDir
+									}
+								}
 								return nil
 							}
 
@@ -128,7 +192,7 @@ func Main() *cli.App {
 
 						var data = ""
 						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
-						logger.Info(fmt.Sprintf("%v", cfg.Includes))
+						logger.Info().Msgf("includes=%q", cfg.Includes)
 						for i := range cfg.Includes {
 							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
 						}
@@ -142,7 +206,9 @@ func Main() *cli.App {
 
 							// 指定plugin path
 							if plg.Path != "" {
-								data += fmt.Sprintf(" --plugin=%s=%s", name, plg.Path)
+								plg.Path = assert.Must1(exec.LookPath(plg.Path))
+								assert.If(pathutil.IsNotExist(plg.Path), "plugin path notfound, path=%s", plg.Path)
+								data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, plg.Path)
 							}
 
 							var out = func() string {
@@ -158,28 +224,35 @@ func Main() *cli.App {
 									return plg.Out
 								}
 
+								if basePlugin != nil && basePlugin.Out != "" {
+									return basePlugin.Out
+								}
+
 								return "."
 							}()
 
 							_ = pathutil.IsNotExistMkDir(out)
 
-							var opts = func(dt interface{}) []string {
-								switch _dt := dt.(type) {
-								case string:
-									if _dt != "" {
-										return []string{_dt}
+							var opts = plg.Opt
+							if basePlugin != nil && basePlugin.Paths != "" {
+								var hasPath = func() bool {
+									for _, opt := range opts {
+										if strings.HasPrefix(opt, "paths=") {
+											return true
+										}
 									}
-								case []string:
-									return _dt
-								case []interface{}:
-									var dtList []string
-									for i := range _dt {
-										dtList = append(dtList, _dt[i].(string))
-									}
-									return dtList
+									return false
 								}
-								return nil
-							}(plg.Opt)
+
+								if !hasPath() {
+									opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
+								}
+
+								if plg.Shell != "" || plg.Docker != "" {
+									opts = append(opts, "__wrapper="+name)
+									data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, assert.Must1(exec.LookPath(os.Args[0])))
+								}
+							}
 
 							if name == "retag" {
 								retagOut = fmt.Sprintf(" --%s_out=%s", name, out)
@@ -194,12 +267,12 @@ func Main() *cli.App {
 							}
 						}
 						data = base + data + " " + filepath.Join(in, "*.proto")
-						logger.Info(data)
+						logger.Info().Msg(data)
 						assert.Must(shutil.Shell(data).Run(), data)
 						if retagOut != "" && retagOpt != "" {
 							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
 						}
-						logger.Info(data)
+						logger.Info().Msg(data)
 						assert.Must(shutil.Shell(data).Run(), data)
 						return true
 					})
@@ -233,14 +306,14 @@ func Main() *cli.App {
 							continue
 						}
 
-						var v = utils.FirstFnNotEmpty(func() string {
+						var v = strutil.FirstFnNotEmpty(func() string {
 							return versions[url]
 						}, func() string {
 							return dep.Version
 						}, func() string {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
-							var localPkg, err = ioutil.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
+							var localPkg, err = os.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
 							assert.Must(err)
 
 							var _, name = filepath.Split(url)
@@ -258,19 +331,30 @@ func Main() *cli.App {
 
 						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
 							changed = true
-							fmt.Println("go", "get", "-d", url+"/...")
-							assert.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
+							if v == "" {
+								fmt.Println("go", "get", "-d", url+"/...")
+								assert.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
+
+							} else if pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
+								fmt.Println("go", "get", "-d", fmt.Sprintf("%s@%s", url, v))
+								assert.Must(shutil.Shell("go", "get", "-d", fmt.Sprintf("%s@%s", url, v)).Run())
+							}
 
 							// 再次解析go.mod然后获取版本信息
 							versions = modutil.LoadVersions()
 							v = versions[url]
-
 							assert.If(v == "", "%s version为空", url)
 						}
 
 						cfg.Depends[i].Version = v
 					}
-					assert.Must(ioutil.WriteFile(protoCfg, assert.Must1(yaml.Marshal(cfg)), 0644))
+
+					var buf bytes.Buffer
+					var enc = yaml.NewEncoder(&buf)
+					enc.SetIndent(2)
+					defer enc.Close()
+					assert.Must(enc.Encode(cfg))
+					assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0666))
 
 					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")
@@ -278,6 +362,7 @@ func Main() *cli.App {
 					}
 
 					// 删除老的protobuf文件
+					logger.Info().Str("vendor", cfg.Vendor).Msg("delete old vendor")
 					_ = os.RemoveAll(cfg.Vendor)
 
 					for _, dep := range cfg.Depends {
@@ -296,7 +381,7 @@ func Main() *cli.App {
 						// 加载路径
 						url = filepath.Join(url, dep.Path)
 
-						if !utils.DirExists(url) {
+						if pathutil.IsNotExist(url) {
 							url = filepath.Join(modPath, url)
 						}
 
@@ -309,8 +394,9 @@ func Main() *cli.App {
 								return err
 							}
 
-							defer recovery.Err(&gErr, func(err xerr.XErr) xerr.XErr {
-								return err.WrapF("path=%s name=%s", path, info.Name())
+							defer recovery.Err(&gErr, func(err *errors.Event) {
+								err.Str("path", path)
+								err.Str("name", info.Name())
 							})
 
 							if info.IsDir() {
@@ -341,7 +427,7 @@ func copyFile(dstFilePath string, srcFilePath string) (written int64, err error)
 	defer srcFile.Close()
 	assert.Must(err, "打开源文件错误", srcFilePath)
 
-	dstFile, err := os.OpenFile(dstFilePath, os.O_WRONLY|os.O_CREATE, 0444)
+	dstFile, err := os.Create(dstFilePath)
 	defer srcFile.Close()
 	assert.Must(err, "打开目标文件错误", dstFilePath)
 

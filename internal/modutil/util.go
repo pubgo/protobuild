@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/protobuild/internal/utils"
+	"github.com/pubgo/funk/pathutil"
 	"golang.org/x/mod/modfile"
 )
 
 func getFileByRecursion(file string, path string) string {
 	filePath := filepath.Join(path, file)
-	if utils.FileExists(filePath) {
+	if pathutil.IsExist(filePath) {
 		return filePath
 	}
 

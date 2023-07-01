@@ -4,12 +4,28 @@ import (
 	"fmt"
 
 	"github.com/pubgo/funk/recovery"
+	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
 func main() {
 	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
 		defer recovery.Exit()
+
+		gen.SupportedFeatures = gengo.SupportedFeatures
+		var originFiles []*protogen.GeneratedFile
+		for _, f := range gen.Files {
+			if !f.Generate {
+				continue
+			}
+			originFiles = append(originFiles, gengo.GenerateFile(gen, f))
+		}
+
+		//ast.Rewrite(gen)
+
+		for _, f := range originFiles {
+			f.Skip()
+		}
 
 		for _, f := range gen.Files {
 			if !f.Generate {

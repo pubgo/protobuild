@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/log"
 	"github.com/pubgo/protobuild/protoc-gen-go-json/internal"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -34,12 +34,12 @@ func main() {
 			f := gp.FilesByPath[name]
 
 			if len(f.Messages) == 0 {
-				logx.Info(fmt.Sprintf("Skipping %s, no messages", name))
+				log.Info().Msgf("Skipping %s, no messages", name)
 				continue
 			}
 
-			logx.Info(fmt.Sprintf("Processing %s", name))
-			logx.Info(fmt.Sprintf("Generating %s.pb.json.go", f.GeneratedFilenamePrefix))
+			log.Info().Msgf("Processing %s", name)
+			log.Info().Msgf("Generating %s.pb.json.go", f.GeneratedFilenamePrefix)
 
 			gf := gp.NewGeneratedFile(fmt.Sprintf("%s.json.pb.go", f.GeneratedFilenamePrefix), f.GoImportPath)
 

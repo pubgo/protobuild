@@ -1,10 +1,10 @@
 // Refer: https://github.com/emicklei/proto-contrib/tree/master/cmd/protofmt
-// clang-format -style=google *.proto
+// https://github.com/bufbuild/buf/blob/main/private/buf/bufformat/bufformat.go
 package cmd
 
 import (
 	"bytes"
-	"fmt"
+	"github.com/pubgo/protobuild/cmd/format"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -15,8 +15,8 @@ import (
 	"github.com/emicklei/proto"
 	"github.com/emicklei/proto-contrib/pkg/protofmt"
 	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/protobuild/internal/typex"
-	"github.com/pubgo/x/pathutil"
 	"github.com/urfave/cli/v2"
 )
 
@@ -40,7 +40,7 @@ func fmtCmd() *cli.Command {
 
 			for i := range cfg.Root {
 				if pathutil.IsNotExist(cfg.Root[i]) {
-					logger.Info(fmt.Sprintf("file %s not found", cfg.Root[i]))
+					logger.Info().Msgf("file %s not found", cfg.Root[i])
 					continue
 				}
 
@@ -63,7 +63,9 @@ func fmtCmd() *cli.Command {
 			}
 
 			for name := range protoList {
-				readFormatWrite(name)
+				//_ = shutil.MustRun("clang-format", "-i", fmt.Sprintf("-style=google %s", name))
+				//readFormatWrite(name)
+				format.Format(name)
 			}
 
 			return nil
@@ -77,7 +79,7 @@ func readFormatWrite(filename string) {
 
 	// buffer before write
 	buf := new(bytes.Buffer)
-	format(filename, file, buf)
+	format1(filename, file, buf)
 
 	if overwrite {
 		// write back to input
@@ -90,7 +92,7 @@ func readFormatWrite(filename string) {
 	}
 }
 
-func format(filename string, input io.Reader, output io.Writer) {
+func format1(filename string, input io.Reader, output io.Writer) {
 	parser := proto.NewParser(input)
 	parser.Filename(filename)
 	def := assert.Must1(parser.Parse())

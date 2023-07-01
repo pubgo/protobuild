@@ -11,10 +11,10 @@ import (
 	"github.com/fatih/structtag"
 	pgs "github.com/lyft/protoc-gen-star/v2"
 	pgsgo "github.com/lyft/protoc-gen-star/v2/lang/go"
-	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/log"
 )
 
-var logger = logx.WithName("retag")
+var logger = log.GetLogger("retag")
 
 type mod struct {
 	*pgs.ModuleBase
@@ -76,7 +76,7 @@ func (m *mod) Execute(targets map[string]pgs.File, packages map[string]pgs.Packa
 			filename = strings.TrimPrefix(filename, trim)
 		}
 
-		logger.Info(fmt.Sprintf("retag %s", filename))
+		logger.Info().Msgf("retag file: %s", filename)
 
 		fs := token.NewFileSet()
 		fn, err := parser.ParseFile(fs, filename, nil, parser.ParseComments)

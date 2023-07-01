@@ -2,8 +2,10 @@ package internal
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dave/jennifer/jen"
-	"github.com/pubgo/funk/logx"
+	"github.com/pubgo/funk/log"
 	"github.com/pubgo/protobuild/internal/protoutil"
 	ormpb "github.com/pubgo/protobuild/pkg/orm"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -11,14 +13,13 @@ import (
 	gp "google.golang.org/protobuf/proto"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm/schema"
-	"strings"
 )
 
 func init() {
 	_ = schema.ParseTagSetting
 }
 
-var logger = logx.WithName("gorm")
+var logger = log.GetLogger("gorm")
 
 // GenerateFile generates a .lava.pb.go file containing service definitions.
 func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.GeneratedFile {
@@ -87,7 +88,10 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 	for name, fields := range tables {
 		for field := range fields.fields {
-			logger.Info("table info", "table", name, "field", field)
+			logger.Info().
+				Str("field", field).
+				Str("table", name).
+				Msg("table info")
 		}
 	}
 
@@ -99,7 +103,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 		var name = protoutil.Name(srv.Desc.Name()).UpperCamelCase().String()
 
-		logger.Info(string(srv.Desc.FullName()))
+		logger.Info().Msg(string(srv.Desc.FullName()))
 		var opts, ok = gp.GetExtension(srv.Desc.Options(), ormpb.E_Server).(*ormpb.GormMessageOptions)
 		if !ok || opts == nil || !opts.Service {
 			continue
@@ -172,7 +176,8 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		for j := range srv.Methods {
 			var m = srv.Methods[j]
 
-			logger.Info("service method", "name", m.GoName)
+			logger.Info().Str("name", m.GoName).
+				Msg("service method")
 
 			genFile.Add(
 				jen.Func().
@@ -231,7 +236,9 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 		var ormName = protoutil.Name(string(m.Desc.Name()) + "Model").UpperCamelCase().String()
 
-		logger.Info(string(m.Desc.FullName()), "orm", ormName)
+		logger.Info().
+			Str("orm", ormName).
+			Msg(string(m.Desc.FullName()))
 		var tb = &table{fields: map[string]*Field{}, name: ormName}
 		for j := range m.Fields {
 			var ff = NewField(m.Fields[j], gen)

@@ -5,12 +5,7 @@ import (
 	"github.com/pubgo/funk/assert"
 )
 
-var CommitID = ""
-var BuildTime = ""
-var Data = ""
-var Domain = ""
 var Version = "v0.0.1-dev"
-var Tag = ""
 
 func init() {
 	if Version == "" {
