@@ -234,7 +234,7 @@ func Main() *cli.App {
 							_ = pathutil.IsNotExistMkDir(out)
 
 							var opts = plg.Opt
-							if basePlugin != nil && basePlugin.Paths != "" {
+							if basePlugin != nil && basePlugin.Paths != "" && !plg.SkipBase {
 								var hasPath = func() bool {
 									for _, opt := range opts {
 										if strings.HasPrefix(opt, "paths=") {
@@ -247,11 +247,11 @@ func Main() *cli.App {
 								if !hasPath() {
 									opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
 								}
+							}
 
-								if plg.Shell != "" || plg.Docker != "" {
-									opts = append(opts, "__wrapper="+name)
-									data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, assert.Must1(exec.LookPath(os.Args[0])))
-								}
+							if plg.Shell != "" || plg.Docker != "" {
+								opts = append(opts, "__wrapper="+name)
+								data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, assert.Must1(exec.LookPath(os.Args[0])))
 							}
 
 							if name == "retag" {

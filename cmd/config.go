@@ -51,13 +51,14 @@ type basePluginCfg struct {
 }
 
 type plugin struct {
-	Name   string     `yaml:"name,omitempty"`
-	Path   string     `yaml:"path,omitempty"`
-	Out    string     `yaml:"out,omitempty"`
-	Shell  string     `yaml:"shell,omitempty"`
-	Docker string     `yaml:"docker,omitempty"`
-	Remote string     `yaml:"remote,omitempty"`
-	Opt    pluginOpts `yaml:"opt,omitempty"`
+	Name     string     `yaml:"name,omitempty"`
+	Path     string     `yaml:"path,omitempty"`
+	Out      string     `yaml:"out,omitempty"`
+	Shell    string     `yaml:"shell,omitempty"`
+	Docker   string     `yaml:"docker,omitempty"`
+	Remote   string     `yaml:"remote,omitempty"`
+	SkipBase bool       `yaml:"skip_base,omitempty"`
+	Opt      pluginOpts `yaml:"opt,omitempty"`
 }
 
 type depend struct {
