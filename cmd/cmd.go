@@ -394,9 +394,11 @@ func Main() *cli.App {
 								return err
 							}
 
-							defer recovery.Err(&gErr, func(err *errors.Event) {
-								err.Str("path", path)
-								err.Str("name", info.Name())
+							defer recovery.Err(&gErr, func(err error) error {
+								return errors.WrapTag(err,
+									errors.T("path", path),
+									errors.T("name", info.Name()),
+								)
 							})
 
 							if info.IsDir() {
