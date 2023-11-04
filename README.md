@@ -14,3 +14,9 @@ protobuf build tool
 - https://github.com/bufbuild/protobuf-es
 - https://github.com/timostamm/protobuf-ts
 - https://github.com/bufbuild/protoc-gen-validate
+- https://github.com/istio/tools/tree/master/cmd/protoc-gen-golang-jsonshim
+- https://github.com/istio/tools/tree/master/cmd/protoc-gen-golang-deepcopy
+- https://github.com/istio/tools/tree/master/cmd/protoc-gen-docs
+- https://github.com/solo-io/protoc-gen-openapi
+- https://github.com/searKing/golang/tree/master/tools/protoc-gen-go-tag
+- 
