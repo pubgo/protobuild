@@ -244,8 +244,21 @@ func Main() *cli.App {
 									return false
 								}
 
-								if !hasPath() {
+								var hasModule = func() bool {
+									for _, opt := range opts {
+										if strings.HasPrefix(opt, "module=") {
+											return true
+										}
+									}
+									return false
+								}
+
+								if !hasPath() && basePlugin.Paths != "" {
 									opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
+								}
+
+								if !hasModule() && basePlugin.Module != "" {
+									opts = append(opts, fmt.Sprintf("module=%s", basePlugin.Module))
 								}
 							}
 

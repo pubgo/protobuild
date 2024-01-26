@@ -47,8 +47,9 @@ type Cfg struct {
 }
 
 type basePluginCfg struct {
-	Out   string `yaml:"out,omitempty"`
-	Paths string `yaml:"paths,omitempty"`
+	Out    string `yaml:"out,omitempty"`
+	Paths  string `yaml:"paths,omitempty"`
+	Module string `yaml:"module,omitempty"`
 }
 
 type plugin struct {
