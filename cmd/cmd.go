@@ -252,11 +252,11 @@ func Main() *cli.App {
 								return false
 							}
 
-							if !hasPath() && basePlugin.Paths != "" {
+							if !hasPath() && basePlugin.Paths != "" && !plg.SkipBase {
 								opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
 							}
 
-							if !hasModule() && basePlugin.Module != "" {
+							if !hasModule() && basePlugin.Module != "" && !plg.SkipBase {
 								opts = append(opts, fmt.Sprintf("module=%s", basePlugin.Module))
 							}
 
@@ -274,7 +274,13 @@ func Main() *cli.App {
 							data += fmt.Sprintf(" --%s_out=%s", name, out)
 
 							if len(opts) > 0 {
-								data += fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
+								var protoOpt []string
+								for _, opt := range opts {
+									if !hasAny(plg.ExcludeOpts, func(d string) bool { return strings.HasPrefix(opt, d) }) {
+										protoOpt = append(protoOpt, opt)
+									}
+								}
+								data += fmt.Sprintf(" --%s_opt=%s", name, strings.Join(protoOpt, ","))
 							}
 						}
 						data = base + data + " " + filepath.Join(in, "*.proto")
@@ -445,4 +451,13 @@ func copyFile(dstFilePath string, srcFilePath string) (written int64, err error)
 	assert.Must(err, "打开目标文件错误", dstFilePath)
 
 	return io.Copy(dstFile, srcFile)
+}
+
+func hasAny(data []string, fn func(d string) bool) bool {
+	for _, d := range data {
+		if fn(d) {
+			return true
+		}
+	}
+	return false
 }
