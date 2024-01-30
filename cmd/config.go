@@ -35,14 +35,14 @@ func (p *pluginOpts) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Cfg struct {
-	Checksum   string         `yaml:"checksum,omitempty" hash:"-"`
-	Vendor     string         `yaml:"vendor,omitempty"`
-	BasePlugin *basePluginCfg `yaml:"base,omitempty" hash:"-"`
-	Root       []string       `yaml:"root,omitempty" hash:"-"`
-	Includes   []string       `yaml:"includes,omitempty" hash:"-"`
-	Excludes   []string       `yaml:"excludes,omitempty" hash:"-"`
-	Depends    []depend       `yaml:"deps,omitempty"`
-	Plugins    []plugin       `yaml:"plugins,omitempty" hash:"-"`
+	Checksum   string        `yaml:"checksum,omitempty" hash:"-"`
+	Vendor     string        `yaml:"vendor,omitempty"`
+	BasePlugin basePluginCfg `yaml:"base,omitempty" hash:"-"`
+	Root       []string      `yaml:"root,omitempty" hash:"-"`
+	Includes   []string      `yaml:"includes,omitempty" hash:"-"`
+	Excludes   []string      `yaml:"excludes,omitempty" hash:"-"`
+	Depends    []depend      `yaml:"deps,omitempty"`
+	Plugins    []plugin      `yaml:"plugins,omitempty" hash:"-"`
 	changed    bool
 }
 
@@ -53,14 +53,13 @@ type basePluginCfg struct {
 }
 
 type plugin struct {
-	Name     string     `yaml:"name,omitempty"`
-	Path     string     `yaml:"path,omitempty"`
-	Out      string     `yaml:"out,omitempty"`
-	Shell    string     `yaml:"shell,omitempty"`
-	Docker   string     `yaml:"docker,omitempty"`
-	Remote   string     `yaml:"remote,omitempty"`
-	SkipBase bool       `yaml:"skip_base,omitempty"`
-	Opt      pluginOpts `yaml:"opt,omitempty"`
+	Name   string     `yaml:"name,omitempty"`
+	Path   string     `yaml:"path,omitempty"`
+	Out    string     `yaml:"out,omitempty"`
+	Shell  string     `yaml:"shell,omitempty"`
+	Docker string     `yaml:"docker,omitempty"`
+	Remote string     `yaml:"remote,omitempty"`
+	Opt    pluginOpts `yaml:"opt,omitempty"`
 }
 
 type depend struct {

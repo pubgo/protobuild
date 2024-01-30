@@ -224,7 +224,7 @@ func Main() *cli.App {
 									return plg.Out
 								}
 
-								if basePlugin != nil && basePlugin.Out != "" {
+								if basePlugin.Out != "" {
 									return basePlugin.Out
 								}
 
@@ -234,32 +234,30 @@ func Main() *cli.App {
 							_ = pathutil.IsNotExistMkDir(out)
 
 							var opts = plg.Opt
-							if basePlugin != nil && basePlugin.Paths != "" && !plg.SkipBase {
-								var hasPath = func() bool {
-									for _, opt := range opts {
-										if strings.HasPrefix(opt, "paths=") {
-											return true
-										}
+							var hasPath = func() bool {
+								for _, opt := range opts {
+									if strings.HasPrefix(opt, "paths=") {
+										return true
 									}
-									return false
 								}
+								return false
+							}
 
-								var hasModule = func() bool {
-									for _, opt := range opts {
-										if strings.HasPrefix(opt, "module=") {
-											return true
-										}
+							var hasModule = func() bool {
+								for _, opt := range opts {
+									if strings.HasPrefix(opt, "module=") {
+										return true
 									}
-									return false
 								}
+								return false
+							}
 
-								if !hasPath() && basePlugin.Paths != "" {
-									opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
-								}
+							if !hasPath() && basePlugin.Paths != "" {
+								opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
+							}
 
-								if !hasModule() && basePlugin.Module != "" {
-									opts = append(opts, fmt.Sprintf("module=%s", basePlugin.Module))
-								}
+							if !hasModule() && basePlugin.Module != "" {
+								opts = append(opts, fmt.Sprintf("module=%s", basePlugin.Module))
 							}
 
 							if plg.Shell != "" || plg.Docker != "" {
