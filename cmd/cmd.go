@@ -316,6 +316,12 @@ func Main() *cli.App {
 					// 解析go.mod并获取所有pkg版本
 					var versions = modutil.LoadVersions()
 					for i, dep := range cfg.Depends {
+						pathVersion := strings.SplitN(dep.Url, "@", 2)
+						if len(pathVersion) == 2 {
+							dep.Version = generic.Ptr(pathVersion[1])
+							dep.Path = pathVersion[0]
+						}
+
 						var url = os.ExpandEnv(dep.Url)
 
 						// url是本地目录, 不做检查
@@ -326,7 +332,7 @@ func Main() *cli.App {
 						var v = strutil.FirstFnNotEmpty(func() string {
 							return versions[url]
 						}, func() string {
-							return dep.Version
+							return generic.DePtr(dep.Version)
 						}, func() string {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
@@ -363,7 +369,7 @@ func Main() *cli.App {
 							assert.If(v == "", "%s version为空", url)
 						}
 
-						cfg.Depends[i].Version = v
+						cfg.Depends[i].Version = generic.Ptr(v)
 					}
 
 					var buf bytes.Buffer
@@ -388,7 +394,7 @@ func Main() *cli.App {
 						}
 
 						var url = os.ExpandEnv(dep.Url)
-						var v = dep.Version
+						var v = generic.DePtr(dep.Version)
 
 						// 加载版本
 						if v != "" {

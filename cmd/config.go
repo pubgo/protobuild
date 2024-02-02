@@ -41,8 +41,8 @@ type Cfg struct {
 	Root       []string      `yaml:"root,omitempty" hash:"-"`
 	Includes   []string      `yaml:"includes,omitempty" hash:"-"`
 	Excludes   []string      `yaml:"excludes,omitempty" hash:"-"`
-	Depends    []depend      `yaml:"deps,omitempty"`
-	Plugins    []plugin      `yaml:"plugins,omitempty" hash:"-"`
+	Depends    []*depend     `yaml:"deps,omitempty"`
+	Plugins    []*plugin     `yaml:"plugins,omitempty" hash:"-"`
 	changed    bool
 }
 
@@ -73,8 +73,8 @@ type plugin struct {
 }
 
 type depend struct {
-	Name    string `yaml:"name,omitempty"`
-	Url     string `yaml:"url,omitempty"`
-	Path    string `yaml:"path,omitempty"`
-	Version string `yaml:"version,omitempty"`
+	Name    string  `yaml:"name,omitempty"`
+	Url     string  `yaml:"url,omitempty"`
+	Path    string  `yaml:"path,omitempty"`
+	Version *string `yaml:"version,omitempty"`
 }
