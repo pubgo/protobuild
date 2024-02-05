@@ -8,7 +8,7 @@ import (
 	pgs "github.com/lyft/protoc-gen-star/v2"
 	pgsgo "github.com/lyft/protoc-gen-star/v2/lang/go"
 	"github.com/pubgo/funk/generic"
-	"github.com/pubgo/protobuild/protoc-gen-retag/internal/retag"
+	"github.com/pubgo/protobuild/cmd/protoc-gen-gotag/internal/retag"
 )
 
 func main() {

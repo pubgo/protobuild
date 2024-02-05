@@ -4,11 +4,11 @@ import (
 	"os"
 
 	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/protobuild/cmd"
+	"github.com/pubgo/protobuild/cmd/protobuild"
 )
 
 func main() {
 	assert.ExitFn(func() error {
-		return cmd.Main().Run(os.Args)
+		return protobuild.Main().Run(os.Args)
 	})
 }

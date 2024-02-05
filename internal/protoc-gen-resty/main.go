@@ -4,8 +4,8 @@ import (
 	"flag"
 
 	"github.com/pubgo/funk/recovery"
+	"github.com/pubgo/protobuild/internal/protoc-gen-resty/internal"
 	"github.com/pubgo/protobuild/internal/protoutil"
-	"github.com/pubgo/protobuild/protoc-gen-resty/internal"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )

@@ -4,7 +4,7 @@ package main
 
 import (
 	"flag"
-	"github.com/pubgo/protobuild/protoc-gen-gotag/internal/retag"
+	"github.com/pubgo/protobuild/internal/protoc-gen-gotag/internal/retag"
 
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"

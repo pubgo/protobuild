@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pubgo/funk/log"
-	"github.com/pubgo/protobuild/protoc-gen-go-json/internal"
+	"github.com/pubgo/protobuild/cmd/protoc-gen-go-json/internal"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )

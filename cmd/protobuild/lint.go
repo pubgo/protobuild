@@ -1,4 +1,4 @@
-package cmd
+package protobuild
 
 // https://github.com/yoheimuta/protolint
 // clang-format -i -style=google role.proto

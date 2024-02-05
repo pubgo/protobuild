@@ -1,10 +1,10 @@
 // Refer: https://github.com/emicklei/proto-contrib/tree/master/cmd/protofmt
 // https://github.com/bufbuild/buf/blob/main/private/buf/bufformat/bufformat.go
-package cmd
+
+package protobuild
 
 import (
 	"bytes"
-	"github.com/pubgo/protobuild/cmd/format"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -16,6 +16,7 @@ import (
 	"github.com/emicklei/proto-contrib/pkg/protofmt"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/pathutil"
+	"github.com/pubgo/protobuild/cmd/format"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/urfave/cli/v2"
 )
@@ -35,6 +36,9 @@ func fmtCmd() *cli.Command {
 			Value:       overwrite,
 			Destination: &overwrite,
 		}},
+		Before: func(context *cli.Context) error {
+			return parseConfig()
+		},
 		Action: func(ctx *cli.Context) error {
 			var protoList = make(map[string]bool)
 

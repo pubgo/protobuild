@@ -1,7 +1,8 @@
-package cmd
+package protobuild
 
 import (
 	"fmt"
+
 	"github.com/pubgo/funk/errors"
 	"gopkg.in/yaml.v3"
 )

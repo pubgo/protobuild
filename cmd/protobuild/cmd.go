@@ -1,4 +1,4 @@
-package cmd
+package protobuild
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -40,6 +40,43 @@ var (
 	logger   = log.GetLogger("proto-build")
 	//binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
+
+func parseConfig() error {
+	content := assert.Must1(os.ReadFile(protoCfg))
+	assert.Must(yaml.Unmarshal(content, &cfg))
+
+	cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
+		return cfg.Vendor
+	}, func() string {
+		protoPath := filepath.Join(pwd, ".proto")
+		if pathutil.IsExist(protoPath) {
+			return protoPath
+		}
+		return ""
+	}, func() string {
+		goModPath := filepath.Dir(modutil.GoModPath())
+		if goModPath == "" {
+			panic("没有找到项目go.mod文件")
+		}
+
+		return filepath.Join(goModPath, ".proto")
+	})
+
+	assert.Must(pathutil.IsNotExistMkDir(cfg.Vendor))
+
+	// protobuf文件检查
+	for _, dep := range cfg.Depends {
+		assert.If(dep.Name == "" || dep.Url == "", "name和url都不能为空")
+	}
+
+	checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))
+	if cfg.Checksum != checksum {
+		cfg.Checksum = checksum
+		cfg.changed = true
+	}
+
+	return nil
+}
 
 func Main() *cli.App {
 	var force bool
@@ -110,49 +147,14 @@ func Main() *cli.App {
 
 			return nil
 		},
-		Before: func(ctx *cli.Context) error {
-			defer recovery.Exit()
-
-			content := assert.Must1(os.ReadFile(protoCfg))
-			assert.Must(yaml.Unmarshal(content, &cfg))
-
-			cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
-				return cfg.Vendor
-			}, func() string {
-				protoPath := filepath.Join(pwd, ".proto")
-				if pathutil.IsExist(protoPath) {
-					return protoPath
-				}
-				return ""
-			}, func() string {
-				goModPath := filepath.Dir(modutil.GoModPath())
-				if goModPath == "" {
-					panic("没有找到项目go.mod文件")
-				}
-
-				return filepath.Join(goModPath, ".proto")
-			})
-
-			assert.Must(pathutil.IsNotExistMkDir(cfg.Vendor))
-
-			// protobuf文件检查
-			for _, dep := range cfg.Depends {
-				assert.If(dep.Name == "" || dep.Url == "", "name和url都不能为空")
-			}
-
-			checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))
-			if cfg.Checksum != checksum {
-				cfg.Checksum = checksum
-				cfg.changed = true
-			}
-
-			return nil
-		},
 		Commands: cli.Commands{
 			fmtCmd(),
 			&cli.Command{
 				Name:  "gen",
 				Usage: "编译protobuf文件",
+				Before: func(context *cli.Context) error {
+					return parseConfig()
+				},
 				Action: func(ctx *cli.Context) error {
 					defer recovery.Exit()
 
@@ -299,6 +301,9 @@ func Main() *cli.App {
 			&cli.Command{
 				Name:  "vendor",
 				Usage: "同步项目protobuf依赖到.proto中",
+				Before: func(context *cli.Context) error {
+					return parseConfig()
+				},
 				Flags: typex.Flags{
 					&cli.BoolFlag{
 						Name:        "force",

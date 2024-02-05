@@ -1,21 +1,23 @@
 package main
 
 import (
+	"github.com/pubgo/protobuild/internal/protoc-gen-gorm/internal"
+	_ "github.com/spf13/cast"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 
-	genLava "github.com/pubgo/protobuild/protoc-gen-lava/internal"
+	_ "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func main() {
-	protogen.Options{ParamFunc: genLava.Flags.Set}.Run(func(gen *protogen.Plugin) error {
+	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
 		gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		for _, f := range gen.Files {
 			if !f.Generate {
 				continue
 			}
 
-			genLava.GenerateFile(gen, f)
+			internal.GenerateFile(gen, f)
 		}
 		return nil
 	})

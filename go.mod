@@ -14,15 +14,17 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/lyft/protoc-gen-star/v2 v2.0.2-alpha
 	github.com/open2b/scriggo v0.56.1
-	github.com/pubgo/funk v0.5.30
+	github.com/pubgo/funk v0.5.39-0.20240202065400-de714e26973b
+	github.com/searKing/golang/go v1.2.115
 	github.com/spf13/cast v1.5.0
 	github.com/urfave/cli/v2 v2.8.0
+	github.com/urfave/cli/v3 v3.0.0-alpha8
 	github.com/yuin/goldmark v1.4.12
 	go.uber.org/multierr v1.11.0
-	golang.org/x/mod v0.9.0
+	golang.org/x/mod v0.14.0
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
 	google.golang.org/grpc v1.51.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.24.5
 )
@@ -43,8 +45,9 @@ require (
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 )
