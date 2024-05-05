@@ -94,6 +94,10 @@ func Main() *cli.App {
 			},
 		},
 		Action: func(context *cli.Context) error {
+			if shutil.IsHelp() {
+				return nil
+			}
+
 			in := assert.Must1(io.ReadAll(os.Stdin))
 			req := &pluginpb.CodeGeneratorRequest{}
 			assert.Must(proto.Unmarshal(in, req))
@@ -148,10 +152,9 @@ func Main() *cli.App {
 			return nil
 		},
 		Commands: cli.Commands{
-			fmtCmd(),
 			&cli.Command{
 				Name:  "gen",
-				Usage: "编译protobuf文件",
+				Usage: "编译 protobuf 文件",
 				Before: func(context *cli.Context) error {
 					return parseConfig()
 				},
@@ -300,7 +303,7 @@ func Main() *cli.App {
 			},
 			&cli.Command{
 				Name:  "vendor",
-				Usage: "同步项目protobuf依赖到.proto中",
+				Usage: "同步项目 protobuf 依赖到 .proto 目录中",
 				Before: func(context *cli.Context) error {
 					return parseConfig()
 				},

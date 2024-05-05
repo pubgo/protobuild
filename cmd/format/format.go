@@ -12,8 +12,7 @@ import (
 // Format formats and writes the target module files into a read bucket.
 func Format(path string) {
 	data := assert.Must1(os.ReadFile(path))
-	fileNode, err := parser.Parse(path, bytes.NewBuffer(data), reporter.NewHandler(nil))
-	assert.Must(err)
+	fileNode := assert.Must1(parser.Parse(path, bytes.NewBuffer(data), reporter.NewHandler(nil)))
 
 	var buf bytes.Buffer
 	assert.Must(newFormatter(&buf, fileNode).Run())
