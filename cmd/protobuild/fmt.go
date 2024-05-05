@@ -21,9 +21,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var (
-	overwrite = false
-)
+var overwrite = false
 
 func fmtCmd() *cli.Command {
 	return &cli.Command{
@@ -40,7 +38,7 @@ func fmtCmd() *cli.Command {
 			return parseConfig()
 		},
 		Action: func(ctx *cli.Context) error {
-			var protoList = make(map[string]bool)
+			protoList := make(map[string]bool)
 
 			for i := range cfg.Root {
 				if pathutil.IsNotExist(cfg.Root[i]) {

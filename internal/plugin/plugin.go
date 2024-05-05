@@ -2,13 +2,14 @@ package plugin
 
 import (
 	"bytes"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -22,7 +23,6 @@ func StripParam(req *pluginpb.CodeGeneratorRequest, p string) {
 
 	v := stripParam(*req.Parameter, p)
 	req.Parameter = &v
-
 }
 
 func stripParam(s, p string) string {

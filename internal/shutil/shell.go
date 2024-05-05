@@ -35,7 +35,7 @@ func GoList() (string, error) {
 }
 
 func Shell(args ...string) *exec.Cmd {
-	var shell = strings.Join(args, " ")
+	shell := strings.Join(args, " ")
 	cmd := exec.Command("/bin/sh", "-c", shell)
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout

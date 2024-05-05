@@ -4,11 +4,13 @@ import "flag"
 
 const version = "v0.1.0"
 
-var path string
-var testDir string
-var genGin bool
-var enableLava bool
-var Flags flag.FlagSet
+var (
+	path       string
+	testDir    string
+	genGin     bool
+	enableLava bool
+	Flags      flag.FlagSet
+)
 
 func init() {
 	Flags.BoolVar(&genGin, "gin", false, "generate gin api")

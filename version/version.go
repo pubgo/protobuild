@@ -12,7 +12,5 @@ func init() {
 		Version = "v0.0.1-dev"
 	}
 
-	if _, err := ver.NewVersion(Version); err != nil {
-		assert.Exit(err, Version)
-	}
+	assert.Exit1(ver.NewVersion(Version))
 }

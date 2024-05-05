@@ -2,11 +2,12 @@ package retag
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/pubgo/funk/generic"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"reflect"
 )
 
 type FieldInfo struct {
@@ -44,7 +45,7 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 	s.StructNameInProto = dp.GetName()
 	s.StructNameInGo = CamelCaseSlice(append(typeNames, CamelCase(dp.GetName())))
 
-	//typeNames := []string{s.StructNameInGo}
+	// typeNames := []string{s.StructNameInGo}
 	for _, field := range dp.GetField() {
 		if field.GetOptions() == nil {
 			continue

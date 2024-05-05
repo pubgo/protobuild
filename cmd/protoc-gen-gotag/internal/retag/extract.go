@@ -65,7 +65,7 @@ func (v *tagExtractor) VisitOneOf(o pgs.OneOf) (pgs.Visitor, error) {
 		return v, nil
 	}
 
-	var tt = new(structtag.Tags)
+	tt := new(structtag.Tags)
 	for _, tag := range tval {
 		assert.Must(tt.Set(&structtag.Tag{Key: tag.Name, Name: tag.Value}))
 	}
@@ -108,7 +108,7 @@ func (v *tagExtractor) VisitField(f pgs.Field) (pgs.Visitor, error) {
 		return v, nil
 	}
 
-	var tt = new(structtag.Tags)
+	tt := new(structtag.Tags)
 	for _, tag := range tval {
 		assert.Must(tt.Set(&structtag.Tag{Key: tag.Name, Name: tag.Value}))
 	}

@@ -2,11 +2,10 @@ package protoutil
 
 import (
 	"bytes"
+	"path/filepath"
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	"path/filepath"
 )
 
 // A Name describes an identifier of an Entity (Message, Field, Enum, Service,

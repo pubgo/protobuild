@@ -38,7 +38,7 @@ var (
 	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd      = assert.Exit1(os.Getwd())
 	logger   = log.GetLogger("proto-build")
-	//binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
+	// binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
 func parseConfig() error {
@@ -80,7 +80,7 @@ func parseConfig() error {
 
 func Main() *cli.App {
 	var force bool
-	var app = &cli.App{
+	app := &cli.App{
 		Name:    "protobuf build",
 		Usage:   "protobuf generation, configuration and management",
 		Version: version.Version,
@@ -159,7 +159,7 @@ func Main() *cli.App {
 					defer recovery.Exit()
 
 					var protoList sync.Map
-					var basePlugin = cfg.BasePlugin
+					basePlugin := cfg.BasePlugin
 					for i := range cfg.Root {
 						if pathutil.IsNotExist(cfg.Root[i]) {
 							log.Printf("file %s not found", cfg.Root[i])
@@ -190,21 +190,21 @@ func Main() *cli.App {
 					}
 
 					protoList.Range(func(key, _ interface{}) bool {
-						var in = key.(string)
+						in := key.(string)
 
-						var data = ""
-						var base = fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
+						data := ""
+						base := fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
 						logger.Info().Msgf("includes=%q", cfg.Includes)
 						for i := range cfg.Includes {
 							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
 						}
 
-						var retagOut = ""
-						var retagOpt = ""
+						retagOut := ""
+						retagOpt := ""
 						for i := range cfg.Plugins {
-							var plg = cfg.Plugins[i]
+							plg := cfg.Plugins[i]
 
-							var name = plg.Name
+							name := plg.Name
 
 							// 指定plugin path
 							if plg.Path != "" {
@@ -213,11 +213,11 @@ func Main() *cli.App {
 								data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, plg.Path)
 							}
 
-							var out = func() string {
+							out := func() string {
 								// https://github.com/pseudomuto/protoc-gen-doc
 								// 目录特殊处理
 								if name == "doc" {
-									var out = filepath.Join(plg.Out, in)
+									out := filepath.Join(plg.Out, in)
 									assert.Must(pathutil.IsNotExistMkDir(out))
 									return out
 								}
@@ -235,8 +235,8 @@ func Main() *cli.App {
 
 							_ = pathutil.IsNotExistMkDir(out)
 
-							var opts = plg.Opt
-							var hasPath = func() bool {
+							opts := plg.Opt
+							hasPath := func() bool {
 								for _, opt := range opts {
 									if strings.HasPrefix(opt, "paths=") {
 										return true
@@ -245,7 +245,7 @@ func Main() *cli.App {
 								return false
 							}
 
-							var hasModule = func() bool {
+							hasModule := func() bool {
 								for _, opt := range opts {
 									if strings.HasPrefix(opt, "module=") {
 										return true
@@ -319,7 +319,7 @@ func Main() *cli.App {
 					var changed bool
 
 					// 解析go.mod并获取所有pkg版本
-					var versions = modutil.LoadVersions()
+					versions := modutil.LoadVersions()
 					for i, dep := range cfg.Depends {
 						pathVersion := strings.SplitN(dep.Url, "@", 2)
 						if len(pathVersion) == 2 {
@@ -327,24 +327,24 @@ func Main() *cli.App {
 							dep.Path = pathVersion[0]
 						}
 
-						var url = os.ExpandEnv(dep.Url)
+						url := os.ExpandEnv(dep.Url)
 
 						// url是本地目录, 不做检查
 						if pathutil.IsDir(url) {
 							continue
 						}
 
-						var v = strutil.FirstFnNotEmpty(func() string {
+						v := strutil.FirstFnNotEmpty(func() string {
 							return versions[url]
 						}, func() string {
 							return generic.DePtr(dep.Version)
 						}, func() string {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
-							var localPkg, err = os.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
+							localPkg, err := os.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
 							assert.Must(err)
 
-							var _, name = filepath.Split(url)
+							_, name := filepath.Split(url)
 							for j := range localPkg {
 								if !localPkg[j].IsDir() {
 									continue
@@ -378,11 +378,11 @@ func Main() *cli.App {
 					}
 
 					var buf bytes.Buffer
-					var enc = yaml.NewEncoder(&buf)
+					enc := yaml.NewEncoder(&buf)
 					enc.SetIndent(2)
 					defer enc.Close()
 					assert.Must(enc.Encode(cfg))
-					assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0666))
+					assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
 
 					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")
@@ -398,8 +398,8 @@ func Main() *cli.App {
 							continue
 						}
 
-						var url = os.ExpandEnv(dep.Url)
-						var v = generic.DePtr(dep.Version)
+						url := os.ExpandEnv(dep.Url)
+						v := generic.DePtr(dep.Version)
 
 						// 加载版本
 						if v != "" {
@@ -416,7 +416,7 @@ func Main() *cli.App {
 						fmt.Println(url)
 
 						url = assert.Must1(filepath.Abs(url))
-						var newUrl = filepath.Join(cfg.Vendor, dep.Name)
+						newUrl := filepath.Join(cfg.Vendor, dep.Name)
 						assert.Must(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
 							if err != nil {
 								return err
@@ -437,7 +437,7 @@ func Main() *cli.App {
 								return nil
 							}
 
-							var newPath = filepath.Join(newUrl, strings.TrimPrefix(path, url))
+							newPath := filepath.Join(newUrl, strings.TrimPrefix(path, url))
 							assert.Must(pathutil.IsNotExistMkDir(filepath.Dir(newPath)))
 							assert.Must1(copyFile(newPath, path))
 
@@ -452,7 +452,7 @@ func Main() *cli.App {
 	return app
 }
 
-func copyFile(dstFilePath string, srcFilePath string) (written int64, err error) {
+func copyFile(dstFilePath, srcFilePath string) (written int64, err error) {
 	srcFile, err := os.Open(srcFilePath)
 	defer srcFile.Close()
 	assert.Must(err, "打开源文件错误", srcFilePath)

@@ -122,7 +122,7 @@ func HandleFieldDescriptorProto(g *protogen.Plugin, field *descriptorpb.FieldDes
 		return nil
 	}
 
-	var info = &FieldInfo{FieldNameInProto: field.GetName(), FieldNameInGo: CamelCase(field.GetName())}
+	info := &FieldInfo{FieldNameInProto: field.GetName(), FieldNameInGo: CamelCase(field.GetName())}
 	for _, v := range tags {
 		tag := reflect.StructTag{}
 		tag.SetName(v.Name, v.Value)

@@ -7,7 +7,7 @@ import (
 
 func genSql(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, service *protogen.Service) {
 	for _, mth := range service.Methods {
-		var opts = mth.Desc.Options()
+		opts := mth.Desc.Options()
 		if !gp.HasExtension(opts, lava.E_Sqlx) {
 			continue
 		}

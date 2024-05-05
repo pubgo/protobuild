@@ -15,13 +15,13 @@ import (
 )
 
 func NewField(field *protogen.Field, gen *protogen.Plugin) *Field {
-	var f = &Field{GoTag: make(map[string]string)}
+	f := &Field{GoTag: make(map[string]string)}
 	f.IsList = field.Desc.IsList()
 	f.IsOptional = field.Desc.HasOptionalKeyword()
 	f.IsMap = field.Desc.IsMap()
 	f.IsMessage = field.Message != nil
 
-	var tag, ok = gp.GetExtension(field.Desc.Options(), ormpb.E_Field).(*ormpb.GormTag)
+	tag, ok := gp.GetExtension(field.Desc.Options(), ormpb.E_Field).(*ormpb.GormTag)
 	if !ok || tag != nil {
 		f.tag = tag
 	}
@@ -87,7 +87,7 @@ type Field struct {
 }
 
 func getTags(field *protogen.Field) map[string]string {
-	var tagMap = map[string]string{"json": protoutil.Name(field.GoName).LowerSnakeCase().String()}
+	tagMap := map[string]string{"json": protoutil.Name(field.GoName).LowerSnakeCase().String()}
 	if tags, ok := gp.GetExtension(field.Desc.Options(), retagpb.E_Tags).([]*retagpb.Tag); ok && tags != nil {
 		for i := range tags {
 			tagMap[tags[i].Name] = tags[i].Value
@@ -97,7 +97,7 @@ func getTags(field *protogen.Field) map[string]string {
 }
 
 func (f *Field) genGormField() *jen.Statement {
-	var g = jen.Id(f.GoName)
+	g := jen.Id(f.GoName)
 	if f.IsList {
 		g = g.Index()
 	}
@@ -107,7 +107,7 @@ func (f *Field) genGormField() *jen.Statement {
 	}
 
 	if f.IsMessage {
-		var ormType = f.GoType
+		ormType := f.GoType
 		switch f.Type {
 		case "google.protobuf.Timestamp":
 			if f.IsOptional {
@@ -150,7 +150,7 @@ func (f *Field) genGormField() *jen.Statement {
 }
 
 func (f *Field) genGormCond() string {
-	var name = f.Name
+	name := f.Name
 	if strings.HasSuffix(name, "_from") {
 		name = strings.TrimSuffix(name, "_from")
 		return fmt.Sprintf("%s >= ?", name)
@@ -176,8 +176,8 @@ func (f *Field) genModel2Protobuf() *jen.Statement {
 	switch f.Type {
 	case "google.protobuf.Timestamp":
 		if f.IsList || f.IsMap {
-			var v = jen.Op("*").Qual("google.golang.org/protobuf/types/known/timestamppb", "Timestamp")
-			var gen = jen.Id("x").Dot(f.GoName).
+			v := jen.Op("*").Qual("google.golang.org/protobuf/types/known/timestamppb", "Timestamp")
+			gen := jen.Id("x").Dot(f.GoName).
 				Op("=").
 				Make(generic.Ternary(f.IsMap, jen.Map(jen.Id(f.MapKeyType.GoName)), jen.Index()).Add(v), jen.Len(jen.Id("m").Dot(f.GoName))).Line()
 			return gen.For(
@@ -209,7 +209,7 @@ func (f *Field) genModel2Protobuf() *jen.Statement {
 		}).Line()
 	default:
 		if f.IsList || f.IsMap {
-			var gen = jen.Id("x").Dot(f.GoName).
+			gen := jen.Id("x").Dot(f.GoName).
 				Op("=").
 				Make(generic.Ternary(f.IsList, jen.Index(), jen.Map(jen.Id(f.MapKeyType.GoName))).Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName), jen.Len(jen.Id("m").Dot(f.GoName))).Line()
 			return gen.For(
@@ -241,8 +241,8 @@ func (f *Field) genProtobuf2Model() *jen.Statement {
 	switch f.Type {
 	case "google.protobuf.Timestamp":
 		if f.IsList || f.IsMap {
-			var v = jen.Qual("time", "Time")
-			var gen = jen.Id("m").Dot(f.GoName).
+			v := jen.Qual("time", "Time")
+			gen := jen.Id("m").Dot(f.GoName).
 				Op("=").
 				Make(generic.Ternary(f.IsMap, jen.Map(jen.Id(f.MapKeyType.GoName)), jen.Index()).Add(v), jen.Len(jen.Id("x").Dot(f.GoName))).Line()
 			return gen.For(
@@ -277,7 +277,7 @@ func (f *Field) genProtobuf2Model() *jen.Statement {
 		}).Line()
 	default:
 		if f.IsList || f.IsMap {
-			var gen = jen.Id("m").Dot(f.GoName).
+			gen := jen.Id("m").Dot(f.GoName).
 				Op("=").
 				Make(generic.Ternary(f.IsList, jen.Index(), jen.Map(jen.Id(f.MapKeyType.GoName))).Op("*").Qual(string(f.GoType.GoImportPath), f.GoType.GoName+"Model"), jen.Len(jen.Id("x").Dot(f.GoName))).Line()
 			return gen.For(
