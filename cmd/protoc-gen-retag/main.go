@@ -1,4 +1,5 @@
 // Note: 本项目主要思路和代码来源于protoc-gen-go-tag
+// https://github.com/searKing/golang/tree/master/tools/protoc-gen-go-tag
 
 package main
 

@@ -48,19 +48,19 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 	s.StructNameInGo = CamelCaseSlice(append(typeNames, CamelCase(dp.GetName())))
 
 	for _, field := range dp.GetField() {
-		var oneofS *StructInfo
+		var oneOfS *StructInfo
 		if field.OneofIndex != nil { // Special Case: oneof
-			oneofS = &StructInfo{}
-			oneofS.StructNameInProto = field.GetName()
-			oneofS.StructNameInGo = CamelCaseSlice(append(typeNames, CamelCase(dp.GetName()), CamelCase(field.GetName())))
+			oneOfS = &StructInfo{}
+			oneOfS.StructNameInProto = field.GetName()
+			oneOfS.StructNameInGo = CamelCaseSlice(append(typeNames, CamelCase(dp.GetName()), CamelCase(field.GetName())))
 		}
 
-		f := HandleFieldDescriptorProto(g, field)
+		f := HandleFieldDescriptorProto(field)
 		if f != nil {
-			if oneofS != nil {
-				oneofS.FieldInfos = append(oneofS.FieldInfos, *f)
-				if len(oneofS.FieldInfos) > 0 {
-					ss = append(ss, *oneofS)
+			if oneOfS != nil {
+				oneOfS.FieldInfos = append(oneOfS.FieldInfos, *f)
+				if len(oneOfS.FieldInfos) > 0 {
+					ss = append(ss, *oneOfS)
 				}
 			} else {
 				s.FieldInfos = append(s.FieldInfos, *f)
@@ -71,7 +71,7 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 	typeNames = append(typeNames, CamelCase(dp.GetName()))
 
 	for _, decl := range dp.GetOneofDecl() {
-		declS := HandleOneofDescriptorProto(g, decl, typeNames)
+		declS := HandleOneOfDescriptorProto(g, decl, typeNames)
 		if declS != nil {
 			if decl.GetOptions() != nil {
 				v := proto.GetExtension(decl.GetOptions(), retagpb.E_OneofTags)
@@ -102,7 +102,7 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 	return ss
 }
 
-func HandleOneofDescriptorProto(g *protogen.Plugin, dp *descriptorpb.OneofDescriptorProto, typeNames []string) *StructInfo {
+func HandleOneOfDescriptorProto(g *protogen.Plugin, dp *descriptorpb.OneofDescriptorProto, typeNames []string) *StructInfo {
 	if dp == nil {
 		return nil
 	}
@@ -112,7 +112,7 @@ func HandleOneofDescriptorProto(g *protogen.Plugin, dp *descriptorpb.OneofDescri
 	return &s
 }
 
-func HandleFieldDescriptorProto(g *protogen.Plugin, field *descriptorpb.FieldDescriptorProto) *FieldInfo {
+func HandleFieldDescriptorProto(field *descriptorpb.FieldDescriptorProto) *FieldInfo {
 	if field.GetOptions() == nil {
 		return nil
 	}
