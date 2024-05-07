@@ -12,8 +12,8 @@ import (
 )
 
 func TestName(t *testing.T) {
-	var pb = &Example{WithNewTags: "true", Test_5: timestamppb.New(time.Now().UTC())}
-	var dd, err = json.Marshal(pb)
+	pb := &Example{WithNewTags: "true", Test_5: timestamppb.New(time.Now().UTC())}
+	dd, err := json.Marshal(pb)
 	assert.Must(err)
 	// 2022-10-19T03:49:42.240649Z
 	log.Print(string(dd))
@@ -40,10 +40,10 @@ func TestName(t *testing.T) {
 }
 
 func TestName2(t *testing.T) {
-	var req = new(AllSrvReq)
+	req := new(AllSrvReq)
 	req.Req = append(req.Req, &Req{Req: &Req_Req1{}})
 
-	var rsp = new(AllSrvRsp)
+	rsp := new(AllSrvRsp)
 	for i := range rsp.Rsp {
 		rsp.Rsp[i].GetRsp()
 	}

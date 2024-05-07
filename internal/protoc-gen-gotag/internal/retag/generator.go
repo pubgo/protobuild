@@ -12,9 +12,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-var (
-	fset = token.NewFileSet()
-)
+var fset = token.NewFileSet()
 
 type Generator struct {
 	// Ast goFiles to which this package contains.
@@ -68,7 +66,7 @@ func (g *Generator) Generate() {
 			ast.Inspect(file.astFile, file.genDecl)
 		}
 
-		//if file.fileChanged {
+		// if file.fileChanged {
 		// FIXME: always generate *.pb.go, to replace protoc-go, avoid "Tried to write the same file twice"
 		{
 			// PrintComment when file is changed by protoc-gen-go-tag.
@@ -83,8 +81,8 @@ func (g *Generator) Generate() {
 			}
 
 			// fix Response will always be generated, so add a new generated file directly.
-			//content := buf.String()
-			//file.outerFile.Content = &content
+			// content := buf.String()
+			// file.outerFile.Content = &content
 			_, err = g.protoGenerator.NewGeneratedFile(file.outerFile.GetName(), "").Write(buf.Bytes())
 			if err != nil {
 				g.protoGenerator.Error(fmt.Errorf("failed to new generated file to rewrite: %w", err))

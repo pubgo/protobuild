@@ -21,6 +21,7 @@ build:
 
 vet:
 	@go vet ./...
+	gofumpt -l -w -extra .
 
 generate:
 	@go generate ./...

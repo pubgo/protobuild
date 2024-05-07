@@ -2,9 +2,10 @@ package internal
 
 import (
 	"fmt"
-	"github.com/pubgo/funk/errors"
 	"net/http"
 	"strings"
+
+	"github.com/pubgo/funk/errors"
 
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/protobuild/internal/protoutil"
@@ -95,7 +96,7 @@ func genClientMethod(gen *protogen.Plugin, file *protogen.File, g *protogen.Gene
 	service := method.Parent
 	hr, err := protoutil.ExtractAPIOptions(method.Desc)
 	if err != nil || hr == nil {
-		var replacer = strings.NewReplacer(".", "/", "-", "/")
+		replacer := strings.NewReplacer(".", "/", "-", "/")
 		hr = protoutil.DefaultAPIOptions(replacer.Replace(string(file.Desc.Package())), service.GoName, method.GoName)
 	}
 	mth, path := protoutil.ExtractHttpMethod(hr)

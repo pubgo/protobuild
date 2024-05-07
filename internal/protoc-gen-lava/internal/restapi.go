@@ -13,7 +13,7 @@ import (
 
 // gen rest.http from protobuf
 func genRestApiTest(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, service *protogen.Service) {
-	var genPath = fmt.Sprintf("%s.%s.http", file.GoPackageName, service.GoName)
+	genPath := fmt.Sprintf("%s.%s.http", file.GoPackageName, service.GoName)
 
 	var data []string
 	for _, m := range service.Methods {
@@ -32,7 +32,7 @@ func genRestApiTest(gen *protogen.Plugin, file *protogen.File, g *protogen.Gener
 		data = append(data, fmt.Sprintf("Content-Type: application/json\n\n"))
 	}
 	assert.If(!utils.DirExists(testDir), "dir %s not found", testDir)
-	assert.Must(os.WriteFile(filepath.Join(testDir, genPath), []byte(strings.Join(data, "")), 0755))
+	assert.Must(os.WriteFile(filepath.Join(testDir, genPath), []byte(strings.Join(data, "")), 0o755))
 }
 
 //func genRestRouter(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, service *protogen.Service) {

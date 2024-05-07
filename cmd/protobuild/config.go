@@ -1,40 +1,5 @@
 package protobuild
 
-import (
-	"fmt"
-
-	"github.com/pubgo/funk/errors"
-	"gopkg.in/yaml.v3"
-)
-
-var _ yaml.Unmarshaler = (*pluginOpts)(nil)
-
-type pluginOpts []string
-
-func (p *pluginOpts) UnmarshalYAML(value *yaml.Node) error {
-	if value.IsZero() {
-		return nil
-	}
-
-	switch value.Kind {
-	case yaml.ScalarNode:
-		if value.Value != "" {
-			*p = []string{value.Value}
-			return nil
-		}
-		return nil
-	case yaml.SequenceNode:
-		var data []string
-		if err := value.Decode(&data); err != nil {
-			return err
-		}
-		*p = data
-		return nil
-	default:
-		return errors.New(fmt.Sprintf("yaml kind type error, data=%s", value.Value))
-	}
-}
-
 type Cfg struct {
 	Checksum   string        `yaml:"checksum,omitempty" hash:"-"`
 	Vendor     string        `yaml:"vendor,omitempty"`

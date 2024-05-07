@@ -18,7 +18,6 @@ require (
 	github.com/searKing/golang/go v1.2.115
 	github.com/spf13/cast v1.5.0
 	github.com/urfave/cli/v2 v2.8.0
-	github.com/urfave/cli/v3 v3.0.0-alpha8
 	github.com/yuin/goldmark v1.4.12
 	go.uber.org/multierr v1.11.0
 	golang.org/x/mod v0.14.0
@@ -30,7 +29,7 @@ require (
 )
 
 require (
-	github.com/alecthomas/repr v0.2.0 // indirect
+	github.com/alecthomas/repr v0.4.0 // indirect
 	github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
@@ -43,9 +42,9 @@ require (
 	github.com/rs/zerolog v1.29.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

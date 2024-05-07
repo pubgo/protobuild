@@ -48,19 +48,19 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 	s.StructNameInGo = CamelCaseSlice(append(typeNames, CamelCase(dp.GetName())))
 
 	for _, field := range dp.GetField() {
-		var oneofS *StructInfo
+		var oneOfS *StructInfo
 		if field.OneofIndex != nil { // Special Case: oneof
-			oneofS = &StructInfo{}
-			oneofS.StructNameInProto = field.GetName()
-			oneofS.StructNameInGo = CamelCaseSlice(append(typeNames, CamelCase(dp.GetName()), CamelCase(field.GetName())))
+			oneOfS = &StructInfo{}
+			oneOfS.StructNameInProto = field.GetName()
+			oneOfS.StructNameInGo = CamelCaseSlice(append(typeNames, CamelCase(dp.GetName()), CamelCase(field.GetName())))
 		}
 
-		f := HandleFieldDescriptorProto(g, field)
+		f := HandleFieldDescriptorProto(field)
 		if f != nil {
-			if oneofS != nil {
-				oneofS.FieldInfos = append(oneofS.FieldInfos, *f)
-				if len(oneofS.FieldInfos) > 0 {
-					ss = append(ss, *oneofS)
+			if oneOfS != nil {
+				oneOfS.FieldInfos = append(oneOfS.FieldInfos, *f)
+				if len(oneOfS.FieldInfos) > 0 {
+					ss = append(ss, *oneOfS)
 				}
 			} else {
 				s.FieldInfos = append(s.FieldInfos, *f)
@@ -71,25 +71,25 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 	typeNames = append(typeNames, CamelCase(dp.GetName()))
 
 	for _, decl := range dp.GetOneofDecl() {
-		declS := HandleOneofDescriptorProto(g, decl, typeNames)
-		if declS != nil {
-			if decl.GetOptions() != nil {
-				v := proto.GetExtension(decl.GetOptions(), retagpb.E_OneofTags)
-				switch v := v.(type) {
-				case []*retagpb.Tag:
-					info := FieldInfo{FieldNameInProto: decl.GetName(), FieldNameInGo: CamelCase(decl.GetName())}
-					for i := range v {
-						tag := reflect.StructTag{}
-						tag.SetName(v[i].Name, v[i].Value)
-						info.FieldTag = append(info.FieldTag, tag)
-					}
-
-					s.FieldInfos = append(s.FieldInfos, info)
-				}
-			}
-
-			ss = append(ss, *declS)
+		declS := HandleOneOfDescriptorProto(decl, typeNames)
+		if declS == nil {
+			continue
 		}
+
+		if decl.GetOptions() != nil {
+			v, ok := proto.GetExtension(decl.GetOptions(), retagpb.E_OneofTags).([]*retagpb.Tag)
+			if ok {
+				info := FieldInfo{FieldNameInProto: decl.GetName(), FieldNameInGo: CamelCase(decl.GetName())}
+				for i := range v {
+					tag := reflect.StructTag{}
+					tag.SetName(v[i].Name, v[i].Value)
+					info.FieldTag = append(info.FieldTag, tag)
+				}
+				s.FieldInfos = append(s.FieldInfos, info)
+			}
+		}
+
+		ss = append(ss, *declS)
 	}
 
 	if len(s.FieldInfos) > 0 {
@@ -102,17 +102,18 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 	return ss
 }
 
-func HandleOneofDescriptorProto(g *protogen.Plugin, dp *descriptorpb.OneofDescriptorProto, typeNames []string) *StructInfo {
+func HandleOneOfDescriptorProto(dp *descriptorpb.OneofDescriptorProto, typeNames []string) *StructInfo {
 	if dp == nil {
 		return nil
 	}
+
 	s := StructInfo{}
 	s.StructNameInProto = dp.GetName()
 	s.StructNameInGo = "is" + CamelCaseSlice(append(typeNames, CamelCase(dp.GetName())))
 	return &s
 }
 
-func HandleFieldDescriptorProto(g *protogen.Plugin, field *descriptorpb.FieldDescriptorProto) *FieldInfo {
+func HandleFieldDescriptorProto(field *descriptorpb.FieldDescriptorProto) *FieldInfo {
 	if field.GetOptions() == nil {
 		return nil
 	}
@@ -122,7 +123,7 @@ func HandleFieldDescriptorProto(g *protogen.Plugin, field *descriptorpb.FieldDes
 		return nil
 	}
 
-	var info = &FieldInfo{FieldNameInProto: field.GetName(), FieldNameInGo: CamelCase(field.GetName())}
+	info := &FieldInfo{FieldNameInProto: field.GetName(), FieldNameInGo: CamelCase(field.GetName())}
 	for _, v := range tags {
 		tag := reflect.StructTag{}
 		tag.SetName(v.Name, v.Value)

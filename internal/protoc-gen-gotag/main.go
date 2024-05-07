@@ -4,6 +4,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/pubgo/protobuild/internal/protoc-gen-gotag/internal/retag"
 
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
@@ -11,9 +12,7 @@ import (
 )
 
 func main() {
-	var (
-		flags flag.FlagSet
-	)
+	var flags flag.FlagSet
 
 	protogen.Options{ParamFunc: flags.Set}.Run(func(gen *protogen.Plugin) error {
 		gen.SupportedFeatures = gengo.SupportedFeatures

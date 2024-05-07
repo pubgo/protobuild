@@ -49,7 +49,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		fields map[string]*Field
 	}
 
-	var tables = make(map[string]*table)
+	tables := make(map[string]*table)
 	for i := range file.Messages {
 		m := file.Messages[i]
 
@@ -57,12 +57,12 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 			continue
 		}
 
-		var opts, ok = gp.GetExtension(m.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
+		opts, ok := gp.GetExtension(m.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
 		if !ok || opts == nil || !opts.Enabled {
 			continue
 		}
 
-		var tableName = string(m.Desc.Name())
+		tableName := string(m.Desc.Name())
 		if opts.Table != "" {
 			tableName = opts.Table
 		}
@@ -76,7 +76,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		}
 
 		for j := range m.Fields {
-			var ff = NewField(m.Fields[j], gen)
+			ff := NewField(m.Fields[j], gen)
 			tables[tableName].fields[ff.GoName] = ff
 
 			if ff.tag != nil && ff.tag.Pk {
@@ -98,26 +98,26 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 			continue
 		}
 
-		var name = protoutil.Name(srv.Desc.Name()).UpperCamelCase().String()
+		name := protoutil.Name(srv.Desc.Name()).UpperCamelCase().String()
 
 		logger.Info(string(srv.Desc.FullName()))
-		var opts, ok = gp.GetExtension(srv.Desc.Options(), ormpb.E_Server).(*ormpb.GormMessageOptions)
+		opts, ok := gp.GetExtension(srv.Desc.Options(), ormpb.E_Server).(*ormpb.GormMessageOptions)
 		if !ok || opts == nil || !opts.Service {
 			continue
 		}
 
-		var tb = tables[opts.Table]
+		tb := tables[opts.Table]
 		if tb == nil {
 			panic(fmt.Sprintf("table [%s] not found", opts.Table))
 		}
 
-		var srvName = fmt.Sprintf("%sGormHandler", name)
+		srvName := fmt.Sprintf("%sGormHandler", name)
 
 		genFile.Add(
 			jen.Type().Id(srvName).InterfaceFunc(func(g *jen.Group) {
 				for j := range srv.Methods {
-					var m = srv.Methods[j]
-					var code = jen.Id(m.GoName).
+					m := srv.Methods[j]
+					code := jen.Id(m.GoName).
 						Params(
 							jen.Id("ctx").Qual("context", "Context"),
 							jen.Id("req").Op("*").Id(m.Input.GoIdent.GoName),
@@ -171,7 +171,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		)
 
 		for j := range srv.Methods {
-			var m = srv.Methods[j]
+			m := srv.Methods[j]
 
 			logger.Info("service method", "name", m.GoName)
 
@@ -196,19 +196,15 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 						g.Var().Id("rsp").Op("=").New(jen.Id(m.Output.GoIdent.GoName))
 
 						if strings.HasPrefix(m.GoName, "Create") {
-
 						}
 
 						if strings.HasPrefix(m.GoName, "Delete") {
-
 						}
 
 						if strings.HasPrefix(m.GoName, "Update") {
-
 						}
 
 						if strings.HasPrefix(m.GoName, "Get") {
-
 						}
 
 						if strings.HasPrefix(m.GoName, "List") {
@@ -225,17 +221,17 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 	for i := range file.Messages {
 		m := file.Messages[i]
-		var opts, ok = gp.GetExtension(m.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
+		opts, ok := gp.GetExtension(m.Desc.Options(), ormpb.E_Opts).(*ormpb.GormMessageOptions)
 		if !ok || opts == nil || !opts.Enabled {
 			continue
 		}
 
-		var ormName = protoutil.Name(string(m.Desc.Name()) + "Model").UpperCamelCase().String()
+		ormName := protoutil.Name(string(m.Desc.Name()) + "Model").UpperCamelCase().String()
 
 		logger.Info(string(m.Desc.FullName()), "orm", ormName)
-		var tb = &table{fields: map[string]*Field{}, name: ormName}
+		tb := &table{fields: map[string]*Field{}, name: ormName}
 		for j := range m.Fields {
-			var ff = NewField(m.Fields[j], gen)
+			ff := NewField(m.Fields[j], gen)
 			tb.fields[ff.GoName] = ff
 			if ff.tag != nil && ff.tag.Pk {
 				tb.pkName = ff.Name
@@ -246,12 +242,12 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		_gen := jen.Commentf("%s gen from %s.%s", ormName, string(m.GoIdent.GoImportPath), m.GoIdent.GoName).Line()
 		_gen = _gen.Type().Id(ormName).StructFunc(func(group *jen.Group) {
 			for j := range m.Fields {
-				var ff = NewField(m.Fields[j], gen)
+				ff := NewField(m.Fields[j], gen)
 				group.Add(ff.genGormField())
 			}
 		}).Line().Line()
 
-		var tableName = string(m.Desc.Name())
+		tableName := string(m.Desc.Name())
 		if opts.Table != "" {
 			tableName = opts.Table
 		}
@@ -306,7 +302,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 				g.Var().Id("x").Op("=").New(jen.Id(string(m.Desc.Name())))
 
 				for j := range m.Fields {
-					var ff = NewField(m.Fields[j], gen)
+					ff := NewField(m.Fields[j], gen)
 					g.Add(ff.genModel2Protobuf())
 				}
 
@@ -323,7 +319,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 				g.Var().Id("m").Op("=").New(jen.Id(ormName))
 
 				for j := range m.Fields {
-					var ff = NewField(m.Fields[j], gen)
+					ff := NewField(m.Fields[j], gen)
 					g.Add(ff.genProtobuf2Model())
 				}
 

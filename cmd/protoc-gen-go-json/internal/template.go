@@ -18,7 +18,6 @@ type Options struct {
 
 // This function is called with a param which contains the entire definition of a method.
 func ApplyTemplate(w io.Writer, f *protogen.File, opts Options) error {
-
 	if err := headerTemplate.Execute(w, tplHeader{
 		File: f,
 	}); err != nil {

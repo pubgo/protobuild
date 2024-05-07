@@ -50,7 +50,7 @@ func Append(s *string, args ...string) {
 }
 
 func IsHelp() bool {
-	var arg = strings.TrimSpace(os.Args[len(os.Args)-1])
+	arg := strings.TrimSpace(os.Args[len(os.Args)-1])
 	return arg == "--help" || arg == "-h"
 }
 
@@ -207,7 +207,7 @@ func CamelCase(s string) string {
 //   - method is POST
 //   - path is "<pkg name>/<service name>/<method name>"
 //   - body should contain the serialized request message
-func DefaultAPIOptions(pkg string, srv string, mth string) *options.HttpRule {
+func DefaultAPIOptions(pkg, srv, mth string) *options.HttpRule {
 	return &options.HttpRule{
 		Pattern: &options.HttpRule_Post{
 			Post: "/" + Camel2Case(fmt.Sprintf("%s/%s/%s", Camel2Case(pkg), Camel2Case(srv), Camel2Case(mth))),
@@ -234,7 +234,7 @@ func ExtractAPIOptions(mth protoreflect.MethodDescriptor) (*options.HttpRule, er
 	return opts, nil
 }
 
-func ExtractHttpMethod(opts *options.HttpRule) (method string, path string) {
+func ExtractHttpMethod(opts *options.HttpRule) (method, path string) {
 	var (
 		httpMethod   string
 		pathTemplate string
@@ -304,7 +304,7 @@ func trim(s string) string {
 }
 
 func Import(name string) func(id string) protogen.GoIdent {
-	var pkg = protogen.GoImportPath(name)
+	pkg := protogen.GoImportPath(name)
 	return func(id string) protogen.GoIdent {
 		return pkg.Ident(id)
 	}
@@ -327,7 +327,7 @@ func Template(tpl string, m pongo.Context) string {
 	temp, err := pongo.FromString(strings.TrimSpace(tpl))
 	assert.Must(err)
 
-	var g = bytes.NewBuffer(nil)
+	g := bytes.NewBuffer(nil)
 	assert.Must(temp.ExecuteWriter(m, g))
 	return g.String()
 }
@@ -426,7 +426,7 @@ func httpPathsAdditionalBindings(m *descriptor.MethodDescriptorProto) []string {
 	}
 
 	var httpPaths []string
-	var optsAdditionalBindings = opts.GetAdditionalBindings()
+	optsAdditionalBindings := opts.GetAdditionalBindings()
 	for _, optAdditionalBindings := range optsAdditionalBindings {
 		switch t := optAdditionalBindings.Pattern.(type) {
 		case *options.HttpRule_Get:

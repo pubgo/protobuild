@@ -10,7 +10,7 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-func getFileByRecursion(file string, path string) string {
+func getFileByRecursion(file, path string) string {
 	filePath := filepath.Join(path, file)
 	if pathutil.IsExist(filePath) {
 		return filePath
@@ -24,28 +24,28 @@ func getFileByRecursion(file string, path string) string {
 }
 
 func GoModPath() string {
-	var pwd = assert.Must1(os.Getwd())
+	pwd := assert.Must1(os.Getwd())
 	return getFileByRecursion("go.mod", pwd)
 }
 
 func LoadVersions() map[string]string {
-	var path = GoModPath()
+	path := GoModPath()
 	assert.Assert(path == "", "go.mod not exists")
 
-	var modBytes = assert.Must1(ioutil.ReadFile(path))
+	modBytes := assert.Must1(ioutil.ReadFile(path))
 
-	var a, err = modfile.Parse("in", modBytes, nil)
+	a, err := modfile.Parse("in", modBytes, nil)
 	assert.Must(err, "go.mod 解析失败")
 
-	var versions = make(map[string]string)
+	versions := make(map[string]string)
 
 	for i := range a.Require {
-		var mod = a.Require[i].Mod
+		mod := a.Require[i].Mod
 		versions[mod.Path] = mod.Version
 	}
 
 	for i := range a.Replace {
-		var mod = a.Replace[i].New
+		mod := a.Replace[i].New
 		versions[mod.Path] = mod.Version
 	}
 

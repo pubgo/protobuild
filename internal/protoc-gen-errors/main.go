@@ -21,7 +21,7 @@ func main() {
 			originFiles = append(originFiles, gengo.GenerateFile(gen, f))
 		}
 
-		//ast.Rewrite(gen)
+		// ast.Rewrite(gen)
 
 		for _, f := range originFiles {
 			f.Skip()
