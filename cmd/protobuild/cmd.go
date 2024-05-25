@@ -3,6 +3,7 @@ package protobuild
 import (
 	"bytes"
 	"fmt"
+	"github.com/a8m/envsubst"
 	"io"
 	"io/fs"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	_ "github.com/a8m/envsubst"
 	"github.com/cnf/structhash"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
@@ -43,6 +45,7 @@ var (
 
 func parseConfig() error {
 	content := assert.Must1(os.ReadFile(protoCfg))
+	content = append(assert.Must1(envsubst.Bytes(content)))
 	assert.Must(yaml.Unmarshal(content, &cfg))
 
 	cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
