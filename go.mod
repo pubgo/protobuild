@@ -3,6 +3,7 @@ module github.com/pubgo/protobuild
 go 1.19
 
 require (
+	github.com/a8m/envsubst v1.3.0
 	github.com/bufbuild/protocompile v0.5.1
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
 	github.com/dave/jennifer v1.6.0
