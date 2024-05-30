@@ -1,5 +1,18 @@
 # protobuild
-protobuf build tool
+> protobuf build and management tool
+
+## install
+
+go install github.com/pubgo/protobuild@latest
+
+## example
+
+[protobuf.yaml](https://github.com/pubgo/lava/blob/master/internal/example/grpc/protobuf.yaml)
+
+```yaml
+protobuild -f protobuf.yaml vendor
+protobuild -f protobuf.yaml gen
+```
 
 ## protoc-gen-[plugin]
 

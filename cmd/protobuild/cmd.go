@@ -90,7 +90,7 @@ func Main() *cli.App {
 		Flags: typex.Flags{
 			&cli.StringFlag{
 				Name:        "conf",
-				Aliases:     typex.Strs{"c"},
+				Aliases:     typex.Strs{"c", "f"},
 				Usage:       "protobuf config path",
 				Value:       protoCfg,
 				Destination: &protoCfg,
