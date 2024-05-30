@@ -10,8 +10,6 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - -X 'github.com/pubgo/protobuild/version.BuildTime={{ .Date }}'
-      - -X 'github.com/pubgo/protobuild/version.CommitID={{ .Commit }}'
       - -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
   - main: ./cmd/protoc-gen-retag/main.go
     id: protoc-gen-retag
@@ -25,6 +23,5 @@ builds:
       - amd64
 archives:
   - name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
-    format: binary
-    replacements:
-      amd64: x86_64
+    format: tar.gz
+report_sizes: true
