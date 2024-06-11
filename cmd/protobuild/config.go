@@ -39,8 +39,9 @@ type plugin struct {
 }
 
 type depend struct {
-	Name    string  `yaml:"name,omitempty"`
-	Url     string  `yaml:"url,omitempty"`
-	Path    string  `yaml:"path,omitempty"`
-	Version *string `yaml:"version,omitempty"`
+	Name     string  `yaml:"name,omitempty"`
+	Url      string  `yaml:"url,omitempty"`
+	Path     string  `yaml:"path,omitempty"`
+	Version  *string `yaml:"version,omitempty"`
+	Optional *bool   `yaml:"optional,omitempty"`
 }
