@@ -3,7 +3,6 @@ package protobuild
 import (
 	"bytes"
 	"fmt"
-	"github.com/a8m/envsubst"
 	"io"
 	"io/fs"
 	"os"
@@ -12,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	_ "github.com/a8m/envsubst"
+	"github.com/a8m/envsubst"
 	"github.com/cnf/structhash"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
