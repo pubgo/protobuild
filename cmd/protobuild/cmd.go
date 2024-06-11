@@ -339,6 +339,10 @@ func Main() *cli.App {
 							continue
 						}
 
+						if pathutil.IsNotExist(url) && dep.Optional != nil && *dep.Optional {
+							continue
+						}
+
 						v := strutil.FirstFnNotEmpty(func() string {
 							return versions[url]
 						}, func() string {
@@ -421,6 +425,11 @@ func Main() *cli.App {
 						fmt.Println(url)
 
 						url = assert.Must1(filepath.Abs(url))
+
+						if pathutil.IsNotExist(url) && dep.Optional != nil && *dep.Optional {
+							continue
+						}
+
 						newUrl := filepath.Join(cfg.Vendor, dep.Name)
 						assert.Must(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
 							if err != nil {
