@@ -2,6 +2,7 @@ package protobuild
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -20,7 +21,7 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
-	cli "github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -84,27 +85,38 @@ func parseConfig() (gErr error) {
 	return nil
 }
 
-func Main() *cli.App {
+func Main() *cli.Command {
 	var force bool
-	app := &cli.App{
-		Name:    "protobuf build",
-		Usage:   "protobuf generation, configuration and management",
-		Version: version.Version,
+	app := &cli.Command{
+		Name:                  "protobuf",
+		Usage:                 "protobuf generation, configuration and management",
+		Version:               version.Version,
+		ShellComplete:         cli.DefaultAppComplete,
+		EnableShellCompletion: true,
+		Suggest:               true,
 		Flags: typex.Flags{
 			&cli.StringFlag{
 				Name:        "conf",
 				Aliases:     typex.Strs{"c", "f"},
 				Usage:       "protobuf config path",
 				Value:       protoCfg,
+				Hidden:      false,
+				Persistent:  true,
 				Destination: &protoCfg,
 			},
 		},
-		Action: func(context *cli.Context) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if shutil.IsHelp() {
 				return nil
 			}
 
-			in := assert.Must1(io.ReadAll(os.Stdin))
+			file := os.Stdin
+			fi := assert.Exit1(file.Stat())
+			if fi.Size() == 0 {
+				return cli.ShowAppHelp(c)
+			}
+
+			in := assert.Must1(io.ReadAll(file))
 			req := &pluginpb.CodeGeneratorRequest{}
 			assert.Must(proto.Unmarshal(in, req))
 
@@ -157,14 +169,14 @@ func Main() *cli.App {
 
 			return nil
 		},
-		Commands: cli.Commands{
+		Commands: typex.Commands{
 			&cli.Command{
 				Name:  "gen",
 				Usage: "编译 protobuf 文件",
-				Before: func(context *cli.Context) error {
+				Before: func(ctx context.Context, c *cli.Command) error {
 					return parseConfig()
 				},
-				Action: func(ctx *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 					defer recovery.Exit()
 
 					var protoList sync.Map
@@ -242,7 +254,7 @@ func Main() *cli.App {
 								return "."
 							}()
 
-							_ = pathutil.IsNotExistMkDir(out)
+							assert.Exit(pathutil.IsNotExistMkDir(out))
 
 							opts := plg.Opt
 							hasPath := func() bool {
@@ -299,9 +311,10 @@ func Main() *cli.App {
 						assert.Must(shutil.Shell(data).Run(), data)
 						if retagOut != "" && retagOpt != "" {
 							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
+							logger.Info().Bool("retag", true).Msg(data)
+							assert.Must(shutil.Shell(data).Run(), data)
 						}
-						logger.Info().Msg(data)
-						assert.Must(shutil.Shell(data).Run(), data)
+
 						return true
 					})
 					return nil
@@ -310,7 +323,7 @@ func Main() *cli.App {
 			&cli.Command{
 				Name:  "vendor",
 				Usage: "同步项目 protobuf 依赖到 .proto 目录中",
-				Before: func(context *cli.Context) error {
+				Before: func(ctx context.Context, c *cli.Command) error {
 					return parseConfig()
 				},
 				Flags: typex.Flags{
@@ -322,7 +335,7 @@ func Main() *cli.App {
 						Destination: &force,
 					},
 				},
-				Action: func(ctx *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 					defer recovery.Exit()
 
 					var changed bool
@@ -390,12 +403,15 @@ func Main() *cli.App {
 						cfg.Depends[i].Version = generic.Ptr(v)
 					}
 
-					var buf bytes.Buffer
-					enc := yaml.NewEncoder(&buf)
-					enc.SetIndent(2)
-					defer enc.Close()
-					assert.Must(enc.Encode(cfg))
-					assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
+					// TODO 强制更新配置文件, 可以考虑参数化
+					{
+						var buf bytes.Buffer
+						enc := yaml.NewEncoder(&buf)
+						enc.SetIndent(2)
+						defer enc.Close()
+						assert.Must(enc.Encode(cfg))
+						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
+					}
 
 					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")

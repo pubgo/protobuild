@@ -19,6 +19,10 @@ LDFLAGS=-ldflags " \
 build:
 	go build ${LDFLAGS} -mod vendor -v -o main *.go
 
+.PHONY: install
+install:
+	go install ${LDFLAGS} -mod vendor -v .
+
 vet:
 	@go vet ./...
 	gofumpt -l -w -extra .
