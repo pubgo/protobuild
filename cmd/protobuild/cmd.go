@@ -30,6 +30,8 @@ import (
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/protobuild/version"
+
+	_ "golang.org/x/mod/module"
 )
 
 var (
@@ -42,9 +44,11 @@ var (
 	// binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
-func parseConfig() error {
+func parseConfig() (gErr error) {
+	defer recovery.Err(&gErr)
+
 	content := assert.Must1(os.ReadFile(protoCfg))
-	content = append(assert.Must1(envsubst.Bytes(content)))
+	content = assert.Must1(envsubst.Bytes(content))
 	assert.Must(yaml.Unmarshal(content, &cfg))
 
 	cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
