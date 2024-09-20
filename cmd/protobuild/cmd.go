@@ -403,16 +403,6 @@ func Main() *cli.Command {
 						cfg.Depends[i].Version = generic.Ptr(v)
 					}
 
-					// TODO 强制更新配置文件, 可以考虑参数化
-					{
-						var buf bytes.Buffer
-						enc := yaml.NewEncoder(&buf)
-						enc.SetIndent(2)
-						defer enc.Close()
-						assert.Must(enc.Encode(cfg))
-						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
-					}
-
 					if !changed && !cfg.changed && !force {
 						fmt.Println("No changes")
 						return nil
@@ -477,6 +467,16 @@ func Main() *cli.Command {
 
 							return nil
 						}))
+					}
+
+					// TODO 强制更新配置文件, 可以考虑参数化
+					{
+						var buf bytes.Buffer
+						enc := yaml.NewEncoder(&buf)
+						enc.SetIndent(2)
+						defer enc.Close()
+						assert.Must(enc.Encode(cfg))
+						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
 					}
 					return nil
 				},
