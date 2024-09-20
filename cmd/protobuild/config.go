@@ -33,6 +33,9 @@ type plugin struct {
 	// SkipBase skip base config
 	SkipBase bool `yaml:"skip_base,omitempty"`
 
+	// SkipRun skip run plugin
+	SkipRun bool `yaml:"skip_run,omitempty"`
+
 	// ExcludeOpts exclude plugin opts
 	ExcludeOpts pluginOpts `yaml:"exclude_opts,omitempty"`
 	Opt         pluginOpts `yaml:"opt,omitempty"`

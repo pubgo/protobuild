@@ -180,7 +180,6 @@ func Main() *cli.Command {
 					defer recovery.Exit()
 
 					var protoList sync.Map
-					basePlugin := cfg.BasePlugin
 					for i := range cfg.Root {
 						if pathutil.IsNotExist(cfg.Root[i]) {
 							log.Printf("file %s not found", cfg.Root[i])
@@ -210,6 +209,7 @@ func Main() *cli.Command {
 						}))
 					}
 
+					basePlugin := cfg.BasePlugin
 					protoList.Range(func(key, _ interface{}) bool {
 						in := key.(string)
 
@@ -224,6 +224,9 @@ func Main() *cli.Command {
 						reTagOpt := ""
 						for i := range cfg.Plugins {
 							plg := cfg.Plugins[i]
+							if plg.SkipRun {
+								continue
+							}
 
 							name := plg.Name
 
