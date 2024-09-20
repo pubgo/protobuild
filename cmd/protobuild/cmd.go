@@ -220,8 +220,8 @@ func Main() *cli.Command {
 							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
 						}
 
-						retagOut := ""
-						retagOpt := ""
+						reTagOut := ""
+						reTagOpt := ""
 						for i := range cfg.Plugins {
 							plg := cfg.Plugins[i]
 
@@ -289,8 +289,8 @@ func Main() *cli.Command {
 							}
 
 							if name == "retag" {
-								retagOut = fmt.Sprintf(" --%s_out=%s", name, out)
-								retagOpt = fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
+								reTagOut = fmt.Sprintf(" --%s_out=%s", name, out)
+								reTagOpt = fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
 								continue
 							}
 
@@ -309,8 +309,8 @@ func Main() *cli.Command {
 						data = base + data + " " + filepath.Join(in, "*.proto")
 						logger.Info().Msg(data)
 						assert.Must(shutil.Shell(data).Run(), data)
-						if retagOut != "" && retagOpt != "" {
-							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
+						if reTagOut != "" && reTagOpt != "" {
+							data = base + reTagOut + reTagOpt + " " + filepath.Join(in, "*.proto")
 							logger.Info().Bool("retag", true).Msg(data)
 							assert.Must(shutil.Shell(data).Run(), data)
 						}
@@ -367,8 +367,7 @@ func Main() *cli.Command {
 						}, func() string {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
-							localPkg, err := os.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
-							assert.Must(err)
+							localPkg := assert.Must1(os.ReadDir(filepath.Dir(filepath.Join(modPath, url))))
 
 							_, name := filepath.Split(url)
 							for j := range localPkg {
