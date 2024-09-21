@@ -29,6 +29,6 @@ func (p *pluginOpts) UnmarshalYAML(value *yaml.Node) error {
 		*p = data
 		return nil
 	default:
-		return errors.Format("yaml kind type error,kinf=%v data=%s", value.Kind, value.Value)
+		return errors.Format("yaml kind type error, kind=%v data=%s", value.Kind, value.Value)
 	}
 }

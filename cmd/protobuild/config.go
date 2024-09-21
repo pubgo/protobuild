@@ -1,15 +1,20 @@
 package protobuild
 
-type Cfg struct {
-	Checksum   string        `yaml:"checksum,omitempty" hash:"-"`
-	Vendor     string        `yaml:"vendor,omitempty"`
-	BasePlugin basePluginCfg `yaml:"base,omitempty" hash:"-"`
-	Root       []string      `yaml:"root,omitempty" hash:"-"`
-	Includes   []string      `yaml:"includes,omitempty" hash:"-"`
-	Excludes   []string      `yaml:"excludes,omitempty" hash:"-"`
-	Depends    []*depend     `yaml:"deps,omitempty"`
-	Plugins    []*plugin     `yaml:"plugins,omitempty" hash:"-"`
-	changed    bool
+type Config struct {
+	Checksum   string         `yaml:"checksum,omitempty" hash:"-"`
+	Vendor     string         `yaml:"vendor,omitempty"`
+	BasePlugin *basePluginCfg `yaml:"base,omitempty" hash:"-"`
+
+	// Root path, default is proto path
+	// source path
+	Root []string `yaml:"root,omitempty" hash:"-"`
+
+	// Includes protoc include path, default is proto path and .proto path
+	Includes []string  `yaml:"includes,omitempty" hash:"-"`
+	Excludes []string  `yaml:"excludes,omitempty" hash:"-"`
+	Depends  []*depend `yaml:"deps,omitempty"`
+	Plugins  []*plugin `yaml:"plugins,omitempty" hash:"-"`
+	changed  bool
 }
 
 type basePluginCfg struct {
@@ -39,6 +44,7 @@ type plugin struct {
 	// ExcludeOpts exclude plugin opts
 	ExcludeOpts pluginOpts `yaml:"exclude_opts,omitempty"`
 	Opt         pluginOpts `yaml:"opt,omitempty"`
+	Opts        pluginOpts `yaml:"opts,omitempty"`
 }
 
 type depend struct {
