@@ -1,12 +1,12 @@
 package typex
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 type (
 	Strs     = []string
 	Flags    = []cli.Flag
 	Command  = cli.Command
-	Commands = []cli.Command
+	Commands = []*cli.Command
 )

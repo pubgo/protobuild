@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/pubgo/funk/assert"
@@ -9,6 +10,6 @@ import (
 
 func main() {
 	assert.ExitFn(func() error {
-		return protobuild.Main().Run(os.Args)
+		return protobuild.Main().Run(context.Background(), os.Args)
 	})
 }

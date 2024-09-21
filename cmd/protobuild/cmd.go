@@ -2,6 +2,7 @@ package protobuild
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -9,10 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 
-	"github.com/a8m/envsubst"
-	"github.com/cnf/structhash"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/generic"
@@ -20,87 +18,68 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
-	cli "github.com/urfave/cli/v2"
+	"github.com/pubgo/protobuild/internal/modutil"
+	"github.com/pubgo/protobuild/internal/shutil"
+	"github.com/pubgo/protobuild/internal/typex"
+	"github.com/pubgo/protobuild/version"
+	"github.com/samber/lo"
+	cli "github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 	yaml "gopkg.in/yaml.v3"
 
-	"github.com/pubgo/protobuild/internal/modutil"
-	"github.com/pubgo/protobuild/internal/shutil"
-	"github.com/pubgo/protobuild/internal/typex"
-	"github.com/pubgo/protobuild/version"
+	_ "github.com/samber/lo"
+	_ "golang.org/x/mod/module"
 )
 
 var (
-	cfg Cfg
+	globalCfg Config
 
-	protoCfg = "protobuf.yaml"
-	modPath  = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
-	pwd      = assert.Exit1(os.Getwd())
-	logger   = log.GetLogger("proto-build")
+	protoCfg       = "protobuf.yaml"
+	protoPluginCfg = "protobuf.plugin.yaml"
+	modPath        = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
+	pwd            = assert.Exit1(os.Getwd())
+	logger         = log.GetLogger("proto-build")
 	// binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
-func parseConfig() error {
-	content := assert.Must1(os.ReadFile(protoCfg))
-	content = append(assert.Must1(envsubst.Bytes(content)))
-	assert.Must(yaml.Unmarshal(content, &cfg))
+const (
+	reTagPluginName = "retag"
+)
 
-	cfg.Vendor = strutil.FirstFnNotEmpty(func() string {
-		return cfg.Vendor
-	}, func() string {
-		protoPath := filepath.Join(pwd, ".proto")
-		if pathutil.IsExist(protoPath) {
-			return protoPath
-		}
-		return ""
-	}, func() string {
-		goModPath := filepath.Dir(modutil.GoModPath())
-		if goModPath == "" {
-			panic("没有找到项目go.mod文件")
-		}
-
-		return filepath.Join(goModPath, ".proto")
-	})
-
-	assert.Must(pathutil.IsNotExistMkDir(cfg.Vendor))
-
-	// protobuf文件检查
-	for _, dep := range cfg.Depends {
-		assert.If(dep.Name == "" || dep.Url == "", "name和url都不能为空")
-	}
-
-	checksum := fmt.Sprintf("%x", structhash.Sha1(cfg, 1))
-	if cfg.Checksum != checksum {
-		cfg.Checksum = checksum
-		cfg.changed = true
-	}
-
-	return nil
-}
-
-func Main() *cli.App {
+func Main() *cli.Command {
 	var force bool
-	app := &cli.App{
-		Name:    "protobuf build",
-		Usage:   "protobuf generation, configuration and management",
-		Version: version.Version,
+	app := &cli.Command{
+		Name:                  "protobuf",
+		Usage:                 "protobuf generation, configuration and management",
+		Version:               version.Version,
+		ShellComplete:         cli.DefaultAppComplete,
+		EnableShellCompletion: true,
+		Suggest:               true,
 		Flags: typex.Flags{
 			&cli.StringFlag{
 				Name:        "conf",
 				Aliases:     typex.Strs{"c", "f"},
 				Usage:       "protobuf config path",
 				Value:       protoCfg,
+				Hidden:      false,
+				Persistent:  true,
 				Destination: &protoCfg,
 			},
 		},
-		Action: func(context *cli.Context) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if shutil.IsHelp() {
 				return nil
 			}
 
-			in := assert.Must1(io.ReadAll(os.Stdin))
+			file := os.Stdin
+			fi := assert.Exit1(file.Stat())
+			if fi.Size() == 0 {
+				return cli.ShowAppHelp(c)
+			}
+
+			in := assert.Must1(io.ReadAll(file))
 			req := &pluginpb.CodeGeneratorRequest{}
 			assert.Must(proto.Unmarshal(in, req))
 
@@ -129,7 +108,7 @@ func Main() *cli.App {
 				req.Parameter = generic.Ptr(strings.Join(params, ","))
 			}
 
-			for _, p := range cfg.Plugins {
+			for _, p := range globalCfg.Plugins {
 				if p.Name != plgName {
 					continue
 				}
@@ -153,160 +132,177 @@ func Main() *cli.App {
 
 			return nil
 		},
-		Commands: cli.Commands{
+		Commands: typex.Commands{
 			&cli.Command{
-				Name:  "gen",
-				Usage: "编译 protobuf 文件",
-				Before: func(context *cli.Context) error {
-					return parseConfig()
-				},
-				Action: func(ctx *cli.Context) error {
+				Name:   "gen",
+				Usage:  "编译 protobuf 文件",
+				Before: func(ctx context.Context, c *cli.Command) error { return parseConfig() },
+				Action: func(ctx context.Context, c *cli.Command) error {
 					defer recovery.Exit()
 
-					var protoList sync.Map
-					basePlugin := cfg.BasePlugin
-					for i := range cfg.Root {
-						if pathutil.IsNotExist(cfg.Root[i]) {
-							log.Printf("file %s not found", cfg.Root[i])
+					var pluginMap = make(map[string]*Config)
+					for i := range globalCfg.Root {
+						if pathutil.IsNotExist(globalCfg.Root[i]) {
+							log.Printf("file %s not found", globalCfg.Root[i])
 							continue
 						}
 
-						assert.Must(filepath.Walk(cfg.Root[i], func(path string, info fs.FileInfo, err error) error {
+						assert.Must(filepath.Walk(globalCfg.Root[i], func(path string, info fs.FileInfo, err error) error {
 							if err != nil {
 								return err
 							}
 
-							if info.IsDir() {
-								for _, e := range cfg.Excludes {
-									if strings.HasPrefix(path, e) {
-										return filepath.SkipDir
-									}
+							// skip dir
+							if !info.IsDir() {
+								return nil
+							}
+
+							// check contains proto file in dir
+							hasProto := lo.ContainsBy(
+								assert.Must1(os.ReadDir(path)),
+								func(item os.DirEntry) bool {
+									return !item.IsDir() && strings.HasSuffix(item.Name(), ".proto")
+								},
+							)
+							if !hasProto {
+								return nil
+							}
+
+							// check protobuf.plugin.yaml
+							var pluginCfg *Config
+							pluginCfgPath := filepath.Join(path, protoPluginCfg)
+							if pathutil.IsExist(pluginCfgPath) {
+								pluginCfg = parsePluginConfig(pluginCfgPath)
+							}
+							pluginCfg = mergePluginConfig(&globalCfg, pluginCfg)
+
+							for _, e := range pluginCfg.Excludes {
+								if strings.HasPrefix(path, e) {
+									return filepath.SkipDir
 								}
-								return nil
 							}
 
-							if !strings.HasSuffix(info.Name(), ".proto") {
-								return nil
-							}
-
-							protoList.Store(filepath.Dir(path), struct{}{})
+							pluginMap[path] = pluginCfg
 							return nil
 						}))
 					}
 
-					protoList.Range(func(key, _ interface{}) bool {
-						in := key.(string)
-
-						data := ""
-						base := fmt.Sprintf("protoc -I %s -I %s", cfg.Vendor, pwd)
-						logger.Info().Msgf("includes=%q", cfg.Includes)
-						for i := range cfg.Includes {
-							base += fmt.Sprintf(" -I %s", cfg.Includes[i])
-						}
-
-						retagOut := ""
-						retagOpt := ""
-						for i := range cfg.Plugins {
-							plg := cfg.Plugins[i]
-
-							name := plg.Name
-
-							// 指定plugin path
-							if plg.Path != "" {
-								plg.Path = assert.Must1(exec.LookPath(plg.Path))
-								assert.If(pathutil.IsNotExist(plg.Path), "plugin path notfound, path=%s", plg.Path)
-								data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, plg.Path)
+					for protoSourcePath, pp := range pluginMap {
+						var doF = func(pluginCfg *Config, protoPath string) {
+							data := ""
+							base := fmt.Sprintf("protoc -I %s -I %s", pluginCfg.Vendor, pwd)
+							logger.Info().Msgf("includes=%q", pluginCfg.Includes)
+							for i := range pluginCfg.Includes {
+								base += fmt.Sprintf(" -I %s", pluginCfg.Includes[i])
 							}
 
-							out := func() string {
-								// https://github.com/pseudomuto/protoc-gen-doc
-								// 目录特殊处理
-								if name == "doc" {
-									out := filepath.Join(plg.Out, in)
-									assert.Must(pathutil.IsNotExistMkDir(out))
-									return out
+							reTagOut := ""
+							reTagOpt := ""
+							for i := range pluginCfg.Plugins {
+								plg := pluginCfg.Plugins[i]
+								if plg.SkipRun {
+									continue
 								}
 
-								if plg.Out != "" {
-									return plg.Out
+								name := plg.Name
+
+								// 指定plugin path
+								if plg.Path != "" {
+									plg.Path = assert.Must1(exec.LookPath(plg.Path))
+									assert.If(pathutil.IsNotExist(plg.Path), "plugin path notfound, path=%s", plg.Path)
+									data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, plg.Path)
 								}
 
-								if basePlugin.Out != "" {
-									return basePlugin.Out
-								}
-
-								return "."
-							}()
-
-							_ = pathutil.IsNotExistMkDir(out)
-
-							opts := plg.Opt
-							hasPath := func() bool {
-								for _, opt := range opts {
-									if strings.HasPrefix(opt, "paths=") {
-										return true
+								out := func() string {
+									// https://github.com/pseudomuto/protoc-gen-doc
+									// 目录特殊处理
+									if name == "doc" {
+										out := filepath.Join(plg.Out, protoPath)
+										assert.Must(pathutil.IsNotExistMkDir(out))
+										return out
 									}
-								}
-								return false
-							}
 
-							hasModule := func() bool {
-								for _, opt := range opts {
-									if strings.HasPrefix(opt, "module=") {
-										return true
+									if plg.Out != "" {
+										return plg.Out
 									}
-								}
-								return false
-							}
 
-							if !hasPath() && basePlugin.Paths != "" && !plg.SkipBase {
-								opts = append(opts, fmt.Sprintf("paths=%s", basePlugin.Paths))
-							}
-
-							if !hasModule() && basePlugin.Module != "" && !plg.SkipBase {
-								opts = append(opts, fmt.Sprintf("module=%s", basePlugin.Module))
-							}
-
-							if plg.Shell != "" || plg.Docker != "" {
-								opts = append(opts, "__wrapper="+name)
-								data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, assert.Must1(exec.LookPath(os.Args[0])))
-							}
-
-							if name == "retag" {
-								retagOut = fmt.Sprintf(" --%s_out=%s", name, out)
-								retagOpt = fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
-								continue
-							}
-
-							data += fmt.Sprintf(" --%s_out=%s", name, out)
-
-							if len(opts) > 0 {
-								var protoOpt []string
-								for _, opt := range opts {
-									if !hasAny(plg.ExcludeOpts, func(d string) bool { return strings.HasPrefix(opt, d) }) {
-										protoOpt = append(protoOpt, opt)
+									if pluginCfg.BasePlugin.Out != "" {
+										return pluginCfg.BasePlugin.Out
 									}
+
+									return "."
+								}()
+
+								assert.Exit(pathutil.IsNotExistMkDir(out))
+
+								opts := append(plg.Opt, plg.Opts...)
+								hasPath := func() bool {
+									for _, opt := range opts {
+										if strings.HasPrefix(opt, "paths=") {
+											return true
+										}
+									}
+									return false
 								}
-								data += fmt.Sprintf(" --%s_opt=%s", name, strings.Join(protoOpt, ","))
+
+								hasModule := func() bool {
+									for _, opt := range opts {
+										if strings.HasPrefix(opt, "module=") {
+											return true
+										}
+									}
+									return false
+								}
+
+								if !hasPath() && pluginCfg.BasePlugin.Paths != "" && !plg.SkipBase {
+									opts = append(opts, fmt.Sprintf("paths=%s", pluginCfg.BasePlugin.Paths))
+								}
+
+								if !hasModule() && pluginCfg.BasePlugin.Module != "" && !plg.SkipBase {
+									opts = append(opts, fmt.Sprintf("module=%s", pluginCfg.BasePlugin.Module))
+								}
+
+								if plg.Shell != "" || plg.Docker != "" {
+									opts = append(opts, "__wrapper="+name)
+									data += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, assert.Must1(exec.LookPath(os.Args[0])))
+								}
+
+								if name == reTagPluginName {
+									reTagOut = fmt.Sprintf(" --%s_out=%s", name, out)
+									reTagOpt = fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
+									continue
+								}
+
+								data += fmt.Sprintf(" --%s_out=%s", name, out)
+
+								if len(opts) > 0 {
+									var protoOpt []string
+									for _, opt := range opts {
+										if !hasAny(plg.ExcludeOpts, func(d string) bool { return strings.HasPrefix(opt, d) }) {
+											protoOpt = append(protoOpt, opt)
+										}
+									}
+									data += fmt.Sprintf(" --%s_opt=%s", name, strings.Join(protoOpt, ","))
+								}
+							}
+							data = base + data + " " + filepath.Join(protoPath, "*.proto")
+							logger.Info().Msg(data)
+							assert.Must(shutil.Shell(data).Run(), data)
+							if reTagOut != "" && reTagOpt != "" {
+								data = base + reTagOut + reTagOpt + " " + filepath.Join(protoPath, "*.proto")
+								logger.Info().Bool(reTagPluginName, true).Msg(data)
+								assert.Must(shutil.Shell(data).Run(), data)
 							}
 						}
-						data = base + data + " " + filepath.Join(in, "*.proto")
-						logger.Info().Msg(data)
-						assert.Must(shutil.Shell(data).Run(), data)
-						if retagOut != "" && retagOpt != "" {
-							data = base + retagOut + retagOpt + " " + filepath.Join(in, "*.proto")
-						}
-						logger.Info().Msg(data)
-						assert.Must(shutil.Shell(data).Run(), data)
-						return true
-					})
+						doF(pp, protoSourcePath)
+					}
 					return nil
 				},
 			},
 			&cli.Command{
 				Name:  "vendor",
 				Usage: "同步项目 protobuf 依赖到 .proto 目录中",
-				Before: func(context *cli.Context) error {
+				Before: func(ctx context.Context, c *cli.Command) error {
 					return parseConfig()
 				},
 				Flags: typex.Flags{
@@ -318,14 +314,14 @@ func Main() *cli.App {
 						Destination: &force,
 					},
 				},
-				Action: func(ctx *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 					defer recovery.Exit()
 
 					var changed bool
 
 					// 解析go.mod并获取所有pkg版本
 					versions := modutil.LoadVersions()
-					for i, dep := range cfg.Depends {
+					for i, dep := range globalCfg.Depends {
 						pathVersion := strings.SplitN(dep.Url, "@", 2)
 						if len(pathVersion) == 2 {
 							dep.Version = generic.Ptr(pathVersion[1])
@@ -350,8 +346,7 @@ func Main() *cli.App {
 						}, func() string {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
-							localPkg, err := os.ReadDir(filepath.Dir(filepath.Join(modPath, url)))
-							assert.Must(err)
+							localPkg := assert.Must1(os.ReadDir(filepath.Dir(filepath.Join(modPath, url))))
 
 							_, name := filepath.Split(url)
 							for j := range localPkg {
@@ -383,26 +378,19 @@ func Main() *cli.App {
 							assert.If(v == "", "%s version为空", url)
 						}
 
-						cfg.Depends[i].Version = generic.Ptr(v)
+						globalCfg.Depends[i].Version = generic.Ptr(v)
 					}
 
-					var buf bytes.Buffer
-					enc := yaml.NewEncoder(&buf)
-					enc.SetIndent(2)
-					defer enc.Close()
-					assert.Must(enc.Encode(cfg))
-					assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
-
-					if !changed && !cfg.changed && !force {
+					if !changed && !globalCfg.changed && !force {
 						fmt.Println("No changes")
 						return nil
 					}
 
 					// 删除老的protobuf文件
-					logger.Info().Str("vendor", cfg.Vendor).Msg("delete old vendor")
-					_ = os.RemoveAll(cfg.Vendor)
+					logger.Info().Str("vendor", globalCfg.Vendor).Msg("delete old vendor")
+					_ = os.RemoveAll(globalCfg.Vendor)
 
-					for _, dep := range cfg.Depends {
+					for _, dep := range globalCfg.Depends {
 						if dep.Name == "" || dep.Url == "" {
 							continue
 						}
@@ -430,7 +418,7 @@ func Main() *cli.App {
 							continue
 						}
 
-						newUrl := filepath.Join(cfg.Vendor, dep.Name)
+						newUrl := filepath.Join(globalCfg.Vendor, dep.Name)
 						assert.Must(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
 							if err != nil {
 								return err
@@ -457,6 +445,16 @@ func Main() *cli.App {
 
 							return nil
 						}))
+					}
+
+					// TODO 强制更新配置文件, 可以考虑参数化
+					{
+						var buf bytes.Buffer
+						enc := yaml.NewEncoder(&buf)
+						enc.SetIndent(2)
+						defer enc.Close()
+						assert.Must(enc.Encode(globalCfg))
+						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
 					}
 					return nil
 				},
