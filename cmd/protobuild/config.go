@@ -10,11 +10,12 @@ type Config struct {
 	Root []string `yaml:"root,omitempty" hash:"-"`
 
 	// Includes protoc include path, default is proto path and .proto path
-	Includes []string  `yaml:"includes,omitempty" hash:"-"`
-	Excludes []string  `yaml:"excludes,omitempty" hash:"-"`
-	Depends  []*depend `yaml:"deps,omitempty"`
-	Plugins  []*plugin `yaml:"plugins,omitempty" hash:"-"`
-	changed  bool
+	Includes   []string  `yaml:"includes,omitempty" hash:"-"`
+	Excludes   []string  `yaml:"excludes,omitempty" hash:"-"`
+	Depends    []*depend `yaml:"deps,omitempty"`
+	Plugins    []*plugin `yaml:"plugins,omitempty" hash:"-"`
+	changed    bool
+	Installers []string `yaml:"installers,omitempty" hash:"-"`
 }
 
 type basePluginCfg struct {

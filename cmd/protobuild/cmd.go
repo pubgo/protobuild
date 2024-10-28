@@ -459,6 +459,36 @@ func Main() *cli.Command {
 					return nil
 				},
 			},
+			&cli.Command{
+				Name:  "install",
+				Usage: "install protobuf plugin",
+				Before: func(ctx context.Context, c *cli.Command) error {
+					return parseConfig()
+				},
+				Flags: typex.Flags{
+					&cli.BoolFlag{
+						Name:        "force",
+						Usage:       "force update protobuf plugin",
+						Aliases:     []string{"f"},
+						Value:       force,
+						Destination: &force,
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					defer recovery.Exit()
+
+					for _, plg := range globalCfg.Installers {
+						if !strings.Contains(plg, "@") || force {
+							if strings.Contains(plg, "@") {
+								pluginPaths := strings.Split(plg, "@")
+								plg = strings.Join(pluginPaths[:len(pluginPaths)-1], "@") + "@latest"
+							}
+						}
+						assert.Must(shutil.Shell("go", "install", plg).Run())
+					}
+					return nil
+				},
+			},
 		},
 	}
 	return app
