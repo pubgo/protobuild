@@ -2,6 +2,7 @@ package shutil
 
 import (
 	"bytes"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -36,6 +37,7 @@ func GoList() (string, error) {
 
 func Shell(args ...string) *exec.Cmd {
 	shell := strings.Join(args, " ")
+	slog.Info(shell)
 	cmd := exec.Command("/bin/sh", "-c", shell)
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
