@@ -397,7 +397,7 @@ func Main() *cli.Command {
 						}
 
 						url := os.ExpandEnv(dep.Url)
-						v := generic.DePtr(dep.Version)
+						v := generic.FromPtr(dep.Version)
 
 						// 加载版本
 						if v != "" {
@@ -455,7 +455,7 @@ func Main() *cli.Command {
 						enc.SetIndent(2)
 						defer enc.Close()
 						assert.Must(enc.Encode(globalCfg))
-						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
+						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o644))
 					}
 					return nil
 				},
