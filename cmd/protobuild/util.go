@@ -11,9 +11,11 @@ import (
 	"github.com/huandu/go-clone"
 	_ "github.com/huandu/go-clone"
 	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/strutil"
 	"github.com/pubgo/protobuild/internal/modutil"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -90,6 +92,14 @@ func parseConfig() error {
 		globalCfg.changed = true
 	}
 
+	oldChecksum, err := getChecksumData(globalCfg.Vendor)
+	if err != nil {
+		log.Err(err).Msg("failed to get checksum data")
+	}
+	if oldChecksum != checksum {
+		globalCfg.changed = true
+	}
+
 	return nil
 }
 
@@ -98,4 +108,31 @@ func parsePluginConfig(path string) (cfg *Config) {
 	content = assert.Must1(envsubst.Bytes(content))
 	assert.Must(yaml.Unmarshal(content, &cfg))
 	return
+}
+
+var checkSumPath = func(vendorPath string) string {
+	return filepath.Join(vendorPath, "checksum")
+}
+
+func getChecksumData(vendorPath string) (string, error) {
+	var path = checkSumPath(vendorPath)
+	if pathutil.IsNotExist(vendorPath) {
+		return "", errors.NewFmt("file not found")
+	}
+
+	if pathutil.IsNotExist(path) {
+		return "", errors.NewFmt("file not found")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", errors.WrapCaller(err)
+	}
+	return string(data), nil
+}
+
+func writeChecksumData(vendorPath string, data []byte) error {
+	_ = os.MkdirAll(vendorPath, 0755)
+	var path = checkSumPath(vendorPath)
+	return errors.WrapCaller(os.WriteFile(path, data, 0644))
 }
