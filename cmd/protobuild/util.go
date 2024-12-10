@@ -94,7 +94,7 @@ func parseConfig() error {
 
 	oldChecksum, err := getChecksumData(globalCfg.Vendor)
 	if err != nil {
-		slog.Warn("failed to get checksum data", slog.Any("err", err))
+		slog.Warn("failed to get checksum data", slog.Any("err", err.Error()))
 	}
 	if oldChecksum != checksum {
 		globalCfg.changed = true
