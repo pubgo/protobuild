@@ -397,7 +397,7 @@ func Main() *cli.Command {
 						}
 
 						url := os.ExpandEnv(dep.Url)
-						v := generic.DePtr(dep.Version)
+						v := generic.FromPtr(dep.Version)
 
 						// 加载版本
 						if v != "" {
@@ -456,7 +456,14 @@ func Main() *cli.Command {
 						defer enc.Close()
 						assert.Must(enc.Encode(globalCfg))
 						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
+
+						slog.Info("protobuf vendor update success")
+						err := writeChecksumData(globalCfg.Vendor, []byte(globalCfg.Checksum))
+						if err != nil {
+							slog.Error("failed to write checksum data", slog.Any("err", err))
+						}
 					}
+
 					return nil
 				},
 			},
