@@ -2,6 +2,7 @@ package protobuild
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/strutil"
 	"github.com/pubgo/protobuild/internal/modutil"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -94,7 +94,7 @@ func parseConfig() error {
 
 	oldChecksum, err := getChecksumData(globalCfg.Vendor)
 	if err != nil {
-		log.Err(err).Msg("failed to get checksum data")
+		slog.Warn("failed to get checksum data", slog.Any("err", err))
 	}
 	if oldChecksum != checksum {
 		globalCfg.changed = true
