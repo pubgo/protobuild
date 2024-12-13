@@ -11,6 +11,8 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"path/filepath"
+	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -88,7 +90,8 @@ func (g *Generator) Generate() {
 			// fix Response will always be generated, so add a new generated file directly.
 			// content := buf.String()
 			// file.outerFile.Content = &content
-			_, err = g.protoGenerator.NewGeneratedFile(file.outerFile.GetName(), "").Write(buf.Bytes())
+			filePath := filepath.Join(getModule(g.protoGenerator), file.outerFile.GetName())
+			_, err = g.protoGenerator.NewGeneratedFile(filePath, "").Write(buf.Bytes())
 			if err != nil {
 				g.protoGenerator.Error(fmt.Errorf("failed to new generated file to rewrite: %w", err))
 				continue
@@ -114,4 +117,15 @@ func PrintComment(file *ast.File) {
 	var lists []*ast.Comment
 	lists = append(lists, &list)
 	comments.List = append(lists, comments.List...)
+}
+
+func getModule(gen *protogen.Plugin) string {
+	params := gen.Request.GetParameter()
+	for _, p := range strings.Split(params, ",") {
+		p = strings.TrimSpace(p)
+		if strings.HasPrefix(p, "module=") {
+			return strings.TrimPrefix(p, "module=")
+		}
+	}
+	return ""
 }

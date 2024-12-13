@@ -1,5 +1,9 @@
 checksum: 85da3b3146c7021097b973c086b0a12dae70c023
 vendor: .proto
+base:
+  out: ./pkg
+  paths: import
+  module: github.com/pubgo/protobuild/pkg
 root:
   - cmd/protoc-gen-retag/example
 includes:
@@ -9,10 +13,5 @@ deps:
     url: /usr/local/include/google/protobuf
 plugins:
   - name: go
-    out: pkg
-    opt:
-      - paths=source_relative
   - name: retag
-    opt:
-      - paths=source_relative
-      - output=pkg
+#    path: /Users/barry/gopath/bin/protoc-gen-gotag
