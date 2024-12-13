@@ -197,8 +197,7 @@ func Main() *cli.Command {
 								base += fmt.Sprintf(" -I %s", pluginCfg.Includes[i])
 							}
 
-							reTagOut := ""
-							reTagOpt := ""
+							reTagData := ""
 							for i := range pluginCfg.Plugins {
 								plg := pluginCfg.Plugins[i]
 								if plg.SkipRun {
@@ -269,8 +268,13 @@ func Main() *cli.Command {
 								}
 
 								if name == reTagPluginName {
-									reTagOut = fmt.Sprintf(" --%s_out=%s", name, out)
-									reTagOpt = fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
+									reTagData = fmt.Sprintf(" --%s_out=%s", name, out)
+									opts = append(opts, "__out="+out)
+
+									reTagData += fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ","))
+									if plg.Path != "" {
+										reTagData += fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, plg.Path)
+									}
 									continue
 								}
 
@@ -288,11 +292,11 @@ func Main() *cli.Command {
 							}
 							data = base + data + " " + filepath.Join(protoPath, "*.proto")
 							logger.Info().Msg(data)
-							assert.Must(shutil.Shell(data).Run(), data)
-							if reTagOut != "" && reTagOpt != "" {
-								data = base + reTagOut + reTagOpt + " " + filepath.Join(protoPath, "*.proto")
+							assert.Exit(shutil.Shell(data).Run(), data)
+							if reTagData != "" {
+								data = base + reTagData + " " + filepath.Join(protoPath, "*.proto")
 								logger.Info().Bool(reTagPluginName, true).Msg(data)
-								assert.Must(shutil.Shell(data).Run(), data)
+								assert.Exit(shutil.Shell(data).Run(), data)
 							}
 						}
 						doF(pp, protoSourcePath)

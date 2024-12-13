@@ -4,21 +4,26 @@
 package main
 
 import (
+	"flag"
+	
 	"github.com/pubgo/protobuild/cmd/protoc-gen-retag/ast"
-
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
 func main() {
-	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
+	protogen.Options{ParamFunc: flag.CommandLine.Set}.Run(func(gen *protogen.Plugin) error {
 		gen.SupportedFeatures = gengo.SupportedFeatures
 		var originFiles []*protogen.GeneratedFile
+
 		for _, f := range gen.Files {
-			if f.Generate {
-				originFiles = append(originFiles, gengo.GenerateFile(gen, f))
+			if !f.Generate {
+				continue
 			}
+
+			originFiles = append(originFiles, gengo.GenerateFile(gen, f))
 		}
+
 		ast.Rewrite(gen)
 
 		for _, f := range originFiles {

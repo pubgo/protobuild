@@ -1,6 +1,6 @@
 module github.com/pubgo/protobuild
 
-go 1.22
+go 1.22.6
 
 require (
 	github.com/a8m/envsubst v1.3.0
@@ -27,7 +27,7 @@ require (
 	golang.org/x/mod v0.17.0
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
 	google.golang.org/grpc v1.51.0
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.35.2
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.24.5
 )

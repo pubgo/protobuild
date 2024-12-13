@@ -5,6 +5,8 @@
 package ast
 
 import (
+	"flag"
+
 	retagpb "github.com/pubgo/protobuild/pkg/retag"
 	"github.com/searKing/golang/go/reflect"
 	strings_ "github.com/searKing/golang/go/strings"
@@ -12,6 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
+
+var OutputPkg = flag.String("__out", "", "output pkg")
 
 type FieldInfo struct {
 	FieldNameInProto string
@@ -56,15 +60,17 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 		}
 
 		f := HandleFieldDescriptorProto(field)
-		if f != nil {
-			if oneOfS != nil {
-				oneOfS.FieldInfos = append(oneOfS.FieldInfos, *f)
-				if len(oneOfS.FieldInfos) > 0 {
-					ss = append(ss, *oneOfS)
-				}
-			} else {
-				s.FieldInfos = append(s.FieldInfos, *f)
+		if f == nil {
+			continue
+		}
+
+		if oneOfS != nil {
+			oneOfS.FieldInfos = append(oneOfS.FieldInfos, *f)
+			if len(oneOfS.FieldInfos) > 0 {
+				ss = append(ss, *oneOfS)
 			}
+		} else {
+			s.FieldInfos = append(s.FieldInfos, *f)
 		}
 	}
 
@@ -76,18 +82,22 @@ func WalkDescriptorProto(g *protogen.Plugin, dp *descriptorpb.DescriptorProto, t
 			continue
 		}
 
-		if decl.GetOptions() != nil {
-			v, ok := proto.GetExtension(decl.GetOptions(), retagpb.E_OneofTags).([]*retagpb.Tag)
-			if ok {
-				info := FieldInfo{FieldNameInProto: decl.GetName(), FieldNameInGo: CamelCase(decl.GetName())}
-				for i := range v {
-					tag := reflect.StructTag{}
-					tag.SetName(v[i].Name, v[i].Value)
-					info.FieldTag = append(info.FieldTag, tag)
-				}
-				s.FieldInfos = append(s.FieldInfos, info)
-			}
+		if decl.GetOptions() == nil {
+			continue
 		}
+
+		v, ok := proto.GetExtension(decl.GetOptions(), retagpb.E_OneofTags).([]*retagpb.Tag)
+		if !ok || len(v) == 0 {
+			continue
+		}
+
+		info := FieldInfo{FieldNameInProto: decl.GetName(), FieldNameInGo: CamelCase(decl.GetName())}
+		for i := range v {
+			tag := reflect.StructTag{}
+			tag.SetName(v[i].Name, v[i].Value)
+			info.FieldTag = append(info.FieldTag, tag)
+		}
+		s.FieldInfos = append(s.FieldInfos, info)
 
 		ss = append(ss, *declS)
 	}
@@ -157,7 +167,8 @@ func Rewrite(g *protogen.Plugin) {
 	//if len(protoFiles) == 0 {
 	//	return
 	//}
-	// g.Response() will generate files, so skip this step
+	//
+	//// g.Response() will generate files, so skip this step
 	//if len(g.Response().GetFile()) == 0 {
 	//	return
 	//}
