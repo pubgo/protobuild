@@ -482,7 +482,7 @@ func Main() *cli.Command {
 						Name:        "force",
 						Usage:       "force update protobuf plugin",
 						Aliases:     []string{"f"},
-						Value:       force,
+						Value:       false,
 						Destination: &force,
 					},
 				},
@@ -501,8 +501,8 @@ func Main() *cli.Command {
 							slog.Error("command not found", slog.Any("name", plgName))
 						}
 
-						if err == nil && !force {
-							slog.Info("command path", slog.Any("path", path))
+						if err == nil && !globalCfg.changed && !force {
+							slog.Info("no changes", slog.Any("path", path))
 							continue
 						}
 
