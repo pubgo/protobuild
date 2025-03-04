@@ -148,24 +148,12 @@ func Main() *cli.Command {
 							continue
 						}
 
-						assert.Must(filepath.Walk(globalCfg.Root[i], func(path string, info fs.FileInfo, err error) error {
+						assert.Must(filepath.WalkDir(globalCfg.Root[i], func(path string, d fs.DirEntry, err error) error {
 							if err != nil {
 								return err
 							}
 
-							// skip dir
-							if !info.IsDir() {
-								return nil
-							}
-
-							// check contains proto file in dir
-							hasProto := lo.ContainsBy(
-								assert.Must1(os.ReadDir(path)),
-								func(item os.DirEntry) bool {
-									return !item.IsDir() && strings.HasSuffix(item.Name(), ".proto")
-								},
-							)
-							if !hasProto {
+							if !d.IsDir() {
 								return nil
 							}
 
@@ -174,6 +162,13 @@ func Main() *cli.Command {
 							pluginCfgPath := filepath.Join(path, protoPluginCfg)
 							if pathutil.IsExist(pluginCfgPath) {
 								pluginCfg = parsePluginConfig(pluginCfgPath)
+							} else {
+								for dir, v := range pluginMap {
+									if strings.HasPrefix(path, dir) {
+										pluginCfg = v
+										break
+									}
+								}
 							}
 							pluginCfg = mergePluginConfig(&globalCfg, pluginCfg)
 
@@ -189,6 +184,17 @@ func Main() *cli.Command {
 					}
 
 					for protoSourcePath, pp := range pluginMap {
+						// check contains proto file in dir
+						hasProto := lo.ContainsBy(
+							assert.Must1(os.ReadDir(protoSourcePath)),
+							func(item os.DirEntry) bool {
+								return !item.IsDir() && strings.HasSuffix(item.Name(), ".proto")
+							},
+						)
+						if !hasProto {
+							continue
+						}
+
 						var doF = func(pluginCfg *Config, protoPath string) {
 							data := ""
 							base := fmt.Sprintf("protoc -I %s -I %s", pluginCfg.Vendor, pwd)
