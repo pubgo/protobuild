@@ -1,7 +1,6 @@
 package modutil
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -32,7 +31,7 @@ func LoadVersions() map[string]string {
 	path := GoModPath()
 	assert.Assert(path == "", "go.mod not exists")
 
-	modBytes := assert.Must1(ioutil.ReadFile(path))
+	modBytes := assert.Must1(os.ReadFile(path))
 
 	a, err := modfile.Parse("in", modBytes, nil)
 	assert.Must(err, "go.mod 解析失败")

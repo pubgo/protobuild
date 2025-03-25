@@ -1,5 +1,5 @@
 builds:
-  - main: ./main.go
+  - main: ./cmd/protobuild/build/main.go
     id: protobuild
     binary: protobuild
     skip: false
