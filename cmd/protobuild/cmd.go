@@ -65,7 +65,7 @@ func Main() *cli.Command {
 				Usage:       "protobuf config path",
 				Value:       protoCfg,
 				Hidden:      false,
-				Persistent:  true,
+				Local:       true,
 				Destination: &protoCfg,
 			},
 		},
@@ -137,7 +137,7 @@ func Main() *cli.Command {
 			&cli.Command{
 				Name:   "gen",
 				Usage:  "编译 protobuf 文件",
-				Before: func(ctx context.Context, c *cli.Command) error { return parseConfig() },
+				Before: func(ctx context.Context, c *cli.Command) (context.Context, error) { return ctx, parseConfig() },
 				Action: func(ctx context.Context, c *cli.Command) error {
 					defer recovery.Exit()
 
@@ -311,16 +311,13 @@ func Main() *cli.Command {
 				},
 			},
 			&cli.Command{
-				Name:  "vendor",
-				Usage: "同步项目 protobuf 依赖到 .proto 目录中",
-				Before: func(ctx context.Context, c *cli.Command) error {
-					return parseConfig()
-				},
+				Name:   "vendor",
+				Usage:  "同步项目 protobuf 依赖到 .proto 目录中",
+				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) { return ctx, parseConfig() },
 				Flags: typex.Flags{
 					&cli.BoolFlag{
 						Name:        "force",
 						Usage:       "protobuf force vendor",
-						Aliases:     []string{"f"},
 						Value:       force,
 						Destination: &force,
 					},
@@ -478,16 +475,13 @@ func Main() *cli.Command {
 				},
 			},
 			&cli.Command{
-				Name:  "install",
-				Usage: "install protobuf plugin",
-				Before: func(ctx context.Context, c *cli.Command) error {
-					return parseConfig()
-				},
+				Name:   "install",
+				Usage:  "install protobuf plugin",
+				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) { return ctx, parseConfig() },
 				Flags: typex.Flags{
 					&cli.BoolFlag{
 						Name:        "force",
 						Usage:       "force update protobuf plugin",
-						Aliases:     []string{"f"},
 						Value:       false,
 						Destination: &force,
 					},

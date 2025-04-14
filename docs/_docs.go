@@ -7,3 +7,5 @@ package docs
 // https://github.com/bufbuild/protocompile
 // https://github.com/mitchellh/protoc-gen-go-json
 // https://github.com/foxygoat/protog/tree/master/httprule
+// https://github.com/josharian/tstruct
+// https://github.com/rsc/tmplfunc

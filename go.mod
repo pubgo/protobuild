@@ -22,7 +22,7 @@ require (
 	github.com/open2b/scriggo v0.56.1
 	github.com/pubgo/funk v0.5.49
 	github.com/samber/lo v1.49.1
-	github.com/urfave/cli/v3 v3.0.0-alpha9.0.20240717192922-127cf54fac9f
+	github.com/urfave/cli/v3 v3.1.0
 	github.com/yuin/goldmark v1.4.13
 	go.uber.org/multierr v1.11.0
 	golang.org/x/mod v0.24.0
