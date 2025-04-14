@@ -27,17 +27,13 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/mod v0.24.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250227231956-55c901821b1e
-	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gorm v1.24.5
 )
 
 require (
 	github.com/alecthomas/repr v0.4.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/k0kubun/pp/v3 v3.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
@@ -51,4 +47,5 @@ require (
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250313205543-e70fdf4c4cb4 // indirect
+	google.golang.org/grpc v1.71.0 // indirect
 )

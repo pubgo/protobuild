@@ -15,7 +15,7 @@ import (
 	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/strutil"
-	"github.com/pubgo/protobuild/internal/modutil"
+	"github.com/pubgo/protobuild/pkg/modutil"
 	"gopkg.in/yaml.v3"
 )
 
