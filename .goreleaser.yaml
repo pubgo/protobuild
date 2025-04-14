@@ -1,5 +1,5 @@
 builds:
-  - main: ./cmd/protobuild/build/main.go
+  - main: ./main.go
     id: protobuild
     binary: protobuild
     skip: false
@@ -7,20 +7,8 @@ builds:
       - linux
       - darwin
       - windows
-    goarch:
-      - amd64
     ldflags:
       - -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
-  - main: ./cmd/protoc-gen-retag/main.go
-    id: protoc-gen-retag
-    binary: protoc-gen-retag
-    skip: false
-    goos:
-      - linux
-      - darwin
-      - windows
-    goarch:
-      - amd64
 archives:
   - name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
     format: binary
