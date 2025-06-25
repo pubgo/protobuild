@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	linters "github.com/pubgo/protobuild/cmd/linter"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -51,6 +52,7 @@ const (
 
 func Main() *cli.Command {
 	var force bool
+	cliArgs, flags := linters.NewCli()
 	app := &cli.Command{
 		Name:                  "protobuf",
 		Usage:                 "protobuf generation, configuration and management",
@@ -518,6 +520,17 @@ func Main() *cli.Command {
 						assert.Must(shutil.Shell("go", "install", plg).Run())
 					}
 					return nil
+				},
+			},
+			&cli.Command{
+				Name:  "lint",
+				Usage: "lint protobuf",
+				Flags: flags,
+				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
+					return ctx, parseConfig()
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					return linters.Linter(cliArgs, globalCfg.Linters, nil)
 				},
 			},
 		},

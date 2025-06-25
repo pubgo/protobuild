@@ -1,18 +1,4 @@
-// Copyright 2019 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 		https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package main
+package linters
 
 import (
 	"encoding/json"
@@ -24,15 +10,14 @@ import (
 
 	"github.com/googleapis/api-linter/lint"
 	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/spf13/pflag"
+	"github.com/pubgo/protobuild/internal/typex"
+	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 )
 
-type cliArgs struct {
-	ConfigPath                string
+type CliArgs struct {
 	FormatType                string
 	ProtoImportPaths          []string
-	ProtoFiles                []string
 	EnabledRules              []string
 	DisabledRules             []string
 	ListRulesFlag             bool
@@ -40,77 +25,77 @@ type cliArgs struct {
 	IgnoreCommentDisablesFlag bool
 }
 
-// ExitForLintFailure indicates that a problem was found during linting.
-//
-//lint:ignore ST1012 modifying this variable name is a breaking change.
-var ExitForLintFailure = errors.New("found problems during linting")
+func NewCli() (*CliArgs, typex.Flags) {
+	var cliArgs CliArgs
 
-func newCli(args []string) *cliArgs {
-	// Define flag variables.
-	var cfgFlag string
-	var fmtFlag string
-	var protoImportFlag []string
-	var ruleEnableFlag []string
-	var ruleDisableFlag []string
-	var listRulesFlag bool
-	var debugFlag bool
-	var ignoreCommentDisablesFlag bool
+	return &cliArgs, typex.Flags{
+		&cli.BoolFlag{
+			Name:        "ignore-comment-disables",
+			Usage:       "If set to true, disable comments will be ignored.\nThis is helpful when strict enforcement of AIPs are necessary and\nproto definitions should not be able to disable checks.",
+			Value:       false,
+			Destination: &cliArgs.IgnoreCommentDisablesFlag,
+		},
 
-	// Register flag variables.
-	fs := pflag.NewFlagSet("api-linter", pflag.ExitOnError)
-	fs.StringVar(&cfgFlag, "config", "", "The linter config file.")
-	fs.StringVar(&fmtFlag, "output-format", "", "The format of the linting results.\nSupported formats include \"yaml\", \"json\",\"github\" and \"summary\" table.\nYAML is the default.")
-	fs.StringArrayVarP(&protoImportFlag, "proto-path", "I", nil, "The folder for searching proto imports.\nMay be specified multiple times; directories will be searched in order.\nThe current working directory is always used.")
-	fs.StringArrayVar(&ruleEnableFlag, "enable-rule", nil, "Enable a rule with the given name.\nMay be specified multiple times.")
-	fs.StringArrayVar(&ruleDisableFlag, "disable-rule", nil, "Disable a rule with the given name.\nMay be specified multiple times.")
-	fs.BoolVar(&listRulesFlag, "list-rules", false, "Print the rules and exit.  Honors the output-format flag.")
-	fs.BoolVar(&debugFlag, "debug", false, "Run in debug mode. Panics will print stack.")
-	fs.BoolVar(&ignoreCommentDisablesFlag, "ignore-comment-disables", false, "If set to true, disable comments will be ignored.\nThis is helpful when strict enforcement of AIPs are necessary and\nproto definitions should not be able to disable checks.")
+		&cli.BoolFlag{
+			Name:        "debug",
+			Usage:       "Run in debug mode. Panics will print stack.",
+			Value:       false,
+			Destination: &cliArgs.DebugFlag,
+		},
 
-	// Parse flags.
-	err := fs.Parse(args)
-	if err != nil {
-		panic(err)
+		&cli.BoolFlag{
+			Name:        "list-rules",
+			Usage:       "Print the rules and exit.  Honors the output-format flag.",
+			Value:       false,
+			Destination: &cliArgs.ListRulesFlag,
+		},
+
+		&cli.StringFlag{
+			Name:        "output-format",
+			Usage:       "The format of the linting results.\nSupported formats include \"yaml\", \"json\",\"github\" and \"summary\" table.\nYAML is the default.",
+			Aliases:     []string{"f"},
+			Value:       "",
+			Destination: &cliArgs.FormatType,
+		},
+
+		&cli.StringSliceFlag{
+			Name:        "proto-path",
+			Usage:       "The folder for searching proto imports.\\nMay be specified multiple times; directories will be searched in order.\\nThe current working directory is always used.",
+			Aliases:     []string{"I"},
+			Value:       nil,
+			Destination: &cliArgs.ProtoImportPaths,
+		},
+
+		&cli.StringSliceFlag{
+			Name:        "enable-rule",
+			Usage:       "Enable a rule with the given name.\nMay be specified multiple times.",
+			Value:       nil,
+			Destination: &cliArgs.EnabledRules,
+		},
+
+		&cli.StringSliceFlag{
+			Name:        "disable-rule",
+			Usage:       "Disable a rule with the given name.\nMay be specified multiple times.",
+			Value:       nil,
+			Destination: &cliArgs.DisabledRules,
+		},
 	}
 
-	return &cliArgs{
-		ConfigPath:                cfgFlag,
-		FormatType:                fmtFlag,
-		ProtoImportPaths:          protoImportFlag,
-		EnabledRules:              ruleEnableFlag,
-		DisabledRules:             ruleDisableFlag,
-		ProtoFiles:                fs.Args(),
-		ListRulesFlag:             listRulesFlag,
-		DebugFlag:                 debugFlag,
-		IgnoreCommentDisablesFlag: ignoreCommentDisablesFlag,
-	}
 }
 
-func linter(c *cliArgs, rules lint.RuleRegistry, configs lint.Configs) error {
+func Linter(c *CliArgs, configs lint.Configs, protoFiles []string) error {
 	if c.ListRulesFlag {
 		return outputRules(c.FormatType)
 	}
 
 	// Pre-check if there are files to lint.
-	if len(c.ProtoFiles) == 0 {
+	if len(protoFiles) == 0 {
 		return fmt.Errorf("no file to lint")
 	}
-	// Read linter config and append it to the default.
-	if c.ConfigPath != "" {
-		config, err := lint.ReadConfigsFromFile(c.ConfigPath)
-		if err != nil {
-			return err
-		}
-		configs = append(configs, config...)
-	}
+
 	// Add configs for the enabled rules.
-	configs = append(configs, lint.Config{
-		EnabledRules: c.EnabledRules,
-	})
-	// Add configs for the disabled rules.
-	configs = append(configs, lint.Config{
-		DisabledRules: c.DisabledRules,
-	})
+	configs = append(configs, lint.Config{EnabledRules: c.EnabledRules})
+	configs = append(configs, lint.Config{DisabledRules: c.DisabledRules})
 
 	var errorsWithPos []protoparse.ErrorWithPos
 	var lock sync.Mutex
@@ -131,9 +116,8 @@ func linter(c *cliArgs, rules lint.RuleRegistry, configs lint.Configs) error {
 	var err error
 	// Resolve file absolute paths to relative ones.
 	// Using supplied import paths first.
-	protoFiles := c.ProtoFiles
 	if len(c.ProtoImportPaths) > 0 {
-		protoFiles, err = protoparse.ResolveFilenames(c.ProtoImportPaths, c.ProtoFiles...)
+		protoFiles, err = protoparse.ResolveFilenames(c.ProtoImportPaths, protoFiles...)
 		if err != nil {
 			return err
 		}
@@ -164,8 +148,8 @@ func linter(c *cliArgs, rules lint.RuleRegistry, configs lint.Configs) error {
 		return err
 	}
 
-	// Create a linter to lint the file descriptors.
-	l := lint.New(rules, configs, lint.Debug(c.DebugFlag), lint.IgnoreCommentDisables(c.IgnoreCommentDisablesFlag))
+	// Create a Linter to lint the file descriptors.
+	l := lint.New(globalRules, configs, lint.Debug(c.DebugFlag), lint.IgnoreCommentDisables(c.IgnoreCommentDisablesFlag))
 	results, err := l.LintProtos(fd...)
 	if err != nil {
 		return err

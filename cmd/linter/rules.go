@@ -1,11 +1,23 @@
-package main
+package linters
 
 import (
+	"github.com/googleapis/api-linter/rules"
+	"log"
 	"os"
 	"sort"
 
 	"github.com/googleapis/api-linter/lint"
 )
+
+var (
+	globalRules = lint.NewRuleRegistry()
+)
+
+func init() {
+	if err := rules.Add(globalRules); err != nil {
+		log.Fatalf("error when registering rules: %v", err)
+	}
+}
 
 type (
 	listedRule struct {
