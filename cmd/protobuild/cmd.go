@@ -19,6 +19,7 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
+	linters "github.com/pubgo/protobuild/cmd/linters"
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
@@ -51,6 +52,7 @@ const (
 
 func Main() *cli.Command {
 	var force bool
+	cliArgs, flags := linters.NewCli()
 	app := &cli.Command{
 		Name:                  "protobuf",
 		Usage:                 "protobuf generation, configuration and management",
@@ -65,7 +67,7 @@ func Main() *cli.Command {
 				Usage:       "protobuf config path",
 				Value:       protoCfg,
 				Hidden:      false,
-				Persistent:  true,
+				Local:       true,
 				Destination: &protoCfg,
 			},
 		},
@@ -135,9 +137,11 @@ func Main() *cli.Command {
 		},
 		Commands: typex.Commands{
 			&cli.Command{
-				Name:   "gen",
-				Usage:  "编译 protobuf 文件",
-				Before: func(ctx context.Context, c *cli.Command) error { return parseConfig() },
+				Name:  "gen",
+				Usage: "编译 protobuf 文件",
+				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
+					return ctx, parseConfig()
+				},
 				Action: func(ctx context.Context, c *cli.Command) error {
 					defer recovery.Exit()
 
@@ -313,8 +317,8 @@ func Main() *cli.Command {
 			&cli.Command{
 				Name:  "vendor",
 				Usage: "同步项目 protobuf 依赖到 .proto 目录中",
-				Before: func(ctx context.Context, c *cli.Command) error {
-					return parseConfig()
+				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
+					return ctx, parseConfig()
 				},
 				Flags: typex.Flags{
 					&cli.BoolFlag{
@@ -480,8 +484,8 @@ func Main() *cli.Command {
 			&cli.Command{
 				Name:  "install",
 				Usage: "install protobuf plugin",
-				Before: func(ctx context.Context, c *cli.Command) error {
-					return parseConfig()
+				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
+					return ctx, parseConfig()
 				},
 				Flags: typex.Flags{
 					&cli.BoolFlag{
@@ -515,6 +519,55 @@ func Main() *cli.Command {
 						slog.Info("install command", slog.Any("name", plg))
 						assert.Must(shutil.Shell("go", "install", plg).Run())
 					}
+					return nil
+				},
+			},
+			&cli.Command{
+				Name:  "lint",
+				Usage: "lint protobuf https://linter.aip.dev/rules/",
+				Flags: flags,
+				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
+					return ctx, parseConfig()
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					var protoPaths []string
+					for i := range globalCfg.Root {
+						if pathutil.IsNotExist(globalCfg.Root[i]) {
+							log.Printf("file %s not found", globalCfg.Root[i])
+							continue
+						}
+
+						assert.Must(filepath.WalkDir(globalCfg.Root[i], func(path string, d fs.DirEntry, err error) error {
+							if err != nil {
+								return err
+							}
+
+							if d.IsDir() {
+								protoPaths = append(protoPaths, path)
+							}
+
+							return nil
+						}))
+					}
+
+					protoPaths = lo.Uniq(protoPaths)
+					for _, path := range protoPaths {
+						// check contains proto file in dir
+						protoFiles := lo.Map(assert.Must1(os.ReadDir(path)), func(item os.DirEntry, index int) string {
+							return filepath.Join(path, item.Name())
+						})
+						protoFiles = lo.Filter(protoFiles, func(item string, index int) bool { return strings.HasSuffix(item, ".proto") })
+						if len(protoFiles) == 0 {
+							continue
+						}
+
+						includes := lo.Uniq(append(globalCfg.Includes, globalCfg.Vendor))
+						err := linters.Linter(cliArgs, globalCfg.Linter, includes, protoFiles)
+						if err != nil {
+							return err
+						}
+					}
+
 					return nil
 				},
 			},

@@ -9,6 +9,7 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
   - main: ./cmd/protoc-gen-retag/main.go
@@ -21,6 +22,7 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
 archives:
   - name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
     format: binary

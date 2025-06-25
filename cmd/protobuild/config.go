@@ -1,5 +1,9 @@
 package protobuild
 
+import (
+	"github.com/pubgo/protobuild/cmd/linters"
+)
+
 type Config struct {
 	Checksum   string         `yaml:"checksum,omitempty" hash:"-"`
 	Vendor     string         `yaml:"vendor,omitempty"`
@@ -15,7 +19,8 @@ type Config struct {
 	Depends    []*depend `yaml:"deps,omitempty"`
 	Plugins    []*plugin `yaml:"plugins,omitempty" hash:"-"`
 	changed    bool
-	Installers []string `yaml:"installers,omitempty" hash:"-"`
+	Installers []string             `yaml:"installers,omitempty" hash:"-"`
+	Linter     linters.LinterConfig `yaml:"linter,omitempty" hash:"-"`
 }
 
 type basePluginCfg struct {
