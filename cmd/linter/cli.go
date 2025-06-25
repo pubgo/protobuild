@@ -28,7 +28,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type cli struct {
+type cliArgs struct {
 	ConfigPath                string
 	FormatType                string
 	ProtoImportPaths          []string
@@ -45,7 +45,7 @@ type cli struct {
 //lint:ignore ST1012 modifying this variable name is a breaking change.
 var ExitForLintFailure = errors.New("found problems during linting")
 
-func newCli(args []string) *cli {
+func newCli(args []string) *cliArgs {
 	// Define flag variables.
 	var cfgFlag string
 	var fmtFlag string
@@ -73,7 +73,7 @@ func newCli(args []string) *cli {
 		panic(err)
 	}
 
-	return &cli{
+	return &cliArgs{
 		ConfigPath:                cfgFlag,
 		FormatType:                fmtFlag,
 		ProtoImportPaths:          protoImportFlag,
@@ -86,7 +86,7 @@ func newCli(args []string) *cli {
 	}
 }
 
-func (c *cli) lint(rules lint.RuleRegistry, configs lint.Configs) error {
+func (c *cliArgs) lint(rules lint.RuleRegistry, configs lint.Configs) error {
 	if c.ListRulesFlag {
 		return outputRules(c.FormatType)
 	}

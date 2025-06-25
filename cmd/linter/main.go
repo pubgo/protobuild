@@ -17,12 +17,23 @@
 package main
 
 import (
-	"log"
-	"os"
-
+	"context"
 	"github.com/googleapis/api-linter/lint"
 	"github.com/googleapis/api-linter/rules"
+	"github.com/urfave/cli/v3"
+	"log"
+	"os"
 )
+
+func NewCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "lint",
+		Usage: "lint protobuf",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return nil
+		},
+	}
+}
 
 var (
 	globalRules = lint.NewRuleRegistry()
