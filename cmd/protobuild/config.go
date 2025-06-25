@@ -1,5 +1,7 @@
 package protobuild
 
+import "github.com/googleapis/api-linter/lint"
+
 type Config struct {
 	Checksum   string         `yaml:"checksum,omitempty" hash:"-"`
 	Vendor     string         `yaml:"vendor,omitempty"`
@@ -15,7 +17,15 @@ type Config struct {
 	Depends    []*depend `yaml:"deps,omitempty"`
 	Plugins    []*plugin `yaml:"plugins,omitempty" hash:"-"`
 	changed    bool
-	Installers []string `yaml:"installers,omitempty" hash:"-"`
+	Installers []string     `yaml:"installers,omitempty" hash:"-"`
+	Linters    lint.Configs `yaml:"linters,omitempty" hash:"-"`
+}
+
+type LinterConfig struct {
+	IncludedPaths []string `json:"included_paths" yaml:"included_paths"`
+	ExcludedPaths []string `json:"excluded_paths" yaml:"excluded_paths"`
+	EnabledRules  []string `json:"enabled_rules" yaml:"enabled_rules"`
+	DisabledRules []string `json:"disabled_rules" yaml:"disabled_rules"`
 }
 
 type basePluginCfg struct {

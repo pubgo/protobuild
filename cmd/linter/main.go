@@ -25,8 +25,7 @@ import (
 )
 
 var (
-	globalRules   = lint.NewRuleRegistry()
-	globalConfigs = defaultConfigs()
+	globalRules = lint.NewRuleRegistry()
 )
 
 func init() {
@@ -43,7 +42,7 @@ func main() {
 
 func runCLI(args []string) error {
 	c := newCli(args)
-	return c.lint(globalRules, globalConfigs)
+	return c.lint(globalRules, nil)
 }
 
 // Enable all rules by default.

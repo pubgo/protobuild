@@ -23,23 +23,16 @@ import (
 	"sync"
 
 	"github.com/googleapis/api-linter/lint"
-	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/spf13/pflag"
-	"google.golang.org/protobuf/proto"
-	dpb "google.golang.org/protobuf/types/descriptorpb"
 	"gopkg.in/yaml.v3"
 )
 
 type cli struct {
 	ConfigPath                string
 	FormatType                string
-	OutputPath                string
-	ExitStatusOnLintFailure   bool
-	VersionFlag               bool
 	ProtoImportPaths          []string
 	ProtoFiles                []string
-	ProtoDescPath             []string
 	EnabledRules              []string
 	DisabledRules             []string
 	ListRulesFlag             bool
@@ -56,11 +49,7 @@ func newCli(args []string) *cli {
 	// Define flag variables.
 	var cfgFlag string
 	var fmtFlag string
-	var outFlag string
-	var setExitStatusOnLintFailure bool
-	var versionFlag bool
 	var protoImportFlag []string
-	var protoDescFlag []string
 	var ruleEnableFlag []string
 	var ruleDisableFlag []string
 	var listRulesFlag bool
@@ -71,11 +60,7 @@ func newCli(args []string) *cli {
 	fs := pflag.NewFlagSet("api-linter", pflag.ExitOnError)
 	fs.StringVar(&cfgFlag, "config", "", "The linter config file.")
 	fs.StringVar(&fmtFlag, "output-format", "", "The format of the linting results.\nSupported formats include \"yaml\", \"json\",\"github\" and \"summary\" table.\nYAML is the default.")
-	fs.StringVarP(&outFlag, "output-path", "o", "", "The output file path.\nIf not given, the linting results will be printed out to STDOUT.")
-	fs.BoolVar(&setExitStatusOnLintFailure, "set-exit-status", false, "Return exit status 1 when lint errors are found.")
-	fs.BoolVar(&versionFlag, "version", false, "Print version and exit.")
 	fs.StringArrayVarP(&protoImportFlag, "proto-path", "I", nil, "The folder for searching proto imports.\nMay be specified multiple times; directories will be searched in order.\nThe current working directory is always used.")
-	fs.StringArrayVar(&protoDescFlag, "descriptor-set-in", nil, "The file containing a FileDescriptorSet for searching proto imports.\nMay be specified multiple times.")
 	fs.StringArrayVar(&ruleEnableFlag, "enable-rule", nil, "Enable a rule with the given name.\nMay be specified multiple times.")
 	fs.StringArrayVar(&ruleDisableFlag, "disable-rule", nil, "Disable a rule with the given name.\nMay be specified multiple times.")
 	fs.BoolVar(&listRulesFlag, "list-rules", false, "Print the rules and exit.  Honors the output-format flag.")
@@ -91,14 +76,10 @@ func newCli(args []string) *cli {
 	return &cli{
 		ConfigPath:                cfgFlag,
 		FormatType:                fmtFlag,
-		OutputPath:                outFlag,
-		ExitStatusOnLintFailure:   setExitStatusOnLintFailure,
 		ProtoImportPaths:          protoImportFlag,
-		ProtoDescPath:             protoDescFlag,
 		EnabledRules:              ruleEnableFlag,
 		DisabledRules:             ruleDisableFlag,
 		ProtoFiles:                fs.Args(),
-		VersionFlag:               versionFlag,
 		ListRulesFlag:             listRulesFlag,
 		DebugFlag:                 debugFlag,
 		IgnoreCommentDisablesFlag: ignoreCommentDisablesFlag,
@@ -106,11 +87,6 @@ func newCli(args []string) *cli {
 }
 
 func (c *cli) lint(rules lint.RuleRegistry, configs lint.Configs) error {
-	// Print version and exit if asked.
-	if c.VersionFlag {
-		return nil
-	}
-
 	if c.ListRulesFlag {
 		return outputRules(c.FormatType)
 	}
@@ -135,24 +111,13 @@ func (c *cli) lint(rules lint.RuleRegistry, configs lint.Configs) error {
 	configs = append(configs, lint.Config{
 		DisabledRules: c.DisabledRules,
 	})
-	// Prepare proto import lookup.
-	fs, err := loadFileDescriptors(c.ProtoDescPath...)
-	if err != nil {
-		return err
-	}
-	lookupImport := func(name string) (*desc.FileDescriptor, error) {
-		if f, found := fs[name]; found {
-			return f, nil
-		}
-		return nil, fmt.Errorf("%q is not found", name)
-	}
+
 	var errorsWithPos []protoparse.ErrorWithPos
 	var lock sync.Mutex
 	// Parse proto files into `protoreflect` file descriptors.
 	p := protoparse.Parser{
 		ImportPaths:           append(c.ProtoImportPaths, "."),
 		IncludeSourceCodeInfo: true,
-		LookupImport:          lookupImport,
 		ErrorReporter: func(errorWithPos protoparse.ErrorWithPos) error {
 			// Protoparse isn't concurrent right now but just to be safe for the future.
 			lock.Lock()
@@ -162,6 +127,8 @@ func (c *cli) lint(rules lint.RuleRegistry, configs lint.Configs) error {
 			return nil
 		},
 	}
+
+	var err error
 	// Resolve file absolute paths to relative ones.
 	// Using supplied import paths first.
 	protoFiles := c.ProtoFiles
@@ -207,14 +174,6 @@ func (c *cli) lint(rules lint.RuleRegistry, configs lint.Configs) error {
 	// Determine the output for writing the results.
 	// Stdout is the default output.
 	w := os.Stdout
-	if c.OutputPath != "" {
-		var err error
-		w, err = os.Create(c.OutputPath)
-		if err != nil {
-			return err
-		}
-		defer w.Close()
-	}
 
 	// Determine the format for printing the results.
 	// YAML format is the default.
@@ -229,46 +188,7 @@ func (c *cli) lint(rules lint.RuleRegistry, configs lint.Configs) error {
 		return err
 	}
 
-	// Return error on lint failure which subsequently
-	// exits with a non-zero status code
-	if c.ExitStatusOnLintFailure && anyProblems(results) {
-		return ExitForLintFailure
-	}
-
 	return nil
-}
-
-func anyProblems(results []lint.Response) bool {
-	for i := range results {
-		if len(results[i].Problems) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
-func loadFileDescriptors(filePaths ...string) (map[string]*desc.FileDescriptor, error) {
-	fds := []*dpb.FileDescriptorProto{}
-	for _, filePath := range filePaths {
-		fs, err := readFileDescriptorSet(filePath)
-		if err != nil {
-			return nil, err
-		}
-		fds = append(fds, fs.GetFile()...)
-	}
-	return desc.CreateFileDescriptors(fds)
-}
-
-func readFileDescriptorSet(filePath string) (*dpb.FileDescriptorSet, error) {
-	in, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-	fs := &dpb.FileDescriptorSet{}
-	if err := proto.Unmarshal(in, fs); err != nil {
-		return nil, err
-	}
-	return fs, nil
 }
 
 var outputFormatFuncs = map[string]formatFunc{
