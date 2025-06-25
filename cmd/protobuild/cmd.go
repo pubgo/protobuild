@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	linters "github.com/pubgo/protobuild/cmd/linter"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -20,6 +19,7 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
+	linters "github.com/pubgo/protobuild/cmd/linters"
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
@@ -524,13 +524,51 @@ func Main() *cli.Command {
 			},
 			&cli.Command{
 				Name:  "lint",
-				Usage: "lint protobuf",
+				Usage: "lint protobuf https://linter.aip.dev/rules/",
 				Flags: flags,
 				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
 					return ctx, parseConfig()
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					return linters.Linter(cliArgs, globalCfg.Linters, nil)
+					var protoPaths []string
+					for i := range globalCfg.Root {
+						if pathutil.IsNotExist(globalCfg.Root[i]) {
+							log.Printf("file %s not found", globalCfg.Root[i])
+							continue
+						}
+
+						assert.Must(filepath.WalkDir(globalCfg.Root[i], func(path string, d fs.DirEntry, err error) error {
+							if err != nil {
+								return err
+							}
+
+							if d.IsDir() {
+								protoPaths = append(protoPaths, path)
+							}
+
+							return nil
+						}))
+					}
+
+					protoPaths = lo.Uniq(protoPaths)
+					for _, path := range protoPaths {
+						// check contains proto file in dir
+						protoFiles := lo.Map(assert.Must1(os.ReadDir(path)), func(item os.DirEntry, index int) string {
+							return filepath.Join(path, item.Name())
+						})
+						protoFiles = lo.Filter(protoFiles, func(item string, index int) bool { return strings.HasSuffix(item, ".proto") })
+						if len(protoFiles) == 0 {
+							continue
+						}
+
+						includes := lo.Uniq(append(globalCfg.Includes, globalCfg.Vendor))
+						err := linters.Linter(cliArgs, globalCfg.Linter, includes, protoFiles)
+						if err != nil {
+							return err
+						}
+					}
+
+					return nil
 				},
 			},
 		},

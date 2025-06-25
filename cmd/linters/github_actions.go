@@ -3,6 +3,8 @@ package linters
 import (
 	"bytes"
 	"fmt"
+	"github.com/samber/lo"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/api-linter/lint"
@@ -17,6 +19,7 @@ func formatGitHubActionOutput(responses []lint.Response) []byte {
 			// ::error file={name},line={line},endLine={endLine},title={title}::{message}
 			// https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message
 
+			fmt.Println(lo.Must(filepath.Abs(response.FilePath)))
 			fmt.Fprintf(&buf, "::error file=%s", response.FilePath)
 			if problem.Location != nil {
 				// Some findings are *line level* and only have start positions but no
