@@ -3,9 +3,9 @@ module github.com/pubgo/protobuild
 go 1.24
 
 require (
-	github.com/a8m/envsubst v1.3.0
+	github.com/a8m/envsubst v1.4.3
 	github.com/bufbuild/protocompile v0.14.1
-	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
+	github.com/cnf/structhash v0.0.0-20250313080605-df4c6cc74a9a
 	github.com/dave/jennifer v1.6.0
 	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/emicklei/proto v1.11.0
@@ -24,7 +24,7 @@ require (
 	github.com/searKing/golang/go v1.2.115
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/pflag v1.0.6
-	github.com/urfave/cli/v3 v3.0.0-alpha9.0.20240717192922-127cf54fac9f
+	github.com/urfave/cli/v3 v3.3.8
 	github.com/yuin/goldmark v1.4.12
 	go.uber.org/multierr v1.11.0
 	golang.org/x/mod v0.17.0
