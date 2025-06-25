@@ -86,7 +86,7 @@ func newCli(args []string) *cliArgs {
 	}
 }
 
-func (c *cliArgs) lint(rules lint.RuleRegistry, configs lint.Configs) error {
+func linter(c *cliArgs, rules lint.RuleRegistry, configs lint.Configs) error {
 	if c.ListRulesFlag {
 		return outputRules(c.FormatType)
 	}

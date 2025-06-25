@@ -6,7 +6,7 @@ require (
 	github.com/a8m/envsubst v1.4.3
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/cnf/structhash v0.0.0-20250313080605-df4c6cc74a9a
-	github.com/dave/jennifer v1.6.0
+	github.com/dave/jennifer v1.7.0
 	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/emicklei/proto v1.11.0
 	github.com/emicklei/proto-contrib v0.11.0
@@ -19,7 +19,7 @@ require (
 	github.com/jhump/protoreflect v1.17.0
 	github.com/lyft/protoc-gen-star/v2 v2.0.2-alpha
 	github.com/open2b/scriggo v0.56.1
-	github.com/pubgo/funk v0.5.49
+	github.com/pubgo/funk v0.5.65
 	github.com/samber/lo v1.47.0
 	github.com/searKing/golang/go v1.2.115
 	github.com/spf13/cast v1.5.0
@@ -41,12 +41,12 @@ require (
 	github.com/alecthomas/repr v0.4.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
-	github.com/goccy/go-json v0.10.0 // indirect
+	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/k0kubun/pp/v3 v3.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/phuslu/goid v1.0.0 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect

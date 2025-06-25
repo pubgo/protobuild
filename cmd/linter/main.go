@@ -53,7 +53,7 @@ func main() {
 
 func runCLI(args []string) error {
 	c := newCli(args)
-	return c.lint(globalRules, nil)
+	return linter(c, globalRules, nil)
 }
 
 // Enable all rules by default.
