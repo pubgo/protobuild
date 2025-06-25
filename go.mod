@@ -1,6 +1,6 @@
 module github.com/pubgo/protobuild
 
-go 1.22.6
+go 1.24
 
 require (
 	github.com/a8m/envsubst v1.3.0
