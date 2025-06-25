@@ -23,7 +23,6 @@ require (
 	github.com/samber/lo v1.47.0
 	github.com/searKing/golang/go v1.2.115
 	github.com/spf13/cast v1.5.0
-	github.com/spf13/pflag v1.0.6
 	github.com/urfave/cli/v3 v3.3.8
 	github.com/yuin/goldmark v1.4.12
 	go.uber.org/multierr v1.11.0
