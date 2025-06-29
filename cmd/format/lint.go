@@ -5,3 +5,4 @@ package format
 // clang-format -i -style=google proto/errorpb/errors.proto
 // https://github.com/googleapis/api-linter
 // buf format
+// https://github.com/emicklei/proto-contrib/tree/master/cmd/protofmt
