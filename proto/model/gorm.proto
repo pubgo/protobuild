@@ -1,11 +1,12 @@
 syntax = "proto3";
 
 package gorm;
-option go_package = "github.com/pubgo/protobuild/pkg/orm;ormpb";
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";
+import "google/protobuf/timestamp.proto";
 import "retag/retag.proto";
+
+option go_package = "github.com/pubgo/protobuild/pkg/orm;ormpb";
 
 extend google.protobuf.FieldOptions {
   GormTag field = 100001;
@@ -61,9 +62,10 @@ message GormTag {
 }
 
 message Timestamp {
-  google.protobuf.Timestamp timestamp = 1[
-    (retag.tags) = {name:"gorm",value:"-:all"}
-  ];
+  google.protobuf.Timestamp timestamp = 1 [(retag.tags) = {
+    name: "gorm"
+    value: "-:all"
+  }];
 }
 
 message protobuf {

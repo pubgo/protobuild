@@ -1,12 +1,12 @@
 package linters
 
 import (
-	"github.com/googleapis/api-linter/rules"
 	"log"
 	"os"
 	"sort"
 
 	"github.com/googleapis/api-linter/lint"
+	"github.com/googleapis/api-linter/rules"
 )
 
 var (

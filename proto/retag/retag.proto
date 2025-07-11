@@ -7,15 +7,15 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/pubgo/protobuild/pkg/retag;retagpb";
 
 message Tag {
-    string name = 1;
-    string value = 2;
+  string name = 1;
+  string value = 2;
 }
 
 // Tags are applied at the field level
 extend google.protobuf.FieldOptions {
-    repeated Tag tags = 100000;
+  repeated Tag tags = 100000;
 }
 
 extend google.protobuf.OneofOptions {
-    repeated Tag oneof_tags = 100000;
+  repeated Tag oneof_tags = 100000;
 }

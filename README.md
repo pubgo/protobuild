@@ -7,12 +7,20 @@ go install github.com/pubgo/protobuild@latest
 
 ## example
 
-[protobuf.yaml](https://github.com/pubgo/lava/blob/master/internal/example/grpc/protobuf.yaml)
+[protobuf.yaml](./protobuf.test.yaml)
 
 ```yaml
 protobuild -f protobuf.yaml vendor
 protobuild -f protobuf.yaml gen
 ```
+
+## lint
+
+    protobuild lint -c protobuf.test.yaml
+
+## format
+
+     protobuild format -c protobuf.test.yaml
 
 ## protoc-gen-[plugin]
 

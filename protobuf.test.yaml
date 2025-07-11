@@ -17,3 +17,15 @@ plugins:
       - paths=source_relative
       - output=pkg
   - name: test
+linter:
+  rules:
+    included_paths: []
+    excluded_paths: []
+    enabled_rules:
+      - core::0131::http-method
+      - core::0131::http-body
+      - core::0235::plural-method-name
+    disabled_rules:
+      - all
+  format_type: yaml
+  ignore_comment_disables_flag: false
