@@ -30,9 +30,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 	yaml "gopkg.in/yaml.v3"
-
-	_ "github.com/samber/lo"
-	_ "golang.org/x/mod/module"
 )
 
 var (
@@ -334,8 +331,8 @@ func Main() *cli.Command {
 
 					var changed bool
 
-					// 解析go.mod并获取所有pkg版本
-					versions := modutil.LoadVersions()
+					// 通过 go mod graph 获取每个 pkg 最大版本
+					versions := modutil.LoadVersionGraph()
 					for i, dep := range globalCfg.Depends {
 						pathVersion := strings.SplitN(dep.Url, "@", 2)
 						if len(pathVersion) == 2 {
@@ -357,7 +354,7 @@ func Main() *cli.Command {
 						v := strutil.FirstFnNotEmpty(func() string {
 							return versions[url]
 						}, func() string {
-							return generic.DePtr(dep.Version)
+							return generic.FromPtr(dep.Version)
 						}, func() string {
 							// go.mod中version不存在, 并且protobuf.yaml也没有指定
 							// go pkg缓存
