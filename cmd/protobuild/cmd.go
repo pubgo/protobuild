@@ -19,6 +19,7 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/strutil"
+	"github.com/pubgo/protobuild/cmd/formatcmd"
 	linters "github.com/pubgo/protobuild/cmd/linters"
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
@@ -568,6 +569,7 @@ func Main() *cli.Command {
 					return nil
 				},
 			},
+			formatcmd.New("format"),
 		},
 	}
 	return app

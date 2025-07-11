@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/samber/lo"
 	"os"
 	"strings"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	"github.com/googleapis/api-linter/lint"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/pubgo/protobuild/internal/typex"
+	"github.com/samber/lo"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 )

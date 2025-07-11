@@ -143,7 +143,6 @@ message StringArrayCondition {
   bool is_negative = 4;
 }
 
-
 // NumberArrayCondition represents a condition with string arrays, e.g. field in [1, 5, 7]
 // field_path is a reference to a value of a resource.
 // is_negative is set to true if the condition is negated
@@ -193,7 +192,6 @@ message PageInfo {
   // A null value indicates no more pages.
   int32 offset = 3;
 }
-
 
 // Searching represents search by.
 message Searching {
