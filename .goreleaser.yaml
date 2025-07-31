@@ -10,8 +10,6 @@ builds:
     goarch:
       - amd64
       - arm64
-    ldflags:
-      - -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
   - main: ./cmd/protoc-gen-retag/main.go
     id: protoc-gen-retag
     binary: protoc-gen-retag
