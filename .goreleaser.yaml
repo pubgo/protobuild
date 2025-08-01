@@ -11,7 +11,10 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -X 'github.com/pubgo/protobuild/version.Version={{ .Version }}'
+      - -X 'github.com/pubgo/funk/version.version=v{{ .Version }}'
+      - -X 'github.com/pubgo/funk/version.project=protobuild'
+      - -X 'github.com/pubgo/funk/version.buildTime={{ .CommitDate }}'
+      - -X 'github.com/pubgo/funk/version.commitID={{ .ShortCommit }}'
   - main: ./cmd/protoc-gen-retag/main.go
     id: protoc-gen-retag
     binary: protoc-gen-retag
