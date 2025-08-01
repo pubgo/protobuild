@@ -28,5 +28,5 @@ builds:
       - arm64
 archives:
   - name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
-    format: binary
+    format: tar.gz
 report_sizes: true
