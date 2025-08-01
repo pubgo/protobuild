@@ -578,7 +578,6 @@ func Main() *cli.Command {
 					defer recovery.Exit()
 					fmt.Printf("Project:   %s\n", running.Project)
 					fmt.Printf("Version:   %s\n", running.Version)
-					fmt.Printf("Release:   %s\n", version.Version)
 					fmt.Printf("GitCommit: %s\n", running.CommitID)
 					return nil
 				},
