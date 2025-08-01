@@ -18,6 +18,7 @@ import (
 	"github.com/pubgo/funk/log"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
+	"github.com/pubgo/funk/running"
 	"github.com/pubgo/funk/strutil"
 	"github.com/pubgo/protobuild/cmd/formatcmd"
 	linters "github.com/pubgo/protobuild/cmd/linters"
@@ -570,6 +571,18 @@ func Main() *cli.Command {
 				},
 			},
 			formatcmd.New("format"),
+			&cli.Command{
+				Name:  "version",
+				Usage: "version info",
+				Action: func(ctx context.Context, command *cli.Command) error {
+					defer recovery.Exit()
+					fmt.Printf("Project:   %s\n", running.Project)
+					fmt.Printf("Version:   %s\n", running.Version)
+					fmt.Printf("Release:   %s\n", version.Version)
+					fmt.Printf("GitCommit: %s\n", running.CommitID)
+					return nil
+				},
+			},
 		},
 	}
 	return app
