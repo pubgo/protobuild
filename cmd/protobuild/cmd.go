@@ -28,6 +28,7 @@ import (
 	"github.com/pubgo/protobuild/version"
 	"github.com/samber/lo"
 	cli "github.com/urfave/cli/v3"
+	"golang.org/x/term"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -41,7 +42,7 @@ var (
 	protoPluginCfg = "protobuf.plugin.yaml"
 	modPath        = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd            = assert.Exit1(os.Getwd())
-	logger         = log.GetLogger("proto-build")
+	logger         = log.GetLogger("protobuild")
 	// binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
@@ -76,6 +77,10 @@ func Main() *cli.Command {
 			}
 
 			file := os.Stdin
+			if term.IsTerminal(int(file.Fd())) {
+				return cli.ShowAppHelp(c)
+			}
+
 			fi := assert.Exit1(file.Stat())
 			if fi.Size() == 0 {
 				return cli.ShowAppHelp(c)
@@ -118,16 +123,16 @@ func Main() *cli.Command {
 				log.Printf("%#v\n", p)
 
 				if p.Shell != "" {
-					cccc := shutil.Shell(strings.TrimSpace(p.Shell))
-					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
-					assert.Must(cccc.Run())
+					cmd := shutil.Shell(strings.TrimSpace(p.Shell))
+					cmd.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cmd.Run())
 					break
 				}
 
 				if p.Docker != "" {
-					cccc := shutil.Shell("docker run -i --rm " + p.Docker)
-					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
-					assert.Must(cccc.Run())
+					cmd := shutil.Shell("docker run -i --rm " + p.Docker)
+					cmd.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cmd.Run())
 					break
 				}
 			}
@@ -590,12 +595,12 @@ func Main() *cli.Command {
 
 func copyFile(dstFilePath, srcFilePath string) (written int64, err error) {
 	srcFile, err := os.Open(srcFilePath)
-	defer srcFile.Close()
 	assert.Must(err, "打开源文件错误", srcFilePath)
+	defer srcFile.Close()
 
 	dstFile, err := os.Create(dstFilePath)
-	defer srcFile.Close()
 	assert.Must(err, "打开目标文件错误", dstFilePath)
+	defer srcFile.Close()
 
 	return io.Copy(dstFile, srcFile)
 }
