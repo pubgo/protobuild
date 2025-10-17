@@ -200,10 +200,11 @@ func Main() *cli.Command {
 
 						var doF = func(pluginCfg *Config, protoPath string) {
 							data := ""
-							base := fmt.Sprintf("protoc -I %s -I %s", pluginCfg.Vendor, pwd)
-							logger.Info().Msgf("includes=%q", pluginCfg.Includes)
-							for i := range pluginCfg.Includes {
-								base += fmt.Sprintf(" -I %s", pluginCfg.Includes[i])
+
+							includes := lo.Uniq(append(pluginCfg.Includes, pluginCfg.Vendor, pwd))
+							base := fmt.Sprintf("protoc")
+							for i := range includes {
+								base += fmt.Sprintf(" -I %s", includes[i])
 							}
 
 							reTagData := ""
