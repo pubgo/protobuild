@@ -304,6 +304,12 @@ plugins:
 - **macOS/Linux**: `~/.cache/protobuild/deps/`
 - **Go 模块**: 标准 Go 模块缓存 (`$GOPATH/pkg/mod`)
 
+## 文档
+
+- [配置示例](./docs/EXAMPLES.md) - 各种使用场景的详细配置示例
+- [多源依赖设计](./docs/MULTI_SOURCE_DEPS.md) - 多源依赖解析设计文档
+- [设计文档](./docs/DESIGN_CN.md) - 架构和设计文档
+
 ## 项目架构
 
 ```

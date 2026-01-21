@@ -322,6 +322,12 @@ protobuild
     └── template/       # Template utilities
 ```
 
+## Documentation
+
+- [Configuration Examples](./docs/EXAMPLES.md) - Detailed configuration examples for various use cases
+- [Multi-Source Dependencies](./docs/MULTI_SOURCE_DEPS.md) - Design document for multi-source dependency resolution
+- [Design Document](./docs/DESIGN.md) - Architecture and design documentation
+
 ## License
 
 [MIT License](LICENSE)
