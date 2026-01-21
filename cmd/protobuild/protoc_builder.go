@@ -135,14 +135,14 @@ func (c *ProtocCommand) buildPluginArgs(plg *plugin) string {
 		args.WriteString(fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, wrapperPath))
 	}
 
-	// Handle retag plugin specially
+	// Handle retag plugin specially - run after main compilation to modify generated files
 	if name == reTagPluginName {
-		opts = append(opts, "__out="+out)
 		args.WriteString(fmt.Sprintf(" --%s_out=%s", name, out))
-		args.WriteString(fmt.Sprintf(" --%s_opt=%s", name, strings.Join(opts, ",")))
-		if plg.Path != "" {
-			plgPath := assert.Must1(exec.LookPath(plg.Path))
-			args.WriteString(fmt.Sprintf(" --plugin=protoc-gen-%s=%s", name, plgPath))
+		if len(opts) > 0 {
+			filteredOpts := c.filterExcludedOpts(opts, plg.ExcludeOpts)
+			if len(filteredOpts) > 0 {
+				args.WriteString(fmt.Sprintf(" --%s_opt=%s", name, strings.Join(filteredOpts, ",")))
+			}
 		}
 		return args.String()
 	}

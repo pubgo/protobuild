@@ -4,21 +4,40 @@ package example.v1;
 
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "retag/retag.proto";
 
-option go_package = "github.com/pubgo/protobuild/proto/example/v1;examplev1";
+option go_package = "github.com/pubgo/protobuild/pkg/example/v1;examplev1";
 option java_multiple_files = true;
 option java_package = "com.example.v1";
 
 // User represents a user in the system.
 message User {
   // Unique identifier for the user.
-  string id = 1;
+  string id = 1 [(retag.tags) = {
+    name: "xml"
+    value: "id,attr"
+  }];
   // User's display name.
-  string name = 2;
+  string name = 2 [(retag.tags) = {
+    name: "xml"
+    value: "name"
+  }];
   // User's email address.
-  string email = 3;
+  string email = 3 [
+    (retag.tags) = {
+      name: "xml"
+      value: "email"
+    },
+    (retag.tags) = {
+      name: "validate"
+      value: "required,email"
+    }
+  ];
   // User's age.
-  int32 age = 4;
+  int32 age = 4 [(retag.tags) = {
+    name: "xml"
+    value: "age,omitempty"
+  }];
   // When the user was created.
   google.protobuf.Timestamp created_at = 5;
   // When the user was last updated.
@@ -39,10 +58,28 @@ enum UserStatus {
 
 // Profile contains user profile information.
 message Profile {
-  string avatar_url = 1;
-  string bio = 2;
-  string location = 3;
-  string website = 4;
+  string avatar_url = 1 [(retag.tags) = {
+    name: "xml"
+    value: "avatarUrl"
+  }];
+  string bio = 2 [(retag.tags) = {
+    name: "xml"
+    value: "bio,omitempty"
+  }];
+  string location = 3 [(retag.tags) = {
+    name: "xml"
+    value: "location,omitempty"
+  }];
+  string website = 4 [
+    (retag.tags) = {
+      name: "xml"
+      value: "website,omitempty"
+    },
+    (retag.tags) = {
+      name: "validate"
+      value: "omitempty,url"
+    }
+  ];
 }
 
 // CreateUserRequest is the request for creating a user.

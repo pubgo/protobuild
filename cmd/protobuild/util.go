@@ -8,13 +8,37 @@ import (
 
 	"github.com/a8m/envsubst"
 	"github.com/cnf/structhash"
+	"github.com/googleapis/api-linter/v2/lint"
 	"github.com/huandu/go-clone"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/strutil"
+	"github.com/pubgo/protobuild/cmd/linters"
+	"github.com/pubgo/protobuild/internal/config"
 	"gopkg.in/yaml.v3"
 )
+
+// toLinterConfig converts the shared config Linter to linters.LinterConfig.
+func toLinterConfig(l *config.Linter) linters.LinterConfig {
+	if l == nil {
+		return linters.LinterConfig{}
+	}
+
+	cfg := linters.LinterConfig{
+		FormatType:                l.FormatType,
+		IgnoreCommentDisablesFlag: l.IgnoreCommentDisablesFlag,
+	}
+
+	if l.Rules != nil {
+		cfg.Rules = lint.Config{
+			EnabledRules:  l.Rules.EnabledRules,
+			DisabledRules: l.Rules.DisabledRules,
+		}
+	}
+
+	return cfg
+}
 
 func mergePluginConfig(base *Config, pluginConfigs ...*Config) *Config {
 	base = clone.Clone(base).(*Config)
@@ -83,7 +107,7 @@ func parseConfig() error {
 	checksum := fmt.Sprintf("%x", structhash.Sha1(globalCfg, 1))
 	if globalCfg.Checksum != checksum {
 		globalCfg.Checksum = checksum
-		globalCfg.changed = true
+		globalCfg.Changed = true
 	}
 
 	oldChecksum, err := getChecksumData(globalCfg.Vendor)
@@ -91,7 +115,7 @@ func parseConfig() error {
 		slog.Warn("failed to get checksum data", slog.Any("err", err.Error()))
 	}
 	if oldChecksum != checksum {
-		globalCfg.changed = true
+		globalCfg.Changed = true
 	}
 
 	return nil

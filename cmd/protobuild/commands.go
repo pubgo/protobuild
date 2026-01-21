@@ -86,7 +86,7 @@ func newVendorCommand(force, update *bool) *redant.Command {
 				return nil
 			}
 
-			if !result.Changed && !globalCfg.changed && !*force {
+			if !result.Changed && !globalCfg.Changed && !*force {
 				fmt.Println("\n✨ No changes detected")
 				return nil
 			}
