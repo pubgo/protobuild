@@ -6,14 +6,14 @@ import (
 	"os/exec"
 
 	"github.com/pubgo/protobuild/internal/shutil"
-	"github.com/urfave/cli/v3"
+	"github.com/pubgo/redant"
 )
 
-func New(name string) *cli.Command {
-	return &cli.Command{
-		Name:  name,
-		Usage: "Format Protobuf files",
-		Action: func(ctx context.Context, command *cli.Command) error {
+func New(name string) *redant.Command {
+	return &redant.Command{
+		Use:   name,
+		Short: "Format Protobuf files",
+		Handler: func(ctx context.Context, inv *redant.Invocation) error {
 			bufPath, err := exec.LookPath("buf")
 			if err != nil {
 				slog.Info("buf not found, please install https://github.com/bufbuild/buf/releases")

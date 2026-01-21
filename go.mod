@@ -17,8 +17,8 @@ require (
 	github.com/jhump/protoreflect v1.17.0
 	github.com/open2b/scriggo v0.60.0
 	github.com/pubgo/funk v0.5.68
+	github.com/pubgo/redant v0.0.5
 	github.com/samber/lo v1.51.0
-	github.com/urfave/cli/v3 v3.3.8
 	github.com/yuin/goldmark v1.7.12
 	go.uber.org/multierr v1.11.0
 	golang.org/x/mod v0.26.0
@@ -31,7 +31,9 @@ require (
 require (
 	bitbucket.org/creachadair/stringset v0.0.14 // indirect
 	cloud.google.com/go/longrunning v0.6.7 // indirect
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
+	github.com/coder/pretty v0.0.0-20230908205945-e89ba86370e0 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -40,13 +42,20 @@ require (
 	github.com/k0kubun/pp/v3 v3.5.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
+	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/phuslu/goid v1.0.2 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect

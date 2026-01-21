@@ -1,12 +1,12 @@
 package typex
 
 import (
-	"github.com/urfave/cli/v3"
+	"github.com/pubgo/redant"
 )
 
 type (
 	Strs     = []string
-	Flags    = []cli.Flag
-	Command  = cli.Command
-	Commands = []*cli.Command
+	Options  = redant.OptionSet
+	Command  = redant.Command
+	Commands = []*redant.Command
 )

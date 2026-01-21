@@ -11,8 +11,8 @@ import (
 	"github.com/googleapis/api-linter/lint"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/pubgo/protobuild/internal/typex"
+	"github.com/pubgo/redant"
 	"github.com/samber/lo"
-	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,29 +26,26 @@ type CliArgs struct {
 	//IgnoreCommentDisablesFlag bool
 }
 
-func NewCli() (*CliArgs, typex.Flags) {
+func NewCli() (*CliArgs, typex.Options) {
 	var cliArgs CliArgs
 
-	return &cliArgs, typex.Flags{
-		//&cli.BoolFlag{
-		//	Name:        "ignore-comment-disables",
-		//	Usage:       "If set to true, disable comments will be ignored.\nThis is helpful when strict enforcement of AIPs are necessary and\nproto definitions should not be able to disable checks.",
-		//	Value:       false,
-		//	Destination: &cliArgs.IgnoreCommentDisablesFlag,
+	return &cliArgs, typex.Options{
+		//redant.Option{
+		//	Flag:        "ignore-comment-disables",
+		//	Description: "If set to true, disable comments will be ignored.\nThis is helpful when strict enforcement of AIPs are necessary and\nproto definitions should not be able to disable checks.",
+		//	Value:       redant.BoolOf(&cliArgs.IgnoreCommentDisablesFlag),
 		//},
 
-		&cli.BoolFlag{
-			Name:        "debug",
-			Usage:       "Run in debug mode. Panics will print stack.",
-			Value:       false,
-			Destination: &cliArgs.DebugFlag,
+		redant.Option{
+			Flag:        "debug",
+			Description: "Run in debug mode. Panics will print stack.",
+			Value:       redant.BoolOf(&cliArgs.DebugFlag),
 		},
 
-		&cli.BoolFlag{
-			Name:        "list-rules",
-			Usage:       "Print the rules and exit.  Honors the output-format flag.",
-			Value:       false,
-			Destination: &cliArgs.ListRulesFlag,
+		redant.Option{
+			Flag:        "list-rules",
+			Description: "Print the rules and exit.  Honors the output-format flag.",
+			Value:       redant.BoolOf(&cliArgs.ListRulesFlag),
 		},
 
 		//&cli.StringFlag{

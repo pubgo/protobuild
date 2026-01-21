@@ -1,11 +1,10 @@
 package main
 
 import (
-	"context"
 	_ "embed"
+	"fmt"
 	"os"
 
-	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/protobuild/cmd/protobuild"
 )
 
@@ -13,8 +12,9 @@ import (
 var version string
 
 func main() {
-	assert.ExitFn(func() error {
-		return protobuild.Main(version).
-			Run(context.Background(), os.Args)
-	})
+	err := protobuild.Main(version).Invoke().WithOS().Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 }

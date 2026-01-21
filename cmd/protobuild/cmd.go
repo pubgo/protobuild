@@ -25,8 +25,8 @@ import (
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
+	"github.com/pubgo/redant"
 	"github.com/samber/lo"
-	cli "github.com/urfave/cli/v3"
 	"golang.org/x/term"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -49,40 +49,34 @@ const (
 	reTagPluginName = "retag"
 )
 
-func Main(ver string) *cli.Command {
+func Main(ver string) *redant.Command {
 	var force bool
-	cliArgs, flags := linters.NewCli()
-	app := &cli.Command{
-		Name:                  "protobuf",
-		Usage:                 "protobuf generation, configuration and management",
-		Version:               ver,
-		ShellComplete:         cli.DefaultAppComplete,
-		EnableShellCompletion: true,
-		Suggest:               true,
-		Flags: typex.Flags{
-			&cli.StringFlag{
-				Name:        "conf",
-				Aliases:     typex.Strs{"c", "f"},
-				Usage:       "protobuf config path",
-				Value:       protoCfg,
-				Hidden:      false,
-				Local:       true,
-				Destination: &protoCfg,
+	cliArgs, options := linters.NewCli()
+	app := &redant.Command{
+		Use:   "protobuf",
+		Short: "protobuf generation, configuration and management",
+		Options: typex.Options{
+			redant.Option{
+				Flag:        "conf",
+				Shorthand:   "c",
+				Description: "protobuf config path",
+				Default:     protoCfg,
+				Value:       redant.StringOf(&protoCfg),
 			},
 		},
-		Action: func(ctx context.Context, c *cli.Command) error {
+		Handler: func(ctx context.Context, inv *redant.Invocation) error {
 			if shutil.IsHelp() {
 				return nil
 			}
 
 			file := os.Stdin
 			if term.IsTerminal(int(file.Fd())) {
-				return cli.ShowAppHelp(c)
+				return nil
 			}
 
 			fi := assert.Exit1(file.Stat())
 			if fi.Size() == 0 {
-				return cli.ShowAppHelp(c)
+				return nil
 			}
 
 			in := assert.Must1(io.ReadAll(file))
@@ -138,14 +132,19 @@ func Main(ver string) *cli.Command {
 
 			return nil
 		},
-		Commands: typex.Commands{
-			&cli.Command{
-				Name:  "gen",
-				Usage: "编译 protobuf 文件",
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+		Children: typex.Commands{
+			&redant.Command{
+				Use:   "gen",
+				Short: "编译 protobuf 文件",
+				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
+					return func(ctx context.Context, inv *redant.Invocation) error {
+						if err := parseConfig(); err != nil {
+							return err
+						}
+						return next(ctx, inv)
+					}
+				}),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
 					var pluginMap = make(map[string]*Config)
@@ -318,22 +317,26 @@ func Main(ver string) *cli.Command {
 					return nil
 				},
 			},
-			&cli.Command{
-				Name:  "vendor",
-				Usage: "同步项目 protobuf 依赖到 .proto 目录中",
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Flags: typex.Flags{
-					&cli.BoolFlag{
-						Name:        "force",
-						Usage:       "protobuf force vendor",
-						Aliases:     []string{"f"},
-						Value:       force,
-						Destination: &force,
+			&redant.Command{
+				Use:   "vendor",
+				Short: "同步项目 protobuf 依赖到 .proto 目录中",
+				Options: typex.Options{
+					redant.Option{
+						Flag:        "force",
+						Shorthand:   "f",
+						Description: "protobuf force vendor",
+						Value:       redant.BoolOf(&force),
 					},
 				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
+					return func(ctx context.Context, inv *redant.Invocation) error {
+						if err := parseConfig(); err != nil {
+							return err
+						}
+						return next(ctx, inv)
+					}
+				}),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
 					var changed bool
@@ -485,22 +488,26 @@ func Main(ver string) *cli.Command {
 					return nil
 				},
 			},
-			&cli.Command{
-				Name:  "install",
-				Usage: "install protobuf plugin",
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Flags: typex.Flags{
-					&cli.BoolFlag{
-						Name:        "force",
-						Usage:       "force update protobuf plugin",
-						Aliases:     []string{"f"},
-						Value:       false,
-						Destination: &force,
+			&redant.Command{
+				Use:   "install",
+				Short: "install protobuf plugin",
+				Options: typex.Options{
+					redant.Option{
+						Flag:        "force",
+						Shorthand:   "f",
+						Description: "force update protobuf plugin",
+						Value:       redant.BoolOf(&force),
 					},
 				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
+					return func(ctx context.Context, inv *redant.Invocation) error {
+						if err := parseConfig(); err != nil {
+							return err
+						}
+						return next(ctx, inv)
+					}
+				}),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
 					for _, plg := range globalCfg.Installers {
@@ -526,14 +533,19 @@ func Main(ver string) *cli.Command {
 					return nil
 				},
 			},
-			&cli.Command{
-				Name:  "lint",
-				Usage: "lint protobuf https://linter.aip.dev/rules/",
-				Flags: flags,
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+			&redant.Command{
+				Use:     "lint",
+				Short:   "lint protobuf https://linter.aip.dev/rules/",
+				Options: options,
+				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
+					return func(ctx context.Context, inv *redant.Invocation) error {
+						if err := parseConfig(); err != nil {
+							return err
+						}
+						return next(ctx, inv)
+					}
+				}),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					var protoPaths []string
 					for i := range globalCfg.Root {
 						if pathutil.IsNotExist(globalCfg.Root[i]) {
@@ -576,10 +588,10 @@ func Main(ver string) *cli.Command {
 				},
 			},
 			formatcmd.New("format"),
-			&cli.Command{
-				Name:  "version",
-				Usage: "version info",
-				Action: func(ctx context.Context, command *cli.Command) error {
+			&redant.Command{
+				Use:   "version",
+				Short: "version info",
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 					fmt.Printf("Project:   %s\n", running.Project)
 					fmt.Printf("Version:   %s\n", running.Version)
