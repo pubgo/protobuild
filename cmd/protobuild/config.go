@@ -55,8 +55,10 @@ type plugin struct {
 
 type depend struct {
 	Name     string  `yaml:"name,omitempty"`
+	Source   string  `yaml:"source,omitempty"` // gomod(default), git, http, s3, gcs, local
 	Url      string  `yaml:"url,omitempty"`
 	Path     string  `yaml:"path,omitempty"`
-	Version  *string `yaml:"version,omitempty"`
+	Version  *string `yaml:"version,omitempty"` // for gomod
+	Ref      string  `yaml:"ref,omitempty"`     // for git: tag/branch/commit
 	Optional *bool   `yaml:"optional,omitempty"`
 }

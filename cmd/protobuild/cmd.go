@@ -19,15 +19,15 @@ import (
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/recovery"
 	"github.com/pubgo/funk/running"
-	"github.com/pubgo/funk/strutil"
 	"github.com/pubgo/protobuild/cmd/formatcmd"
 	linters "github.com/pubgo/protobuild/cmd/linters"
-	"github.com/pubgo/protobuild/internal/modutil"
+	"github.com/pubgo/protobuild/internal/depresolver"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
-	"github.com/pubgo/protobuild/version"
+	"github.com/pubgo/redant"
 	"github.com/samber/lo"
-	cli "github.com/urfave/cli/v3"
+	"github.com/schollz/progressbar/v3"
+	"golang.org/x/term"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -39,9 +39,8 @@ var (
 
 	protoCfg       = "protobuf.yaml"
 	protoPluginCfg = "protobuf.plugin.yaml"
-	modPath        = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
 	pwd            = assert.Exit1(os.Getwd())
-	logger         = log.GetLogger("proto-build")
+	logger         = log.GetLogger("protobuild")
 	// binPath  = []string{os.ExpandEnv("$HOME/bin"), os.ExpandEnv("$HOME/.local/bin"), os.ExpandEnv("./bin")}
 )
 
@@ -49,36 +48,48 @@ const (
 	reTagPluginName = "retag"
 )
 
-func Main() *cli.Command {
+// withParseConfig 返回一个解析配置的中间件
+func withParseConfig() redant.MiddlewareFunc {
+	return func(next redant.HandlerFunc) redant.HandlerFunc {
+		return func(ctx context.Context, inv *redant.Invocation) error {
+			if err := parseConfig(); err != nil {
+				slog.Error("failed to parse config", "err", err)
+				return err
+			}
+			return next(ctx, inv)
+		}
+	}
+}
+
+func Main(ver string) *redant.Command {
 	var force bool
-	cliArgs, flags := linters.NewCli()
-	app := &cli.Command{
-		Name:                  "protobuf",
-		Usage:                 "protobuf generation, configuration and management",
-		Version:               version.Version,
-		ShellComplete:         cli.DefaultAppComplete,
-		EnableShellCompletion: true,
-		Suggest:               true,
-		Flags: typex.Flags{
-			&cli.StringFlag{
-				Name:        "conf",
-				Aliases:     typex.Strs{"c", "f"},
-				Usage:       "protobuf config path",
-				Value:       protoCfg,
-				Hidden:      false,
-				Local:       true,
-				Destination: &protoCfg,
+	var update bool
+	cliArgs, options := linters.NewCli()
+	app := &redant.Command{
+		Use:   "protobuf",
+		Short: "protobuf generation, configuration and management",
+		Options: typex.Options{
+			redant.Option{
+				Flag:        "conf",
+				Shorthand:   "c",
+				Description: "protobuf config path",
+				Default:     protoCfg,
+				Value:       redant.StringOf(&protoCfg),
 			},
 		},
-		Action: func(ctx context.Context, c *cli.Command) error {
+		Handler: func(ctx context.Context, inv *redant.Invocation) error {
 			if shutil.IsHelp() {
 				return nil
 			}
 
 			file := os.Stdin
+			if term.IsTerminal(int(file.Fd())) {
+				return nil
+			}
+
 			fi := assert.Exit1(file.Stat())
 			if fi.Size() == 0 {
-				return cli.ShowAppHelp(c)
+				return nil
 			}
 
 			in := assert.Must1(io.ReadAll(file))
@@ -118,30 +129,28 @@ func Main() *cli.Command {
 				log.Printf("%#v\n", p)
 
 				if p.Shell != "" {
-					cccc := shutil.Shell(strings.TrimSpace(p.Shell))
-					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
-					assert.Must(cccc.Run())
+					cmd := shutil.Shell(strings.TrimSpace(p.Shell))
+					cmd.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cmd.Run())
 					break
 				}
 
 				if p.Docker != "" {
-					cccc := shutil.Shell("docker run -i --rm " + p.Docker)
-					cccc.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
-					assert.Must(cccc.Run())
+					cmd := shutil.Shell("docker run -i --rm " + p.Docker)
+					cmd.Stdin = bytes.NewBuffer(assert.Must1(proto.Marshal(req)))
+					assert.Must(cmd.Run())
 					break
 				}
 			}
 
 			return nil
 		},
-		Commands: typex.Commands{
-			&cli.Command{
-				Name:  "gen",
-				Usage: "编译 protobuf 文件",
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+		Children: typex.Commands{
+			&redant.Command{
+				Use:        "gen",
+				Short:      "编译 protobuf 文件",
+				Middleware: withParseConfig(),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
 					var pluginMap = make(map[string]*Config)
@@ -202,7 +211,7 @@ func Main() *cli.Command {
 							data := ""
 
 							includes := lo.Uniq(append(pluginCfg.Includes, pluginCfg.Vendor, pwd))
-							base := fmt.Sprintf("protoc")
+							base := "protoc"
 							for i := range includes {
 								base += fmt.Sprintf(" -I %s", includes[i])
 							}
@@ -246,29 +255,19 @@ func Main() *cli.Command {
 								assert.Exit(pathutil.IsNotExistMkDir(out))
 
 								opts := append(plg.Opt, plg.Opts...)
-								hasPath := func() bool {
-									for _, opt := range opts {
-										if strings.HasPrefix(opt, "paths=") {
-											return true
-										}
-									}
-									return false
-								}
+								hasPath := lo.ContainsBy(opts, func(opt string) bool {
+									return strings.HasPrefix(opt, "paths=")
+								})
 
-								hasModule := func() bool {
-									for _, opt := range opts {
-										if strings.HasPrefix(opt, "module=") {
-											return true
-										}
-									}
-									return false
-								}
+								hasModule := lo.ContainsBy(opts, func(opt string) bool {
+									return strings.HasPrefix(opt, "module=")
+								})
 
-								if !hasPath() && pluginCfg.BasePlugin.Paths != "" && !plg.SkipBase {
+								if !hasPath && pluginCfg.BasePlugin.Paths != "" && !plg.SkipBase {
 									opts = append(opts, fmt.Sprintf("paths=%s", pluginCfg.BasePlugin.Paths))
 								}
 
-								if !hasModule() && pluginCfg.BasePlugin.Module != "" && !plg.SkipBase {
+								if !hasModule && pluginCfg.BasePlugin.Module != "" && !plg.SkipBase {
 									opts = append(opts, fmt.Sprintf("module=%s", pluginCfg.BasePlugin.Module))
 								}
 
@@ -293,7 +292,7 @@ func Main() *cli.Command {
 								if len(opts) > 0 {
 									var protoOpt []string
 									for _, opt := range opts {
-										if !hasAny(plg.ExcludeOpts, func(d string) bool { return strings.HasPrefix(opt, d) }) {
+										if !lo.ContainsBy(plg.ExcludeOpts, func(d string) bool { return strings.HasPrefix(opt, d) }) {
 											protoOpt = append(protoOpt, opt)
 										}
 									}
@@ -314,127 +313,150 @@ func Main() *cli.Command {
 					return nil
 				},
 			},
-			&cli.Command{
-				Name:  "vendor",
-				Usage: "同步项目 protobuf 依赖到 .proto 目录中",
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Flags: typex.Flags{
-					&cli.BoolFlag{
-						Name:        "force",
-						Usage:       "protobuf force vendor",
-						Aliases:     []string{"f"},
-						Value:       force,
-						Destination: &force,
+			&redant.Command{
+				Use:   "vendor",
+				Short: "同步项目 protobuf 依赖到 .proto 目录中",
+				Options: typex.Options{
+					redant.Option{
+						Flag:        "force",
+						Shorthand:   "f",
+						Description: "protobuf force vendor",
+						Value:       redant.BoolOf(&force),
+					},
+					redant.Option{
+						Flag:        "update",
+						Shorthand:   "u",
+						Description: "force re-download dependencies (ignore cache)",
+						Value:       redant.BoolOf(&update),
 					},
 				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+				Middleware: withParseConfig(),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
-					var changed bool
-
-					// 通过 go mod graph 获取每个 pkg 最大版本
-					versions := modutil.LoadVersionGraph()
-					for i, dep := range globalCfg.Depends {
-						pathVersion := strings.SplitN(dep.Url, "@", 2)
-						if len(pathVersion) == 2 {
-							dep.Version = generic.Ptr(pathVersion[1])
-							dep.Path = pathVersion[0]
+					// Filter valid dependencies
+					var validDeps []*depend
+					for _, dep := range globalCfg.Depends {
+						if dep.Name != "" && dep.Url != "" {
+							validDeps = append(validDeps, dep)
 						}
-
-						url := os.ExpandEnv(dep.Url)
-
-						// url是本地目录, 不做检查
-						if pathutil.IsDir(url) {
-							continue
-						}
-
-						if pathutil.IsNotExist(url) && dep.Optional != nil && *dep.Optional {
-							continue
-						}
-
-						v := strutil.FirstFnNotEmpty(func() string {
-							return versions[url]
-						}, func() string {
-							return generic.FromPtr(dep.Version)
-						}, func() string {
-							// go.mod中version不存在, 并且protobuf.yaml也没有指定
-							// go pkg缓存
-							localPkg := assert.Must1(os.ReadDir(filepath.Dir(filepath.Join(modPath, url))))
-
-							_, name := filepath.Split(url)
-							for j := range localPkg {
-								if !localPkg[j].IsDir() {
-									continue
-								}
-
-								if strings.HasPrefix(localPkg[j].Name(), name+"@") {
-									return strings.TrimPrefix(localPkg[j].Name(), name+"@")
-								}
-							}
-							return ""
-						})
-
-						if v == "" || pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
-							changed = true
-							if v == "" {
-								fmt.Println("go", "get", "-d", url+"/...")
-								assert.Must(shutil.Shell("go", "get", "-d", url+"/...").Run())
-
-							} else if pathutil.IsNotExist(fmt.Sprintf("%s/%s@%s", modPath, url, v)) {
-								fmt.Println("go", "get", "-d", fmt.Sprintf("%s@%s", url, v))
-								assert.Must(shutil.Shell("go", "get", "-d", fmt.Sprintf("%s@%s", url, v)).Run())
-							}
-
-							// 再次解析go.mod然后获取版本信息
-							versions = modutil.LoadVersions()
-							v = versions[url]
-							assert.If(v == "", "%s version为空", url)
-						}
-
-						globalCfg.Depends[i].Version = generic.Ptr(v)
 					}
 
-					if !changed && !globalCfg.changed && !force {
-						fmt.Println("No changes")
+					if len(validDeps) == 0 {
+						fmt.Println("📦 No dependencies configured")
 						return nil
 					}
 
-					// 删除老的protobuf文件
-					logger.Info().Str("vendor", globalCfg.Vendor).Msg("delete old vendor")
-					_ = os.RemoveAll(globalCfg.Vendor)
+					fmt.Printf("\n🔍 Resolving %d dependencies...\n\n", len(validDeps))
 
-					for _, dep := range globalCfg.Depends {
+					// Create dependency resolver manager
+					resolver := depresolver.NewManager("", "")
+
+					// Clean cache if --update flag is set
+					if update {
+						fmt.Println("🗑️  Cleaning dependency cache...")
+						_ = resolver.CleanCache()
+						fmt.Println()
+					}
+
+					var changed bool
+					var resolvedPaths = make(map[string]string) // dep.Name -> localPath
+					var failedDeps []string
+
+					// Resolve all dependencies using the multi-source resolver
+					for i, dep := range globalCfg.Depends {
 						if dep.Name == "" || dep.Url == "" {
 							continue
 						}
 
-						url := os.ExpandEnv(dep.Url)
-						v := generic.FromPtr(dep.Version)
-
-						// 加载版本
-						if v != "" {
-							url = fmt.Sprintf("%s@%s", url, v)
+						// Convert config depend to depresolver.Dependency
+						resolverDep := &depresolver.Dependency{
+							Name:     dep.Name,
+							Source:   depresolver.Source(dep.Source), // "" = auto-detect
+							URL:      dep.Url,
+							Path:     dep.Path,
+							Version:  dep.Version,
+							Ref:      dep.Ref,
+							Optional: dep.Optional,
 						}
 
-						// 加载路径
-						url = filepath.Join(url, dep.Path)
-
-						if pathutil.IsNotExist(url) {
-							url = filepath.Join(modPath, url)
-						}
-
-						fmt.Println(url)
-
-						url = assert.Must1(filepath.Abs(url))
-
-						if pathutil.IsNotExist(url) && dep.Optional != nil && *dep.Optional {
+						// Resolve dependency
+						result, err := resolver.Resolve(ctx, resolverDep)
+						if err != nil {
+							if dep.Optional != nil && *dep.Optional {
+								fmt.Printf("  ⚠️  [optional] %s - skipped\n", dep.Name)
+								continue
+							}
+							// Print detailed error and continue to show all failures
+							fmt.Print(err.Error())
+							failedDeps = append(failedDeps, dep.Name)
 							continue
 						}
 
-						newUrl := filepath.Join(globalCfg.Vendor, dep.Name)
-						assert.Must(filepath.Walk(url, func(path string, info fs.FileInfo, err error) (gErr error) {
+						// Skip if empty result (optional not found)
+						if result.LocalPath == "" {
+							continue
+						}
+
+						if result.Changed {
+							changed = true
+							fmt.Printf("  ✅ %s (downloaded)\n", dep.Name)
+						} else {
+							fmt.Printf("  ✅ %s (cached)\n", dep.Name)
+						}
+
+						// Update version in config if resolved
+						if result.Version != "" {
+							globalCfg.Depends[i].Version = &result.Version
+						}
+
+						resolvedPaths[dep.Name] = result.LocalPath
+					}
+
+					// Check if any dependencies failed
+					if len(failedDeps) > 0 {
+						fmt.Printf("\n❌ Failed to resolve %d dependencies: %v\n", len(failedDeps), failedDeps)
+						return fmt.Errorf("dependency resolution failed")
+					}
+
+					if !changed && !globalCfg.changed && !force {
+						fmt.Println("\n✨ No changes detected")
+						return nil
+					}
+
+					// Delete old vendor directory
+					fmt.Printf("\n📁 Updating vendor directory: %s\n", globalCfg.Vendor)
+					_ = os.RemoveAll(globalCfg.Vendor)
+
+					// Count total .proto files first
+					var totalFiles int
+					for _, localPath := range resolvedPaths {
+						_ = filepath.Walk(localPath, func(path string, info fs.FileInfo, err error) error {
+							if err == nil && !info.IsDir() && strings.HasSuffix(info.Name(), ".proto") {
+								totalFiles++
+							}
+							return nil
+						})
+					}
+
+					// Create progress bar for copying
+					bar := progressbar.NewOptions(totalFiles,
+						progressbar.OptionSetDescription("  📋 Copying proto files"),
+						progressbar.OptionShowCount(),
+						progressbar.OptionSetWidth(30),
+						progressbar.OptionOnCompletion(func() { fmt.Println() }),
+					)
+
+					// Copy resolved dependencies to vendor
+					var copiedFiles int
+					for name, localPath := range resolvedPaths {
+						if pathutil.IsNotExist(localPath) {
+							fmt.Printf("  ⚠️  Path not found: %s (%s)\n", name, localPath)
+							continue
+						}
+
+						newUrl := filepath.Join(globalCfg.Vendor, name)
+						assert.Must(filepath.Walk(localPath, func(path string, info fs.FileInfo, err error) (gErr error) {
 							if err != nil {
 								return err
 							}
@@ -454,15 +476,18 @@ func Main() *cli.Command {
 								return nil
 							}
 
-							newPath := filepath.Join(newUrl, strings.TrimPrefix(path, url))
+							newPath := filepath.Join(newUrl, strings.TrimPrefix(path, localPath))
 							assert.Must(pathutil.IsNotExistMkDir(filepath.Dir(newPath)))
 							assert.Must1(copyFile(newPath, path))
+							copiedFiles++
+							_ = bar.Add(1)
 
 							return nil
 						}))
 					}
+					_ = bar.Finish()
 
-					// TODO 强制更新配置文件, 可以考虑参数化
+					// Update config file with resolved versions
 					{
 						var buf bytes.Buffer
 						enc := yaml.NewEncoder(&buf)
@@ -471,32 +496,29 @@ func Main() *cli.Command {
 						assert.Must(enc.Encode(globalCfg))
 						assert.Must(os.WriteFile(protoCfg, buf.Bytes(), 0o666))
 
-						slog.Info("protobuf vendor update success")
 						err := writeChecksumData(globalCfg.Vendor, []byte(globalCfg.Checksum))
 						if err != nil {
-							slog.Error("failed to write checksum data", slog.Any("err", err))
+							fmt.Printf("  ⚠️  Failed to write checksum: %s\n", err)
 						}
 					}
 
+					fmt.Printf("\n✅ Vendor complete! Copied %d proto files.\n", copiedFiles)
 					return nil
 				},
 			},
-			&cli.Command{
-				Name:  "install",
-				Usage: "install protobuf plugin",
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Flags: typex.Flags{
-					&cli.BoolFlag{
-						Name:        "force",
-						Usage:       "force update protobuf plugin",
-						Aliases:     []string{"f"},
-						Value:       false,
-						Destination: &force,
+			&redant.Command{
+				Use:   "install",
+				Short: "install protobuf plugin",
+				Options: typex.Options{
+					redant.Option{
+						Flag:        "force",
+						Shorthand:   "f",
+						Description: "force update protobuf plugin",
+						Value:       redant.BoolOf(&force),
 					},
 				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+				Middleware: withParseConfig(),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
 					for _, plg := range globalCfg.Installers {
@@ -522,14 +544,12 @@ func Main() *cli.Command {
 					return nil
 				},
 			},
-			&cli.Command{
-				Name:  "lint",
-				Usage: "lint protobuf https://linter.aip.dev/rules/",
-				Flags: flags,
-				Before: func(ctx context.Context, command *cli.Command) (context.Context, error) {
-					return ctx, parseConfig()
-				},
-				Action: func(ctx context.Context, c *cli.Command) error {
+			&redant.Command{
+				Use:        "lint",
+				Short:      "lint protobuf https://linter.aip.dev/rules/",
+				Options:    options,
+				Middleware: withParseConfig(),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					var protoPaths []string
 					for i := range globalCfg.Root {
 						if pathutil.IsNotExist(globalCfg.Root[i]) {
@@ -572,10 +592,138 @@ func Main() *cli.Command {
 				},
 			},
 			formatcmd.New("format"),
-			&cli.Command{
-				Name:  "version",
-				Usage: "version info",
-				Action: func(ctx context.Context, command *cli.Command) error {
+			&redant.Command{
+				Use:        "deps",
+				Short:      "显示依赖列表及状态",
+				Middleware: withParseConfig(),
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
+					if len(globalCfg.Depends) == 0 {
+						fmt.Println("📭 No dependencies configured")
+						return nil
+					}
+
+					resolver := depresolver.NewManager("", "")
+
+					fmt.Println()
+					fmt.Println("📦 Dependencies:")
+					fmt.Println()
+					fmt.Printf("  %-35s %-10s %-12s %s\n", "NAME", "SOURCE", "VERSION", "STATUS")
+					fmt.Printf("  %-35s %-10s %-12s %s\n", "----", "------", "-------", "------")
+
+					for _, dep := range globalCfg.Depends {
+						if dep.Name == "" || dep.Url == "" {
+							continue
+						}
+
+						// Detect source type
+						source := depresolver.Source(dep.Source)
+						if source == "" {
+							source = depresolver.DetectSource(dep.Url)
+						}
+
+						// Get version
+						version := "-"
+						if dep.Version != nil && *dep.Version != "" {
+							version = *dep.Version
+						} else if dep.Ref != "" {
+							version = dep.Ref
+						}
+
+						// Check cache status
+						status := "⚪ not cached"
+						resolverDep := &depresolver.Dependency{
+							Name:    dep.Name,
+							Source:  source,
+							URL:     dep.Url,
+							Path:    dep.Path,
+							Version: dep.Version,
+							Ref:     dep.Ref,
+						}
+
+						// Try to check if it's in cache
+						result, err := resolver.Resolve(context.Background(), resolverDep)
+						if err == nil && result.LocalPath != "" {
+							if pathutil.IsExist(result.LocalPath) {
+								status = "🟢 cached"
+							}
+						}
+
+						// Check if optional
+						optFlag := ""
+						if dep.Optional != nil && *dep.Optional {
+							optFlag = " (optional)"
+						}
+
+						fmt.Printf("  %-35s %-10s %-12s %s%s\n",
+							dep.Name,
+							source.DisplayName(),
+							version,
+							status,
+							optFlag,
+						)
+					}
+
+					fmt.Println()
+					fmt.Printf("  Total: %d dependencies\n\n", len(globalCfg.Depends))
+					return nil
+				},
+			},
+			&redant.Command{
+				Use:   "clean",
+				Short: "清理依赖缓存",
+				Options: typex.Options{
+					redant.Option{
+						Flag:        "dry-run",
+						Description: "只显示要删除的内容，不实际删除",
+						Value:       redant.BoolOf(&force), // reuse force as dry-run
+					},
+				},
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
+					resolver := depresolver.NewManager("", "")
+					cacheDir := resolver.CacheDir()
+
+					// Calculate cache size
+					var totalSize int64
+					var fileCount int
+					if pathutil.IsDir(cacheDir) {
+						_ = filepath.Walk(cacheDir, func(path string, info fs.FileInfo, err error) error {
+							if err == nil && !info.IsDir() {
+								totalSize += info.Size()
+								fileCount++
+							}
+							return nil
+						})
+					}
+
+					if fileCount == 0 {
+						fmt.Println("📭 Cache is empty, nothing to clean.")
+						return nil
+					}
+
+					// Format size
+					sizeStr := formatBytes(totalSize)
+					fmt.Printf("🗑️  Cache directory: %s\n", cacheDir)
+					fmt.Printf("   Files: %d, Size: %s\n\n", fileCount, sizeStr)
+
+					if force { // dry-run mode
+						fmt.Println("🔍 Dry-run mode: no files will be deleted.")
+						return nil
+					}
+
+					fmt.Print("Cleaning...")
+					if err := resolver.CleanCache(); err != nil {
+						fmt.Println(" ❌")
+						return fmt.Errorf("failed to clean cache: %w", err)
+					}
+					fmt.Println(" ✅")
+					fmt.Printf("\n✨ Cleaned %d files (%s)\n", fileCount, sizeStr)
+					return nil
+				},
+			},
+			&redant.Command{
+				Use:   "version",
+				Short: "version info",
+				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 					fmt.Printf("Project:   %s\n", running.Project)
 					fmt.Printf("Version:   %s\n", running.Version)
@@ -590,21 +738,26 @@ func Main() *cli.Command {
 
 func copyFile(dstFilePath, srcFilePath string) (written int64, err error) {
 	srcFile, err := os.Open(srcFilePath)
-	defer srcFile.Close()
 	assert.Must(err, "打开源文件错误", srcFilePath)
+	defer srcFile.Close()
 
 	dstFile, err := os.Create(dstFilePath)
-	defer srcFile.Close()
 	assert.Must(err, "打开目标文件错误", dstFilePath)
+	defer dstFile.Close()
 
 	return io.Copy(dstFile, srcFile)
 }
 
-func hasAny(data []string, fn func(d string) bool) bool {
-	for _, d := range data {
-		if fn(d) {
-			return true
-		}
+// formatBytes formats bytes into a human-readable string
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
 	}
-	return false
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
