@@ -5,13 +5,11 @@ import (
 	"os"
 	"sort"
 
-	"github.com/googleapis/api-linter/lint"
-	"github.com/googleapis/api-linter/rules"
+	"github.com/googleapis/api-linter/v2/lint"
+	"github.com/googleapis/api-linter/v2/rules"
 )
 
-var (
-	globalRules = lint.NewRuleRegistry()
-)
+var globalRules = lint.NewRuleRegistry()
 
 func init() {
 	if err := rules.Add(globalRules); err != nil {
@@ -32,21 +30,19 @@ func (a listedRulesByName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a listedRulesByName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 func outputRules(formatType string) error {
-	rules := listedRules{}
+	ruleList := make(listedRules, 0, len(globalRules))
 	for id := range globalRules {
-		rules = append(rules, listedRule{
-			Name: id,
-		})
+		ruleList = append(ruleList, listedRule{Name: id})
 	}
 
-	sort.Sort(listedRulesByName(rules))
+	sort.Sort(listedRulesByName(ruleList))
 
 	// Determine the format for printing the results.
 	// YAML format is the default.
 	marshal := getOutputFormatFunc(formatType)
 
 	// Print the results.
-	b, err := marshal(rules)
+	b, err := marshal(ruleList)
 	if err != nil {
 		return err
 	}

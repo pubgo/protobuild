@@ -1,96 +1,71 @@
+// Package linters provides proto file linting with AIP rules.
 package linters
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
-	"github.com/googleapis/api-linter/lint"
-	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/pubgo/protobuild/internal/typex"
+	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/reporter"
+	"github.com/googleapis/api-linter/v2/lint"
+	"github.com/pubgo/redant"
 	"github.com/samber/lo"
-	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"gopkg.in/yaml.v3"
+
+	"github.com/pubgo/protobuild/internal/typex"
 )
 
+// CliArgs holds command line arguments for the linter.
 type CliArgs struct {
-	//FormatType string
-	//ProtoImportPaths          []string
+	// FormatType string
+	// ProtoImportPaths          []string
 	EnabledRules  []string
 	DisabledRules []string
 	ListRulesFlag bool
 	DebugFlag     bool
-	//IgnoreCommentDisablesFlag bool
+	// IgnoreCommentDisablesFlag bool
 }
 
-func NewCli() (*CliArgs, typex.Flags) {
+// NewCli creates a new CLI arguments instance and options.
+func NewCli() (*CliArgs, typex.Options) {
 	var cliArgs CliArgs
 
-	return &cliArgs, typex.Flags{
-		//&cli.BoolFlag{
-		//	Name:        "ignore-comment-disables",
-		//	Usage:       "If set to true, disable comments will be ignored.\nThis is helpful when strict enforcement of AIPs are necessary and\nproto definitions should not be able to disable checks.",
-		//	Value:       false,
-		//	Destination: &cliArgs.IgnoreCommentDisablesFlag,
+	return &cliArgs, typex.Options{
+		//redant.Option{
+		//	Flag:        "ignore-comment-disables",
+		//	Description: "If set to true, disable comments will be ignored.\nThis is helpful when strict enforcement of AIPs are necessary and\nproto definitions should not be able to disable checks.",
+		//	Value:       redant.BoolOf(&cliArgs.IgnoreCommentDisablesFlag),
 		//},
 
-		&cli.BoolFlag{
-			Name:        "debug",
-			Usage:       "Run in debug mode. Panics will print stack.",
-			Value:       false,
-			Destination: &cliArgs.DebugFlag,
+		redant.Option{
+			Flag:        "debug",
+			Description: "Run in debug mode. Panics will print stack.",
+			Value:       redant.BoolOf(&cliArgs.DebugFlag),
 		},
 
-		&cli.BoolFlag{
-			Name:        "list-rules",
-			Usage:       "Print the rules and exit.  Honors the output-format flag.",
-			Value:       false,
-			Destination: &cliArgs.ListRulesFlag,
+		redant.Option{
+			Flag:        "list-rules",
+			Description: "Print the rules and exit.  Honors the output-format flag.",
+			Value:       redant.BoolOf(&cliArgs.ListRulesFlag),
 		},
-
-		//&cli.StringFlag{
-		//	Name:        "output-format",
-		//	Usage:       "The format of the linting results.\nSupported formats include \"yaml\", \"json\",\"github\" and \"summary\" table.\nYAML is the default.",
-		//	Aliases:     []string{"f"},
-		//	Value:       "",
-		//	Destination: &cliArgs.FormatType,
-		//},
-
-		//&cli.StringSliceFlag{
-		//	Name:        "proto-path",
-		//	Usage:       "The folder for searching proto imports.\\nMay be specified multiple times; directories will be searched in order.\\nThe current working directory is always used.",
-		//	Aliases:     []string{"I"},
-		//	Value:       nil,
-		//	Destination: &cliArgs.ProtoImportPaths,
-		//},
-
-		//&cli.StringSliceFlag{
-		//	Name:        "enable-rule",
-		//	Usage:       "Enable a rule with the given name.\nMay be specified multiple times.",
-		//	Value:       nil,
-		//	Destination: &cliArgs.EnabledRules,
-		//},
-		//
-		//&cli.StringSliceFlag{
-		//	Name:        "disable-rule",
-		//	Usage:       "Disable a rule with the given name.\nMay be specified multiple times.",
-		//	Value:       nil,
-		//	Destination: &cliArgs.DisabledRules,
-		//},
 	}
-
 }
 
+// LinterConfig holds configuration for the linter.
 type LinterConfig struct {
 	Rules                     lint.Config `yaml:"rules,omitempty" hash:"-"`
 	FormatType                string      `yaml:"format_type"`
 	IgnoreCommentDisablesFlag bool        `yaml:"ignore_comment_disables_flag"`
 }
 
-func Linter(c *CliArgs, config LinterConfig, protoImportPaths []string, protoFiles []string) error {
+// Linter runs the linter on the given proto files.
+func Linter(c *CliArgs, config LinterConfig, protoImportPaths, protoFiles []string) error {
 	if c.ListRulesFlag {
 		return outputRules(config.FormatType)
 	}
@@ -106,61 +81,60 @@ func Linter(c *CliArgs, config LinterConfig, protoImportPaths []string, protoFil
 	rules = append(rules, lint.Config{EnabledRules: c.EnabledRules})
 	rules = append(rules, lint.Config{DisabledRules: c.DisabledRules})
 
-	var errorsWithPos []protoparse.ErrorWithPos
-	var lock sync.Mutex
-	// Parse proto files into `protoreflect` file descriptors.
-	p := protoparse.Parser{
-		ImportPaths:           append(protoImportPaths, "."),
-		IncludeSourceCodeInfo: true,
-		ErrorReporter: func(errorWithPos protoparse.ErrorWithPos) error {
-			// Protoparse isn't concurrent right now but just to be safe for the future.
-			lock.Lock()
-			errorsWithPos = append(errorsWithPos, errorWithPos)
-			lock.Unlock()
-			// Continue parsing. The error returned will be protoparse.ErrInvalidSource.
-			return nil
-		},
+	// Create resolver for source files with import paths.
+	importPaths := append(protoImportPaths, ".")
+	sourceResolver := &protocompile.SourceResolver{
+		ImportPaths: importPaths,
 	}
 
-	var err error
-	// Resolve file absolute paths to relative ones.
-	// Using supplied import paths first.
-	if len(protoImportPaths) > 0 {
-		protoFiles, err = protoparse.ResolveFilenames(protoImportPaths, protoFiles...)
+	// Create resolver for standard imports (like google/protobuf/*.proto).
+	importResolver := protocompile.ResolverFunc(func(path string) (protocompile.SearchResult, error) {
+		fd, err := protoregistry.GlobalFiles.FindFileByPath(path)
 		if err != nil {
-			return err
+			return protocompile.SearchResult{}, err
 		}
+		return protocompile.SearchResult{Desc: fd}, nil
+	})
+
+	// Collect errors during compilation.
+	var collectedErrors []error
+	rep := reporter.NewReporter(func(err reporter.ErrorWithPos) error {
+		collectedErrors = append(collectedErrors, err)
+		return nil // Continue on error
+	}, nil)
+
+	// Create compiler with combined resolvers.
+	compiler := protocompile.Compiler{
+		Resolver:       protocompile.WithStandardImports(protocompile.CompositeResolver{sourceResolver, importResolver}),
+		SourceInfoMode: protocompile.SourceInfoStandard,
+		Reporter:       rep,
 	}
-	// Then resolve again against ".", the local directory.
-	// This is necessary because ResolveFilenames won't resolve a path if it
-	// relative to *at least one* of the given import paths, which can result
-	// in duplicate file parsing and compilation errors, as seen in #1465 and
-	// #1471. So we resolve against local (default) and flag specified import
-	// paths separately.
-	protoFiles, err = protoparse.ResolveFilenames([]string{"."}, protoFiles...)
+
+	// Compile proto files.
+	compiledFiles, err := compiler.Compile(context.Background(), protoFiles...)
+
+	// Check for collected errors first.
+	if len(collectedErrors) > 0 {
+		errStrings := make([]string, len(collectedErrors))
+		for i, e := range collectedErrors {
+			errStrings[i] = e.Error()
+		}
+		return errors.New(strings.Join(errStrings, "\n"))
+	}
+
 	if err != nil {
 		return err
 	}
 
-	fd, err := p.ParseFiles(protoFiles...)
-	if err != nil {
-		if err == protoparse.ErrInvalidSource {
-			if len(errorsWithPos) == 0 {
-				return errors.New("got protoparse.ErrInvalidSource but no ErrorWithPos errors")
-			}
-			// TODO: There's multiple ways to deal with this but this prints all the errors at least
-			errStrings := make([]string, len(errorsWithPos))
-			for i, errorWithPos := range errorsWithPos {
-				errStrings[i] = errorWithPos.Error()
-			}
-			return errors.New(strings.Join(errStrings, "\n"))
-		}
-		return err
+	// Convert to protoreflect.FileDescriptor slice.
+	fileDescriptors := make([]protoreflect.FileDescriptor, 0, len(compiledFiles))
+	for _, f := range compiledFiles {
+		fileDescriptors = append(fileDescriptors, f)
 	}
 
 	// Create a Linter to lint the file descriptors.
 	l := lint.New(globalRules, rules, lint.Debug(c.DebugFlag), lint.IgnoreCommentDisables(config.IgnoreCommentDisablesFlag))
-	results, err := l.LintProtos(fd...)
+	results, err := l.LintProtos(fileDescriptors...)
 	if err != nil {
 		return err
 	}
@@ -177,7 +151,7 @@ func Linter(c *CliArgs, config LinterConfig, protoImportPaths []string, protoFil
 
 	fmt.Println(string(b))
 
-	filterResults := lo.Filter(results, func(item lint.Response, index int) bool { return len(item.Problems) > 0 })
+	filterResults := lo.Filter(results, func(item lint.Response, _ int) bool { return len(item.Problems) > 0 })
 	if len(filterResults) > 0 {
 		os.Exit(1)
 	}
@@ -189,7 +163,7 @@ var outputFormatFuncs = map[string]formatFunc{
 	"yaml": yaml.Marshal,
 	"yml":  yaml.Marshal,
 	"json": json.Marshal,
-	"github": func(i interface{}) ([]byte, error) {
+	"github": func(i any) ([]byte, error) {
 		switch v := i.(type) {
 		case []lint.Response:
 			return formatGitHubActionOutput(v), nil
@@ -199,7 +173,7 @@ var outputFormatFuncs = map[string]formatFunc{
 	},
 }
 
-type formatFunc func(interface{}) ([]byte, error)
+type formatFunc func(any) ([]byte, error)
 
 func getOutputFormatFunc(formatType string) formatFunc {
 	if f, found := outputFormatFuncs[strings.ToLower(formatType)]; found {

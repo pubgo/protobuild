@@ -920,7 +920,7 @@ func (f *formatter) writeRPCType(rpcTypeNode *ast.RPCTypeNode) {
 //	  string name = 1;
 //	  int number = 2;
 //	}
-func (f *formatter) writeOneOf(oneOfNode *ast.OneOfNode) {
+func (f *formatter) writeOneOf(oneOfNode *ast.OneofNode) {
 	var elementWriterFunc func()
 	if len(oneOfNode.Decls) > 0 {
 		elementWriterFunc = func() {
@@ -1223,8 +1223,6 @@ func (f *formatter) writeCompositeValueForArrayLiteral(
 	switch node := compositeNode.(type) {
 	case *ast.CompoundStringLiteralNode:
 		f.writeCompoundStringLiteralForArray(node, lastElement)
-	case *ast.PositiveUintLiteralNode:
-		f.writePositiveUintLiteralForArray(node, lastElement)
 	case *ast.NegativeIntLiteralNode:
 		f.writeNegativeIntLiteralForArray(node, lastElement)
 	case *ast.SignedFloatLiteralNode:
@@ -1519,29 +1517,6 @@ func (f *formatter) writeNegativeIntLiteralForArray(
 	f.writeInline(negativeIntLiteralNode.Uint)
 }
 
-// writePositiveUintLiteral writes a positive uint literal (e.g. '+42').
-func (f *formatter) writePositiveUintLiteral(positiveIntLiteralNode *ast.PositiveUintLiteralNode) {
-	f.writeInline(positiveIntLiteralNode.Plus)
-	f.writeInline(positiveIntLiteralNode.Uint)
-}
-
-// writePositiveUintLiteralForArray writes a positive uint literal value, but writes
-// its comments suitable for an element in an array literal.
-//
-// The lastElement boolean is used to signal whether or not the value should
-// be written as the last element (i.e. it doesn't have a trailing comma).
-func (f *formatter) writePositiveUintLiteralForArray(
-	positiveIntLiteralNode *ast.PositiveUintLiteralNode,
-	lastElement bool,
-) {
-	f.writeStart(positiveIntLiteralNode.Plus)
-	if lastElement {
-		f.writeLineEnd(positiveIntLiteralNode.Uint)
-		return
-	}
-	f.writeInline(positiveIntLiteralNode.Uint)
-}
-
 // writeIdent writes an identifier (e.g. 'foo').
 func (f *formatter) writeIdent(identNode *ast.IdentNode) {
 	f.WriteString(identNode.Val)
@@ -1612,7 +1587,7 @@ func (f *formatter) writeNode(node ast.Node) {
 		f.writeMessageLiteral(element)
 	case *ast.NegativeIntLiteralNode:
 		f.writeNegativeIntLiteral(element)
-	case *ast.OneOfNode:
+	case *ast.OneofNode:
 		f.writeOneOf(element)
 	case *ast.OptionNode:
 		f.writeOption(element)
@@ -1620,8 +1595,6 @@ func (f *formatter) writeNode(node ast.Node) {
 		f.writeOptionName(element)
 	case *ast.PackageNode:
 		f.writePackage(element)
-	case *ast.PositiveUintLiteralNode:
-		f.writePositiveUintLiteral(element)
 	case *ast.RangeNode:
 		f.writeRange(element)
 	case *ast.ReservedNode:

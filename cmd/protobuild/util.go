@@ -8,14 +8,11 @@ import (
 
 	"github.com/a8m/envsubst"
 	"github.com/cnf/structhash"
-	_ "github.com/deckarep/golang-set/v2"
 	"github.com/huandu/go-clone"
-	_ "github.com/huandu/go-clone"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/strutil"
-	"github.com/pubgo/protobuild/internal/modutil"
 	"gopkg.in/yaml.v3"
 )
 
@@ -70,12 +67,9 @@ func parseConfig() error {
 			return ""
 		},
 		func() string {
-			goModPath := filepath.Dir(modutil.GoModPath())
-			if goModPath == "" {
-				panic("没有找到项目go.mod文件")
-			}
-
-			return filepath.Join(goModPath, ".proto")
+			// Default to .proto in current directory
+			// No longer requires go.mod
+			return filepath.Join(pwd, ".proto")
 		},
 	)
 
@@ -135,4 +129,18 @@ func writeChecksumData(vendorPath string, data []byte) error {
 	_ = os.MkdirAll(vendorPath, 0755)
 	var path = checkSumPath(vendorPath)
 	return errors.WrapCaller(os.WriteFile(path, data, 0644))
+}
+
+// formatBytes formats bytes into a human-readable string.
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }

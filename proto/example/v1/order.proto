@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/pubgo/protobuild/proto/example/v1;examplev1";
+option java_multiple_files = true;
+option java_package = "com.example.v1";
+
+// Order represents an order in the system.
+message Order {
+  string id = 1;
+  string user_id = 2;
+  repeated OrderItem items = 3;
+  OrderStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  Money total = 7;
+  ShippingAddress shipping_address = 8;
+}
+
+// OrderItem represents an item in an order.
+message OrderItem {
+  string product_id = 1;
+  string product_name = 2;
+  int32 quantity = 3;
+  Money unit_price = 4;
+}
+
+// OrderStatus represents the status of an order.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING = 1;
+  ORDER_STATUS_CONFIRMED = 2;
+  ORDER_STATUS_SHIPPED = 3;
+  ORDER_STATUS_DELIVERED = 4;
+  ORDER_STATUS_CANCELLED = 5;
+}
+
+// Money represents a monetary value.
+message Money {
+  string currency_code = 1;
+  int64 units = 2;
+  int32 nanos = 3;
+}
+
+// ShippingAddress represents a shipping address.
+message ShippingAddress {
+  string name = 1;
+  string street = 2;
+  string city = 3;
+  string state = 4;
+  string postal_code = 5;
+  string country = 6;
+}
+
+// CreateOrderRequest is the request for creating an order.
+message CreateOrderRequest {
+  Order order = 1;
+}
+
+// CreateOrderResponse is the response for creating an order.
+message CreateOrderResponse {
+  Order order = 1;
+}
+
+// GetOrderRequest is the request for getting an order.
+message GetOrderRequest {
+  string id = 1;
+}
+
+// GetOrderResponse is the response for getting an order.
+message GetOrderResponse {
+  Order order = 1;
+}
+
+// OrderService provides order management functionality.
+service OrderService {
+  // CreateOrder creates a new order.
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  // GetOrder retrieves an order by ID.
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+}
