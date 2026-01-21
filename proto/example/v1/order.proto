@@ -4,7 +4,7 @@ package example.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/pubgo/protobuild/proto/example/v1;examplev1";
+option go_package = "github.com/pubgo/protobuild/pkg/example/v1;examplev1";
 option java_multiple_files = true;
 option java_package = "com.example.v1";
 

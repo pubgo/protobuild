@@ -71,6 +71,8 @@ protobuild gen
 | `format -w` | Format and write changes to files |
 | `format --diff` | Show diff of formatting changes |
 | `format --builtin` | Use builtin formatter instead of buf |
+| `web` | Start web-based configuration UI |
+| `web --port 9090` | Start web UI on custom port |
 | `clean` | Clean dependency cache |
 | `clean --dry-run` | Show what would be cleaned without deleting |
 | `version` | Show version information |
@@ -238,6 +240,23 @@ protobuild format --builtin
 protobuild format -w proto/ api/
 ```
 
+### Web Configuration UI
+
+```bash
+# Start web UI on default port (8080)
+protobuild web
+
+# Start web UI on custom port
+protobuild web --port 9090
+```
+
+The web interface provides:
+- 📝 Visual configuration editor
+- 📦 Dependency management
+- 🔌 Plugin configuration
+- 🚀 One-click build, lint, format operations
+- 📄 Real-time YAML preview
+
 ### Force Vendor Update
 
 ```bash
@@ -339,7 +358,11 @@ protobuild
 │   │   └── yaml_types.go    # YAML type definitions
 │   ├── format/              # Proto file formatting (builtin)
 │   ├── formatcmd/           # Format command (buf integration)
-│   └── linters/             # AIP linting rules
+│   ├── linters/             # AIP linting rules
+│   └── webcmd/              # Web configuration UI
+│       ├── cmd.go           # Web command entry
+│       ├── server.go        # HTTP server and API
+│       └── templates/       # HTML templates (Alpine.js + Tailwind)
 └── internal/
     ├── depresolver/         # Multi-source dependency resolver
     ├── modutil/             # Go module utilities

@@ -14,6 +14,7 @@ require (
 	github.com/hashicorp/go-version v1.8.0
 	github.com/huandu/go-clone v1.7.3
 	github.com/pubgo/funk v0.5.68
+	github.com/pubgo/protoc-gen-retag v0.0.5
 	github.com/pubgo/redant v0.0.5
 	github.com/samber/lo v1.51.0
 	github.com/schollz/progressbar/v3 v3.19.0

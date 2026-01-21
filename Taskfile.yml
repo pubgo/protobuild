@@ -128,3 +128,7 @@ tasks:
       - task: lint
       - task: test
       - task: build
+  web:
+    desc: Run web server
+    cmds:
+      - go run *.go web

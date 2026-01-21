@@ -1,5 +1,9 @@
-checksum: ae1e52134aaa1770db37e83bf3cea605874942cb
+checksum: db5860630b46e9b8b0c59d190bf5639ab2da2b17
 vendor: .proto
+base:
+  out: ./pkg
+  paths: import
+  module: github.com/pubgo/protobuild/pkg
 root:
   - proto
 includes:
@@ -7,20 +11,15 @@ includes:
 deps:
   - name: google/protobuf
     url: /usr/local/include/google/protobuf
+  - name: retag
+    url: github.com/pubgo/protoc-gen-retag
+    path: proto/retag
+    version: v0.0.5
 plugins:
   - name: go
-    out: pkg
-    opt:
-      - paths=source_relative
   - name: retag
-    opt:
-      - paths=source_relative
-      - output=pkg
-  - name: test
 linter:
   rules:
-    included_paths: []
-    excluded_paths: []
     enabled_rules:
       - core::0131::http-method
       - core::0131::http-body
@@ -28,4 +27,3 @@ linter:
     disabled_rules:
       - all
   format_type: yaml
-  ignore_comment_disables_flag: false

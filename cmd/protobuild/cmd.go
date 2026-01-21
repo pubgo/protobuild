@@ -17,6 +17,7 @@ import (
 	"github.com/pubgo/funk/running"
 	"github.com/pubgo/protobuild/cmd/formatcmd"
 	"github.com/pubgo/protobuild/cmd/linters"
+	"github.com/pubgo/protobuild/cmd/webcmd"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/redant"
@@ -72,6 +73,8 @@ func Main(ver string) *redant.Command {
 		},
 		Handler: handleStdinPlugin,
 		Children: typex.Commands{
+			newInitCommand(),
+			newDoctorCommand(),
 			newGenCommand(),
 			newVendorCommand(&force, &update),
 			newInstallCommand(&force),
@@ -79,6 +82,7 @@ func Main(ver string) *redant.Command {
 			newFormatCommand(),
 			newDepsCommand(),
 			newCleanCommand(&dryRun),
+			webcmd.New(&protoCfg),
 			newVersionCommand(),
 		},
 	}
@@ -201,7 +205,7 @@ func installPlugin(plg string, force bool) {
 		slog.Error("command not found", slog.Any("name", plgName))
 	}
 
-	if err == nil && !globalCfg.changed && !force {
+	if err == nil && !globalCfg.Changed && !force {
 		slog.Info("no changes", slog.Any("path", path))
 		return
 	}
@@ -256,7 +260,8 @@ func newLintCommand(cliArgs *linters.CliArgs, options typex.Options) *redant.Com
 				}
 
 				includes := lo.Uniq(append(globalCfg.Includes, globalCfg.Vendor))
-				if err := linters.Linter(cliArgs, globalCfg.Linter, includes, protoFiles); err != nil {
+				linterCfg := toLinterConfig(globalCfg.Linter)
+				if err := linters.Linter(cliArgs, linterCfg, includes, protoFiles); err != nil {
 					return err
 				}
 			}

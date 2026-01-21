@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protobuild - 配置管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        /* Terminal output styles */
+        .terminal-output {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .terminal-output .log-time { color: #6b7280; }
+        .terminal-output .log-level-inf { color: #34d399; }
+        .terminal-output .log-level-wrn { color: #fbbf24; }
+        .terminal-output .log-level-err { color: #f87171; }
+        .terminal-output .log-level-dbg { color: #a78bfa; }
+        .terminal-output .log-msg { color: #e5e7eb; }
+        .terminal-output .log-key { color: #60a5fa; }
+        .terminal-output .log-val { color: #34d399; }
+        .terminal-output .log-path { color: #fbbf24; }
+        .terminal-output .log-cmd { color: #f472b6; font-weight: 500; }
+        .terminal-output .log-success { color: #34d399; }
+        .terminal-output .log-error { color: #f87171; }
+        /* Proto syntax highlighting */
+        .proto-code {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .proto-keyword { color: #c792ea; font-weight: 500; }
+        .proto-type { color: #82aaff; }
+        .proto-string { color: #c3e88d; }
+        .proto-number { color: #f78c6c; }
+        .proto-comment { color: #546e7a; font-style: italic; }
+        .proto-bracket { color: #89ddff; }
+        .line-number {
+            color: #4a5568;
+            user-select: none;
+            text-align: right;
+            padding-right: 1rem;
+            border-right: 1px solid #374151;
+            min-width: 3rem;
+        }
+        .file-tree-item:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .file-tree-item.selected {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div x-data="app()" x-init="init()" x-cloak class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">🔧 Protobuild</h1>
+                        <p class="text-sm text-gray-500">Protocol Buffers 构建与管理工具</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-500">配置文件: <code class="bg-gray-100 px-2 py-1 rounded">{{.ConfigPath}}</code></span>
+                        <button @click="saveConfig()" 
+                                :disabled="saving"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center">
+                            <span x-show="saving" class="mr-2">
+                                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                            </span>
+                            💾 保存配置
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Notification -->
+        <div x-show="notification.show" 
+             x-transition
+             :class="notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'"
+             class="fixed top-4 right-4 px-6 py-3 rounded-lg text-white shadow-lg z-50">
+            <span x-text="notification.message"></span>
+        </div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <!-- Project Stats Dashboard -->
+            <div class="mb-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-3xl font-bold text-blue-600" x-text="stats.proto_files || 0"></div>
+                    <div class="text-sm text-gray-500">Proto 文件</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-3xl font-bold text-green-600" x-text="stats.message_count || 0"></div>
+                    <div class="text-sm text-gray-500">Message</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-3xl font-bold text-purple-600" x-text="stats.service_count || 0"></div>
+                    <div class="text-sm text-gray-500">Service</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-3xl font-bold text-orange-600" x-text="stats.dependency_count || 0"></div>
+                    <div class="text-sm text-gray-500">依赖</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-3xl font-bold text-indigo-600" x-text="stats.plugin_count || 0"></div>
+                    <div class="text-sm text-gray-500">插件</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-3xl font-bold text-gray-600" x-text="stats.total_lines || 0"></div>
+                    <div class="text-sm text-gray-500">总行数</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mb-6 bg-white rounded-lg shadow p-4">
+                <h2 class="text-lg font-semibold mb-3">⚡ 快速操作</h2>
+                <div class="flex flex-wrap gap-3">
+                    <button @click="runCommand('gen')" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                        🚀 生成代码
+                    </button>
+                    <button @click="runCommand('vendor')" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
+                        📦 同步依赖
+                    </button>
+                    <button @click="runCommand('lint')" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50">
+                        🔍 代码检查
+                    </button>
+                    <button @click="runCommand('format', {write: true})" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                        📝 格式化
+                    </button>
+                    <button @click="runCommand('doctor')" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">
+                        🩺 环境检查
+                    </button>
+                    <button @click="runCommand('deps')" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50">
+                        📋 查看依赖
+                    </button>
+                    <button @click="runCommand('install')" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                        ⬇️ 安装插件
+                    </button>
+                    <button @click="runCommand('clean')" 
+                            :disabled="running"
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
+                        🗑️ 清理缓存
+                    </button>
+                </div>
+            </div>
+
+            <!-- Command Output -->
+            <div x-show="output || running" class="mb-6 bg-gray-900 rounded-lg shadow overflow-hidden">
+                <div class="flex justify-between items-center px-4 py-2 bg-gray-800">
+                    <span class="text-gray-300 text-sm">
+                        <span x-show="running" class="flex items-center">
+                            <svg class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            运行中...
+                        </span>
+                        <span x-show="!running">命令输出</span>
+                    </span>
+                    <button @click="output = ''" class="text-gray-400 hover:text-white text-sm">清除</button>
+                </div>
+                <pre class="terminal-output p-4 text-green-400 text-sm overflow-auto max-h-96" x-html="formatOutput(output)"></pre>
+            </div>
+
+            <!-- Tabs -->
+            <div class="mb-4 border-b border-gray-200">
+                <nav class="flex space-x-8 overflow-x-auto">
+                    <button @click="activeTab = 'basic'" 
+                            :class="activeTab === 'basic' ? 'tab-active' : 'text-gray-500 hover:text-gray-700'"
+                            class="py-2 px-1 font-medium whitespace-nowrap">
+                        📁 基础配置
+                    </button>
+                    <button @click="activeTab = 'deps'" 
+                            :class="activeTab === 'deps' ? 'tab-active' : 'text-gray-500 hover:text-gray-700'"
+                            class="py-2 px-1 font-medium whitespace-nowrap">
+                        📦 依赖管理
+                    </button>
+                    <button @click="activeTab = 'plugins'" 
+                            :class="activeTab === 'plugins' ? 'tab-active' : 'text-gray-500 hover:text-gray-700'"
+                            class="py-2 px-1 font-medium whitespace-nowrap">
+                        🔌 插件配置
+                    </button>
+                    <button @click="activeTab = 'linter'" 
+                            :class="activeTab === 'linter' ? 'tab-active' : 'text-gray-500 hover:text-gray-700'"
+                            class="py-2 px-1 font-medium whitespace-nowrap">
+                        🔍 Linter 配置
+                    </button>
+                    <button @click="activeTab = 'files'; loadProtoFiles()" 
+                            :class="activeTab === 'files' ? 'tab-active' : 'text-gray-500 hover:text-gray-700'"
+                            class="py-2 px-1 font-medium whitespace-nowrap">
+                        📄 Proto 文件
+                    </button>
+                    <button @click="activeTab = 'examples'" 
+                            :class="activeTab === 'examples' ? 'tab-active' : 'text-gray-500 hover:text-gray-700'"
+                            class="py-2 px-1 font-medium whitespace-nowrap">
+                        📚 配置示例
+                    </button>
+                    <button @click="activeTab = 'yaml'" 
+                            :class="activeTab === 'yaml' ? 'tab-active' : 'text-gray-500 hover:text-gray-700'"
+                            class="py-2 px-1 font-medium whitespace-nowrap">
+                        📝 YAML 预览
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="bg-white rounded-lg shadow">
+                <!-- Basic Config -->
+                <div x-show="activeTab === 'basic'" class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Vendor Directory -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Vendor 目录</label>
+                            <input type="text" x-model="config.vendor" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder=".proto">
+                            <p class="mt-1 text-xs text-gray-500">依赖存放的目录</p>
+                        </div>
+
+                        <!-- Base Plugin Out -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">默认输出目录</label>
+                            <input type="text" x-model="config.base.out" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="pkg">
+                            <p class="mt-1 text-xs text-gray-500">插件生成代码的默认目录</p>
+                        </div>
+
+                        <!-- Base Paths -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">路径模式</label>
+                            <select x-model="config.base.paths" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">默认</option>
+                                <option value="source_relative">source_relative</option>
+                                <option value="import">import</option>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">protoc 路径模式</p>
+                        </div>
+
+                        <!-- Module -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Go Module</label>
+                            <input type="text" x-model="config.base.module" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="github.com/your/module">
+                            <p class="mt-1 text-xs text-gray-500">Go 模块路径</p>
+                        </div>
+                    </div>
+
+                    <!-- Root Directories -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Proto 源目录</label>
+                        <div class="space-y-2">
+                            <template x-for="(dir, index) in config.root" :key="index">
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" x-model="config.root[index]" 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <button @click="config.root.splice(index, 1)" 
+                                            class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                        ✕
+                                    </button>
+                                </div>
+                            </template>
+                            <button @click="config.root.push('')" 
+                                    class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg border border-dashed border-blue-300">
+                                + 添加目录
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Include Directories -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Include 路径</label>
+                        <div class="space-y-2">
+                            <template x-for="(dir, index) in config.includes" :key="index">
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" x-model="config.includes[index]" 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <button @click="config.includes.splice(index, 1)" 
+                                            class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                        ✕
+                                    </button>
+                                </div>
+                            </template>
+                            <button @click="config.includes.push('')" 
+                                    class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg border border-dashed border-blue-300">
+                                + 添加路径
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Exclude Directories -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">排除路径</label>
+                        <div class="space-y-2">
+                            <template x-for="(dir, index) in config.excludes" :key="index">
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" x-model="config.excludes[index]" 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <button @click="config.excludes.splice(index, 1)" 
+                                            class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                        ✕
+                                    </button>
+                                </div>
+                            </template>
+                            <button @click="config.excludes.push('')" 
+                                    class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg border border-dashed border-blue-300">
+                                + 添加排除路径
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dependencies -->
+                <div x-show="activeTab === 'deps'" class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">Proto 依赖</h3>
+                        <button @click="addDep()" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            + 添加依赖
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <template x-for="(dep, index) in config.deps" :key="index">
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-between items-start mb-3">
+                                    <span class="font-medium text-gray-700" x-text="dep.name || '新依赖'"></span>
+                                    <button @click="config.deps.splice(index, 1)" 
+                                            class="text-red-600 hover:bg-red-50 px-2 py-1 rounded">
+                                        删除
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">名称</label>
+                                        <input type="text" x-model="dep.name" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                               placeholder="google/protobuf">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">URL</label>
+                                        <input type="text" x-model="dep.url" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                               placeholder="github.com/protocolbuffers/protobuf">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">源类型</label>
+                                        <select x-model="dep.source" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                            <option value="">自动检测</option>
+                                            <option value="gomod">Go Module</option>
+                                            <option value="git">Git</option>
+                                            <option value="http">HTTP</option>
+                                            <option value="local">本地</option>
+                                            <option value="s3">S3</option>
+                                            <option value="gcs">GCS</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">路径</label>
+                                        <input type="text" x-model="dep.path" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                               placeholder="src/google/protobuf">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">版本/Ref</label>
+                                        <input type="text" x-model="dep.version" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                               placeholder="v21.0 或 main">
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" x-model="dep.optional" class="mr-2">
+                                            可选依赖
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div x-show="!config.deps || config.deps.length === 0" 
+                             class="text-center py-8 text-gray-500">
+                            暂无依赖配置，点击"添加依赖"开始
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plugins -->
+                <div x-show="activeTab === 'plugins'" class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">Protoc 插件</h3>
+                        <div class="space-x-2">
+                            <button @click="addPlugin('go')" 
+                                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm">
+                                + Go
+                            </button>
+                            <button @click="addPlugin('go-grpc')" 
+                                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm">
+                                + Go-gRPC
+                            </button>
+                            <button @click="addPlugin('grpc-gateway')" 
+                                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm">
+                                + Gateway
+                            </button>
+                            <button @click="addPlugin('')" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                + 自定义插件
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <template x-for="(plugin, index) in config.plugins" :key="index">
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-medium text-gray-700" x-text="plugin.name || '新插件'"></span>
+                                        <span x-show="plugin.skip_run" class="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">已禁用</span>
+                                    </div>
+                                    <button @click="config.plugins.splice(index, 1)" 
+                                            class="text-red-600 hover:bg-red-50 px-2 py-1 rounded">
+                                        删除
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">插件名称</label>
+                                        <input type="text" x-model="plugin.name" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                               placeholder="go">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">输出目录</label>
+                                        <input type="text" x-model="plugin.out" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                               placeholder="pkg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">自定义路径</label>
+                                        <input type="text" x-model="plugin.path" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                               placeholder="留空使用默认">
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="block text-xs text-gray-500 mb-1">选项 (每行一个)</label>
+                                    <textarea x-model="plugin._optStr" 
+                                              @input="plugin.opt = $event.target.value.split('\n').filter(s => s.trim())"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                                              rows="2"
+                                              placeholder="paths=source_relative"></textarea>
+                                </div>
+                                <div class="mt-3 flex items-center space-x-4">
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" x-model="plugin.skip_base" class="mr-2">
+                                        跳过基础配置
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" x-model="plugin.skip_run" class="mr-2">
+                                        禁用此插件
+                                    </label>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div x-show="!config.plugins || config.plugins.length === 0" 
+                             class="text-center py-8 text-gray-500">
+                            暂无插件配置，点击上方按钮添加
+                        </div>
+                    </div>
+
+                    <!-- Installers -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h3 class="text-lg font-medium mb-4">插件安装器</h3>
+                        <p class="text-sm text-gray-500 mb-3">通过 go install 安装的插件列表</p>
+                        <div class="space-y-2">
+                            <template x-for="(installer, index) in config.installers" :key="index">
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" x-model="config.installers[index]" 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                                           placeholder="google.golang.org/protobuf/cmd/protoc-gen-go@latest">
+                                    <button @click="config.installers.splice(index, 1)" 
+                                            class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                        ✕
+                                    </button>
+                                </div>
+                            </template>
+                            <button @click="config.installers.push('')" 
+                                    class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg border border-dashed border-blue-300">
+                                + 添加安装器
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Linter -->
+                <div x-show="activeTab === 'linter'" class="p-6">
+                    <h3 class="text-lg font-medium mb-4">Linter 配置</h3>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">输出格式</label>
+                        <select x-model="config.linter.format_type" 
+                                class="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">默认</option>
+                            <option value="yaml">YAML</option>
+                            <option value="json">JSON</option>
+                            <option value="summary">Summary</option>
+                            <option value="github_actions">GitHub Actions</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Enabled Rules -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">启用的规则</label>
+                            <div class="space-y-2">
+                                <template x-for="(rule, index) in (config.linter.rules?.enabled_rules || [])" :key="index">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" x-model="config.linter.rules.enabled_rules[index]" 
+                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                                               placeholder="core::0131::http-method">
+                                        <button @click="config.linter.rules.enabled_rules.splice(index, 1)" 
+                                                class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </template>
+                                <button @click="ensureLinterRules(); config.linter.rules.enabled_rules.push('')" 
+                                        class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg border border-dashed border-blue-300 text-sm">
+                                    + 添加规则
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Disabled Rules -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">禁用的规则</label>
+                            <div class="space-y-2">
+                                <template x-for="(rule, index) in (config.linter.rules?.disabled_rules || [])" :key="index">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" x-model="config.linter.rules.disabled_rules[index]" 
+                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                                               placeholder="all">
+                                        <button @click="config.linter.rules.disabled_rules.splice(index, 1)" 
+                                                class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </template>
+                                <button @click="ensureLinterRules(); config.linter.rules.disabled_rules.push('')" 
+                                        class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg border border-dashed border-blue-300 text-sm">
+                                    + 添加规则
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-medium text-blue-800 mb-2">💡 常用规则</h4>
+                        <div class="flex flex-wrap gap-2 text-sm">
+                            <button @click="addEnabledRule('core')" class="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">core</button>
+                            <button @click="addEnabledRule('naming')" class="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">naming</button>
+                            <button @click="addDisabledRule('all')" class="px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">禁用所有</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proto Files Browser -->
+                <div x-show="activeTab === 'files'" class="p-0">
+                    <div class="flex h-[600px]">
+                        <!-- File Tree Sidebar -->
+                        <div class="w-72 border-r bg-gray-50 flex flex-col">
+                            <div class="px-4 py-3 border-b bg-white flex justify-between items-center">
+                                <span class="font-medium text-gray-700">📁 文件浏览器</span>
+                                <button @click="loadProtoFiles()" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="flex-1 overflow-auto">
+                                <template x-for="(dirData, dir) in protoFileTree" :key="dir">
+                                    <div>
+                                        <div @click="toggleDir(dir)" class="px-3 py-2 bg-gray-100 text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center cursor-pointer hover:bg-gray-200">
+                                            <span x-text="dirData.expanded ? '📂' : '📁'" class="mr-1"></span>
+                                            <span x-text="dir || 'root'"></span>
+                                            <span class="ml-auto text-gray-400" x-text="dirData.files.length"></span>
+                                        </div>
+                                        <template x-if="dirData.expanded">
+                                            <div>
+                                                <template x-for="file in dirData.files" :key="file.path">
+                                                    <div @click="loadProtoContent(file.path)" 
+                                                         :class="selectedProtoFile === file.path ? 'selected' : ''"
+                                                         class="file-tree-item px-4 py-2 cursor-pointer text-sm flex items-center group">
+                                                        <svg class="w-4 h-4 mr-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                                        </svg>
+                                                        <span x-text="file.name" class="truncate"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <div x-show="protoFiles.length === 0" class="p-8 text-center text-gray-400">
+                                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-sm">暂无 Proto 文件</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Code Editor Area -->
+                        <div class="flex-1 flex flex-col bg-[#1e1e1e]">
+                            <!-- Editor Header -->
+                            <div class="px-4 py-2 bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between">
+                                <div class="flex items-center text-sm">
+                                    <template x-if="selectedProtoFile">
+                                        <div class="flex items-center text-gray-300">
+                                            <svg class="w-4 h-4 mr-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            <span x-text="selectedProtoFile"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="!selectedProtoFile">
+                                        <span class="text-gray-500">选择文件以查看内容</span>
+                                    </template>
+                                </div>
+                                <div x-show="protoContent.content" class="flex items-center space-x-4 text-xs text-gray-400">
+                                    <span><span class="text-blue-400" x-text="countInContent('message ')"></span> messages</span>
+                                    <span><span class="text-green-400" x-text="countInContent('service ')"></span> services</span>
+                                    <span><span class="text-purple-400" x-text="countInContent('import ')"></span> imports</span>
+                                    <span><span class="text-gray-400" x-text="(protoContent.content || '').split('\\n').length"></span> lines</span>
+                                </div>
+                            </div>
+
+                            <!-- Code Content -->
+                            <div class="flex-1 overflow-auto">
+                                <div x-show="!selectedProtoFile" class="h-full flex items-center justify-center text-gray-500">
+                                    <div class="text-center">
+                                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                        </svg>
+                                        <p class="text-sm">👈 从左侧选择文件查看</p>
+                                    </div>
+                                </div>
+                                <div x-show="loadingProto" class="h-full flex items-center justify-center">
+                                    <svg class="animate-spin h-8 w-8 text-blue-500" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                </div>
+                                <div x-show="selectedProtoFile && !loadingProto" class="proto-code flex text-sm">
+                                    <!-- Line numbers -->
+                                    <div class="py-4 pr-4 text-right select-none text-gray-500 border-r border-gray-700 bg-[#252526]" style="min-width: 3rem;">
+                                        <template x-for="(line, i) in (protoContent.content || '').split('\n')" :key="'ln'+i">
+                                            <div class="leading-relaxed px-2" x-text="i + 1"></div>
+                                        </template>
+                                    </div>
+                                    <!-- Code content with syntax highlighting -->
+                                    <pre x-ref="codeContent" 
+                                         x-effect="if($refs.codeContent && protoContent.content) $refs.codeContent.innerHTML = highlightProto(protoContent.content)"
+                                         class="flex-1 py-4 pl-4 leading-relaxed overflow-x-auto"
+                                         style="color: #d4d4d4;"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- YAML Preview -->
+                <div x-show="activeTab === 'yaml'" class="p-6">
+                    <h3 class="text-lg font-medium mb-4">YAML 配置预览</h3>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-auto text-sm" x-text="yamlPreview()"></pre>
+                </div>
+
+                <!-- Examples -->
+                <div x-show="activeTab === 'examples'" class="p-6">
+                    <h3 class="text-lg font-medium mb-4">📚 配置示例参考</h3>
+                    <p class="text-gray-600 mb-6">以下是常用的配置示例，点击「应用此配置」可直接使用。</p>
+
+                    <div class="space-y-6">
+                        <!-- Example 1: Basic Go Project -->
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">🚀 基础 Go 项目</h4>
+                                    <p class="text-sm text-gray-500">适合简单的 Go + gRPC 项目</p>
+                                </div>
+                                <button @click="applyExample('basic')" 
+                                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                    应用此配置
+                                </button>
+                            </div>
+                            <pre class="bg-gray-900 text-green-400 p-4 text-xs overflow-auto max-h-64">vendor: .proto
+base:
+  out: ./gen
+  paths: source_relative
+root:
+  - proto
+includes:
+  - proto
+deps:
+  - name: google/protobuf
+    url: https://github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+plugins:
+  - name: go
+  - name: go-grpc</pre>
+                        </div>
+
+                        <!-- Example 2: Full-featured Project -->
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">⚡ 完整项目配置</h4>
+                                    <p class="text-sm text-gray-500">包含 gRPC-Gateway、Validate、OpenAPI 等</p>
+                                </div>
+                                <button @click="applyExample('full')" 
+                                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                    应用此配置
+                                </button>
+                            </div>
+                            <pre class="bg-gray-900 text-green-400 p-4 text-xs overflow-auto max-h-64">vendor: .proto
+base:
+  out: ./pkg
+  paths: import
+  module: github.com/yourorg/yourproject/pkg
+root:
+  - proto
+  - api
+includes:
+  - proto
+  - third_party
+deps:
+  - name: google/protobuf
+    url: https://github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+  - name: google/api
+    url: https://github.com/googleapis/googleapis
+    path: google/api
+  - name: protoc-gen-openapiv2/options
+    url: https://github.com/grpc-ecosystem/grpc-gateway
+    path: protoc-gen-openapiv2/options
+  - name: validate
+    url: https://github.com/bufbuild/protovalidate
+    path: proto/protovalidate/buf/validate
+plugins:
+  - name: go
+  - name: go-grpc
+  - name: grpc-gateway
+    opt:
+      - generate_unbound_methods=true
+  - name: openapiv2
+    out: ./docs/swagger
+  - name: validate-go
+linter:
+  format_type: github_actions
+  rules:
+    enabled_rules:
+      - core
+      - naming
+    disabled_rules: []</pre>
+                        </div>
+
+                        <!-- Example 3: Microservice -->
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">🔧 微服务项目</h4>
+                                    <p class="text-sm text-gray-500">适合多模块微服务架构</p>
+                                </div>
+                                <button @click="applyExample('microservice')" 
+                                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                    应用此配置
+                                </button>
+                            </div>
+                            <pre class="bg-gray-900 text-green-400 p-4 text-xs overflow-auto max-h-64">vendor: .proto
+base:
+  out: ./internal/pb
+  paths: import
+  module: github.com/yourorg/service/internal/pb
+root:
+  - api/proto
+includes:
+  - api/proto
+  - vendor/proto
+excludes:
+  - vendor
+  - third_party
+deps:
+  - name: google/protobuf
+    url: https://github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+  - name: google/api
+    url: https://github.com/googleapis/googleapis
+    path: google/api
+plugins:
+  - name: go
+    opt:
+      - paths=source_relative
+  - name: go-grpc
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=false
+  - name: connect-go
+    out: ./internal/connect
+linter:
+  format_type: yaml
+  rules:
+    enabled_rules:
+      - core::0131::http-method
+      - core::0131::http-body
+    disabled_rules:
+      - all</pre>
+                        </div>
+
+                        <!-- Example 4: With Retag -->
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">🏷️ 自定义结构体标签</h4>
+                                    <p class="text-sm text-gray-500">使用 retag 添加 JSON/XML/Validate 标签</p>
+                                </div>
+                                <button @click="applyExample('retag')" 
+                                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                    应用此配置
+                                </button>
+                            </div>
+                            <pre class="bg-gray-900 text-green-400 p-4 text-xs overflow-auto max-h-64">vendor: .proto
+base:
+  out: ./pkg
+  paths: import
+  module: github.com/yourorg/yourproject/pkg
+root:
+  - proto
+includes:
+  - proto
+deps:
+  - name: google/protobuf
+    url: https://github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+  - name: retag
+    url: https://github.com/pubgo/protoc-gen-retag
+    path: proto/retag
+plugins:
+  - name: go
+  - name: retag
+# Proto 文件中使用示例:
+# message User {
+#   string id = 1 [(retag.tags) = {name: "json", value: "user_id"}];
+#   string email = 2 [
+#     (retag.tags) = {name: "json", value: "email"},
+#     (retag.tags) = {name: "xml", value: "email,attr"},
+#     (retag.tags) = {name: "validate", value: "required,email"}
+#   ];
+# }</pre>
+                        </div>
+
+                        <!-- Example 5: Buf Compatible -->
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">📦 Buf 兼容配置</h4>
+                                    <p class="text-sm text-gray-500">与 Buf Schema Registry 集成</p>
+                                </div>
+                                <button @click="applyExample('buf')" 
+                                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                    应用此配置
+                                </button>
+                            </div>
+                            <pre class="bg-gray-900 text-green-400 p-4 text-xs overflow-auto max-h-64">vendor: .proto
+base:
+  out: ./gen/go
+  paths: source_relative
+root:
+  - proto
+includes:
+  - proto
+deps:
+  - name: buf/validate
+    source: buf.build
+    url: buf.build/bufbuild/protovalidate
+  - name: googleapis
+    source: buf.build
+    url: buf.build/googleapis/googleapis
+plugins:
+  - name: go
+  - name: go-grpc
+  - name: buf-validate-go
+installers:
+  - go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+  - go install github.com/bufbuild/buf/cmd/buf@latest</pre>
+                        </div>
+
+                        <!-- Example 6: Multi-language -->
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">🌐 多语言生成</h4>
+                                    <p class="text-sm text-gray-500">同时生成 Go、TypeScript、Python 代码</p>
+                                </div>
+                                <button @click="applyExample('multilang')" 
+                                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                    应用此配置
+                                </button>
+                            </div>
+                            <pre class="bg-gray-900 text-green-400 p-4 text-xs overflow-auto max-h-64">vendor: .proto
+root:
+  - proto
+includes:
+  - proto
+deps:
+  - name: google/protobuf
+    url: https://github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+plugins:
+  # Go
+  - name: go
+    out: ./gen/go
+    opt:
+      - paths=source_relative
+  - name: go-grpc
+    out: ./gen/go
+    opt:
+      - paths=source_relative
+  # TypeScript (使用 ts-proto)
+  - name: ts_proto
+    out: ./gen/ts
+    opt:
+      - esModuleInterop=true
+      - outputServices=grpc-js
+  # Python
+  - name: python
+    out: ./gen/python
+  - name: grpc_python
+    out: ./gen/python
+installers:
+  - go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+  - npm install -g ts-proto
+  - pip install grpcio-tools</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
+            Protobuild - Protocol Buffers Build Tool
+        </footer>
+    </div>
+
+    <script>
+        function app() {
+            return {
+                activeTab: 'basic',
+                config: {
+                    vendor: '{{.Config.Vendor}}',
+                    base: {
+                        out: '{{if .Config.BasePlugin}}{{.Config.BasePlugin.Out}}{{end}}',
+                        paths: '{{if .Config.BasePlugin}}{{.Config.BasePlugin.Paths}}{{end}}',
+                        module: '{{if .Config.BasePlugin}}{{.Config.BasePlugin.Module}}{{end}}'
+                    },
+                    root: [],
+                    includes: [],
+                    excludes: [],
+                    deps: [],
+                    plugins: [],
+                    installers: [],
+                    linter: {
+                        format_type: '',
+                        rules: {
+                            enabled_rules: [],
+                            disabled_rules: []
+                        }
+                    }
+                },
+                output: '',
+                running: false,
+                saving: false,
+                notification: {
+                    show: false,
+                    message: '',
+                    type: 'success'
+                },
+                // New state for enhanced features
+                stats: {},
+                protoFiles: [],
+                protoFileTree: {},
+                selectedProtoFile: '',
+                protoContent: {},
+                loadingProto: false,
+
+                async init() {
+                    await this.loadConfig();
+                    await this.loadStats();
+                },
+
+                async loadStats() {
+                    try {
+                        const resp = await fetch('/api/project/stats');
+                        this.stats = await resp.json();
+                    } catch (e) {
+                        console.error('Failed to load stats:', e);
+                    }
+                },
+
+                async loadProtoFiles() {
+                    try {
+                        const resp = await fetch('/api/proto-files');
+                        const files = await resp.json();
+                        this.protoFiles = files;
+                        this.protoFileTree = this.buildFileTree(files);
+                    } catch (e) {
+                        console.error('Failed to load proto files:', e);
+                    }
+                },
+
+                // Build tree structure from flat file list
+                buildFileTree(files) {
+                    const tree = {};
+                    files.forEach(file => {
+                        const parts = file.split('/');
+                        const fileName = parts.pop();
+                        const dir = parts.join('/') || '.';
+                        
+                        if (!tree[dir]) {
+                            tree[dir] = { expanded: true, files: [] };
+                        }
+                        tree[dir].files.push({ path: file, name: fileName });
+                    });
+                    return tree;
+                },
+
+                toggleDir(dir) {
+                    if (this.protoFileTree[dir]) {
+                        this.protoFileTree[dir].expanded = !this.protoFileTree[dir].expanded;
+                    }
+                },
+
+                async loadProtoContent(file) {
+                    this.selectedProtoFile = file;
+                    this.loadingProto = true;
+                    try {
+                        const resp = await fetch(`/api/proto-content?file=${encodeURIComponent(file)}`);
+                        this.protoContent = await resp.json();
+                    } catch (e) {
+                        console.error('Failed to load proto content:', e);
+                        this.protoContent = { content: '// Error loading file' };
+                    }
+                    this.loadingProto = false;
+                },
+
+                getProtoLines() {
+                    if (!this.protoContent.content) return [];
+                    return this.protoContent.content.split('\n');
+                },
+
+                highlightProtoLine(line) {
+                    if (!line) return '&nbsp;';
+                    let html = this.escapeHtml(line);
+                    
+                    // Comments first (highest priority)
+                    if (html.match(/^\s*\/\//)) {
+                        return '<span class="proto-comment">' + html + '</span>';
+                    }
+                    
+                    // Keywords
+                    html = html.replace(/\b(syntax|package|import|option|message|enum|service|rpc|returns|repeated|optional|required|oneof|map|reserved|extend|extensions)\b/g, 
+                        '<span class="proto-keyword">$1</span>');
+                    
+                    // Types
+                    html = html.replace(/\b(string|int32|int64|uint32|uint64|bool|bytes|float|double|fixed32|fixed64|sfixed32|sfixed64|sint32|sint64|google\.protobuf\.\w+)\b/g, 
+                        '<span class="proto-type">$1</span>');
+                    
+                    // Inline comments
+                    html = html.replace(/(\/\/.*)$/, '<span class="proto-comment">$1</span>');
+                    
+                    // Strings
+                    html = html.replace(/("(?:[^"\\]|\\.)*")/g, '<span class="proto-string">$1</span>');
+                    
+                    // Numbers (field numbers and values)
+                    html = html.replace(/=\s*(\d+)/g, '= <span class="proto-number">$1</span>');
+                    
+                    // Brackets
+                    html = html.replace(/([{}[\]()])/g, '<span class="proto-bracket">$1</span>');
+                    
+                    return html;
+                },
+
+                highlightProto(content) {
+                    if (!content) return '';
+                    
+                    // Process line by line to handle comments correctly
+                    const lines = content.split('\n');
+                    const highlightedLines = lines.map(line => {
+                        // Escape HTML first
+                        let escaped = this.escapeHtml(line);
+                        
+                        // Check if entire line is a comment
+                        if (/^\s*\/\//.test(line)) {
+                            return '<span style="color:#546e7a;font-style:italic">' + escaped + '</span>';
+                        }
+                        
+                        // Use placeholders to avoid nested replacements
+                        const placeholders = [];
+                        const placeholder = (str, style) => {
+                            const idx = placeholders.length;
+                            placeholders.push('<span style="' + style + '">' + str + '</span>');
+                            return '\x00' + idx + '\x00';
+                        };
+                        
+                        // Extract and replace strings first (highest priority)
+                        escaped = escaped.replace(/"([^"\\]|\\.)*"/g, m => placeholder(m, 'color:#c3e88d'));
+                        
+                        // Extract inline comments
+                        escaped = escaped.replace(/\/\/.*$/, m => placeholder(m, 'color:#546e7a;font-style:italic'));
+                        
+                        // Keywords
+                        escaped = escaped.replace(/\b(syntax|package|import|option|message|enum|service|rpc|returns|repeated|optional|required|oneof|map|reserved|extend|extensions)\b/g, 
+                            m => placeholder(m, 'color:#c792ea;font-weight:500'));
+                        
+                        // Types
+                        escaped = escaped.replace(/\b(string|int32|int64|uint32|uint64|bool|bytes|float|double|fixed32|fixed64|sfixed32|sfixed64|sint32|sint64|google)\b/g, 
+                            m => placeholder(m, 'color:#82aaff'));
+                        
+                        // Numbers (field numbers)
+                        escaped = escaped.replace(/=\s*(\d+)/g, (m, num) => '= ' + placeholder(num, 'color:#f78c6c'));
+                        
+                        // Restore placeholders
+                        escaped = escaped.replace(/\x00(\d+)\x00/g, (m, idx) => placeholders[parseInt(idx)]);
+                        
+                        return escaped;
+                    });
+                    
+                    return highlightedLines.join('\n');
+                },
+
+                countInContent(keyword) {
+                    if (!this.protoContent.content) return 0;
+                    const matches = this.protoContent.content.match(new RegExp('^\\s*' + keyword, 'gm'));
+                    return matches ? matches.length : 0;
+                },
+
+                async loadConfig() {
+                    try {
+                        const resp = await fetch('/api/config');
+                        const data = await resp.json();
+                        
+                        // Merge with defaults
+                        this.config = {
+                            ...this.config,
+                            ...data,
+                            base: {
+                                out: '',
+                                paths: '',
+                                module: '',
+                                ...(data.base || {})
+                            },
+                            root: data.root || [],
+                            includes: data.includes || [],
+                            excludes: data.excludes || [],
+                            deps: data.deps || [],
+                            plugins: (data.plugins || []).map(p => ({
+                                ...p,
+                                opt: p.opt || [],
+                                _optStr: (p.opt || []).join('\n')
+                            })),
+                            installers: data.installers || [],
+                            linter: {
+                                format_type: '',
+                                rules: {
+                                    enabled_rules: [],
+                                    disabled_rules: []
+                                },
+                                ...(data.linter || {})
+                            }
+                        };
+
+                        if (this.config.linter && !this.config.linter.rules) {
+                            this.config.linter.rules = {
+                                enabled_rules: [],
+                                disabled_rules: []
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Failed to load config:', e);
+                    }
+                },
+
+                async saveConfig() {
+                    this.saving = true;
+                    try {
+                        // Clean up config before saving
+                        const cfg = JSON.parse(JSON.stringify(this.config));
+                        
+                        // Remove empty values
+                        cfg.root = cfg.root.filter(s => s);
+                        cfg.includes = cfg.includes.filter(s => s);
+                        cfg.excludes = cfg.excludes.filter(s => s);
+                        cfg.installers = cfg.installers.filter(s => s);
+                        
+                        // Clean plugins
+                        cfg.plugins = cfg.plugins.map(p => {
+                            const cleaned = {...p};
+                            delete cleaned._optStr;
+                            cleaned.opt = (cleaned.opt || []).filter(s => s);
+                            return cleaned;
+                        });
+
+                        // Clean linter rules
+                        if (cfg.linter?.rules) {
+                            cfg.linter.rules.enabled_rules = (cfg.linter.rules.enabled_rules || []).filter(s => s);
+                            cfg.linter.rules.disabled_rules = (cfg.linter.rules.disabled_rules || []).filter(s => s);
+                        }
+
+                        // Remove empty base
+                        if (!cfg.base?.out && !cfg.base?.paths && !cfg.base?.module) {
+                            delete cfg.base;
+                        }
+
+                        const resp = await fetch('/api/config/save', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(cfg)
+                        });
+                        const result = await resp.json();
+                        
+                        if (result.success) {
+                            this.showNotification('配置已保存', 'success');
+                        } else {
+                            this.showNotification('保存失败: ' + result.error, 'error');
+                        }
+                    } catch (e) {
+                        this.showNotification('保存失败: ' + e.message, 'error');
+                    }
+                    this.saving = false;
+                },
+
+                async runCommand(cmd, flags = {}) {
+                    this.running = true;
+                    this.output = `<span class="log-cmd">$ protobuild ${cmd}</span>\n\n`;
+                    
+                    try {
+                        const resp = await fetch(`/api/command/${cmd}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(flags)
+                        });
+                        const result = await resp.json();
+                        
+                        this.output += result.output || '';
+                        if (result.error) {
+                            this.output += '\n\n<span class="log-error">❌ 错误: ' + this.escapeHtml(result.error) + '</span>';
+                        } else if (result.success) {
+                            this.output += '\n\n<span class="log-success">✅ 执行成功</span>';
+                        }
+                    } catch (e) {
+                        this.output += '\n\n<span class="log-error">❌ 请求失败: ' + this.escapeHtml(e.message) + '</span>';
+                    }
+                    
+                    this.running = false;
+                },
+
+                escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                },
+
+                formatOutput(text) {
+                    if (!text) return '';
+                    
+                    // First, escape HTML to prevent XSS (but preserve our own HTML tags)
+                    let output = text;
+                    
+                    // Remove ANSI escape codes
+                    output = output.replace(/\x1b\[[0-9;]*m/g, '');
+                    output = output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+                    
+                    // Format structured log lines (JSON-style logs from zerolog/slog)
+                    // Pattern: timestamp LEVEL > message key=value key=value
+                    output = output.replace(
+                        /^(\d{4}-\d{2}-\d{2}T[\d:+.-]+)\s+(INF|WRN|ERR|DBG)\s+([^>]+)>\s+(.*)$/gm,
+                        (match, time, level, source, rest) => {
+                            const levelClass = {
+                                'INF': 'log-level-inf',
+                                'WRN': 'log-level-wrn', 
+                                'ERR': 'log-level-err',
+                                'DBG': 'log-level-dbg'
+                            }[level] || '';
+                            
+                            // Parse key=value pairs
+                            let formatted = rest.replace(
+                                /(\w+)=([^\s]+)/g,
+                                '<span class="log-key">$1</span>=<span class="log-val">$2</span>'
+                            );
+                            
+                            // Highlight protoc commands
+                            formatted = formatted.replace(
+                                /(protoc\s+[^\n]+)/g,
+                                '<span class="log-cmd">$1</span>'
+                            );
+                            
+                            return `<span class="log-time">${time}</span> <span class="${levelClass}">${level}</span> <span class="log-path">${source.trim()}</span> ${formatted}`;
+                        }
+                    );
+                    
+                    // Highlight file paths
+                    output = output.replace(
+                        /([\w./\-]+\.(proto|go|yaml|json))/g,
+                        '<span class="log-path">$1</span>'
+                    );
+                    
+                    return output;
+                },
+
+                addDep() {
+                    if (!this.config.deps) this.config.deps = [];
+                    this.config.deps.push({
+                        name: '',
+                        url: '',
+                        source: '',
+                        path: '',
+                        version: '',
+                        ref: '',
+                        optional: false
+                    });
+                },
+
+                addPlugin(name) {
+                    if (!this.config.plugins) this.config.plugins = [];
+                    const plugin = {
+                        name: name,
+                        out: '',
+                        path: '',
+                        opt: [],
+                        _optStr: '',
+                        skip_base: false,
+                        skip_run: false
+                    };
+                    
+                    if (name === 'go') {
+                        plugin.opt = ['paths=source_relative'];
+                        plugin._optStr = 'paths=source_relative';
+                    } else if (name === 'go-grpc') {
+                        plugin.opt = ['paths=source_relative'];
+                        plugin._optStr = 'paths=source_relative';
+                    }
+                    
+                    this.config.plugins.push(plugin);
+                },
+
+                ensureLinterRules() {
+                    if (!this.config.linter) {
+                        this.config.linter = {format_type: '', rules: {enabled_rules: [], disabled_rules: []}};
+                    }
+                    if (!this.config.linter.rules) {
+                        this.config.linter.rules = {enabled_rules: [], disabled_rules: []};
+                    }
+                    if (!this.config.linter.rules.enabled_rules) {
+                        this.config.linter.rules.enabled_rules = [];
+                    }
+                    if (!this.config.linter.rules.disabled_rules) {
+                        this.config.linter.rules.disabled_rules = [];
+                    }
+                },
+
+                addEnabledRule(rule) {
+                    this.ensureLinterRules();
+                    if (!this.config.linter.rules.enabled_rules.includes(rule)) {
+                        this.config.linter.rules.enabled_rules.push(rule);
+                    }
+                },
+
+                addDisabledRule(rule) {
+                    this.ensureLinterRules();
+                    if (!this.config.linter.rules.disabled_rules.includes(rule)) {
+                        this.config.linter.rules.disabled_rules.push(rule);
+                    }
+                },
+
+                showNotification(message, type) {
+                    this.notification = {show: true, message, type};
+                    setTimeout(() => {
+                        this.notification.show = false;
+                    }, 3000);
+                },
+
+                applyExample(type) {
+                    const examples = {
+                        basic: {
+                            vendor: '.proto',
+                            base: { out: './gen', paths: 'source_relative', module: '' },
+                            root: ['proto'],
+                            includes: ['proto'],
+                            excludes: [],
+                            deps: [
+                                { name: 'google/protobuf', url: 'https://github.com/protocolbuffers/protobuf', path: 'src/google/protobuf' }
+                            ],
+                            plugins: [
+                                { name: 'go', out: '', path: '', opt: [], _optStr: '' },
+                                { name: 'go-grpc', out: '', path: '', opt: [], _optStr: '' }
+                            ],
+                            installers: [],
+                            linter: { format_type: '', rules: { enabled_rules: [], disabled_rules: [] } }
+                        },
+                        full: {
+                            vendor: '.proto',
+                            base: { out: './pkg', paths: 'import', module: 'github.com/yourorg/yourproject/pkg' },
+                            root: ['proto', 'api'],
+                            includes: ['proto', 'third_party'],
+                            excludes: [],
+                            deps: [
+                                { name: 'google/protobuf', url: 'https://github.com/protocolbuffers/protobuf', path: 'src/google/protobuf' },
+                                { name: 'google/api', url: 'https://github.com/googleapis/googleapis', path: 'google/api' },
+                                { name: 'protoc-gen-openapiv2/options', url: 'https://github.com/grpc-ecosystem/grpc-gateway', path: 'protoc-gen-openapiv2/options' },
+                                { name: 'validate', url: 'https://github.com/bufbuild/protovalidate', path: 'proto/protovalidate/buf/validate' }
+                            ],
+                            plugins: [
+                                { name: 'go', out: '', path: '', opt: [], _optStr: '' },
+                                { name: 'go-grpc', out: '', path: '', opt: [], _optStr: '' },
+                                { name: 'grpc-gateway', out: '', path: '', opt: ['generate_unbound_methods=true'], _optStr: 'generate_unbound_methods=true' },
+                                { name: 'openapiv2', out: './docs/swagger', path: '', opt: [], _optStr: '' },
+                                { name: 'validate-go', out: '', path: '', opt: [], _optStr: '' }
+                            ],
+                            installers: [],
+                            linter: { format_type: 'github_actions', rules: { enabled_rules: ['core', 'naming'], disabled_rules: [] } }
+                        },
+                        microservice: {
+                            vendor: '.proto',
+                            base: { out: './internal/pb', paths: 'import', module: 'github.com/yourorg/service/internal/pb' },
+                            root: ['api/proto'],
+                            includes: ['api/proto', 'vendor/proto'],
+                            excludes: ['vendor', 'third_party'],
+                            deps: [
+                                { name: 'google/protobuf', url: 'https://github.com/protocolbuffers/protobuf', path: 'src/google/protobuf' },
+                                { name: 'google/api', url: 'https://github.com/googleapis/googleapis', path: 'google/api' }
+                            ],
+                            plugins: [
+                                { name: 'go', out: '', path: '', opt: ['paths=source_relative'], _optStr: 'paths=source_relative' },
+                                { name: 'go-grpc', out: '', path: '', opt: ['paths=source_relative', 'require_unimplemented_servers=false'], _optStr: 'paths=source_relative\nrequire_unimplemented_servers=false' },
+                                { name: 'connect-go', out: './internal/connect', path: '', opt: [], _optStr: '' }
+                            ],
+                            installers: [],
+                            linter: { format_type: 'yaml', rules: { enabled_rules: ['core::0131::http-method', 'core::0131::http-body'], disabled_rules: ['all'] } }
+                        },
+                        retag: {
+                            vendor: '.proto',
+                            base: { out: './pkg', paths: 'import', module: 'github.com/yourorg/yourproject/pkg' },
+                            root: ['proto'],
+                            includes: ['proto'],
+                            excludes: [],
+                            deps: [
+                                { name: 'google/protobuf', url: 'https://github.com/protocolbuffers/protobuf', path: 'src/google/protobuf' },
+                                { name: 'retag', url: 'https://github.com/pubgo/protoc-gen-retag', path: 'proto/retag' }
+                            ],
+                            plugins: [
+                                { name: 'go', out: '', path: '', opt: [], _optStr: '' },
+                                { name: 'retag', out: '', path: '', opt: [], _optStr: '' }
+                            ],
+                            installers: [],
+                            linter: { format_type: '', rules: { enabled_rules: [], disabled_rules: [] } }
+                        },
+                        buf: {
+                            vendor: '.proto',
+                            base: { out: './gen/go', paths: 'source_relative', module: '' },
+                            root: ['proto'],
+                            includes: ['proto'],
+                            excludes: [],
+                            deps: [
+                                { name: 'buf/validate', source: 'buf.build', url: 'buf.build/bufbuild/protovalidate', path: '' },
+                                { name: 'googleapis', source: 'buf.build', url: 'buf.build/googleapis/googleapis', path: '' }
+                            ],
+                            plugins: [
+                                { name: 'go', out: '', path: '', opt: [], _optStr: '' },
+                                { name: 'go-grpc', out: '', path: '', opt: [], _optStr: '' },
+                                { name: 'buf-validate-go', out: '', path: '', opt: [], _optStr: '' }
+                            ],
+                            installers: [
+                                'go install google.golang.org/protobuf/cmd/protoc-gen-go@latest',
+                                'go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest',
+                                'go install github.com/bufbuild/buf/cmd/buf@latest'
+                            ],
+                            linter: { format_type: '', rules: { enabled_rules: [], disabled_rules: [] } }
+                        },
+                        multilang: {
+                            vendor: '.proto',
+                            base: { out: '', paths: '', module: '' },
+                            root: ['proto'],
+                            includes: ['proto'],
+                            excludes: [],
+                            deps: [
+                                { name: 'google/protobuf', url: 'https://github.com/protocolbuffers/protobuf', path: 'src/google/protobuf' }
+                            ],
+                            plugins: [
+                                { name: 'go', out: './gen/go', path: '', opt: ['paths=source_relative'], _optStr: 'paths=source_relative' },
+                                { name: 'go-grpc', out: './gen/go', path: '', opt: ['paths=source_relative'], _optStr: 'paths=source_relative' },
+                                { name: 'ts_proto', out: './gen/ts', path: '', opt: ['esModuleInterop=true', 'outputServices=grpc-js'], _optStr: 'esModuleInterop=true\noutputServices=grpc-js' },
+                                { name: 'python', out: './gen/python', path: '', opt: [], _optStr: '' },
+                                { name: 'grpc_python', out: './gen/python', path: '', opt: [], _optStr: '' }
+                            ],
+                            installers: [
+                                'go install google.golang.org/protobuf/cmd/protoc-gen-go@latest',
+                                'go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest',
+                                'npm install -g ts-proto',
+                                'pip install grpcio-tools'
+                            ],
+                            linter: { format_type: '', rules: { enabled_rules: [], disabled_rules: [] } }
+                        }
+                    };
+
+                    const example = examples[type];
+                    if (example) {
+                        this.config = JSON.parse(JSON.stringify(example));
+                        this.showNotification('已应用「' + this.getExampleName(type) + '」配置示例', 'success');
+                        this.activeTab = 'basic';
+                    }
+                },
+
+                getExampleName(type) {
+                    const names = {
+                        basic: '基础 Go 项目',
+                        full: '完整项目配置',
+                        microservice: '微服务项目',
+                        retag: '自定义结构体标签',
+                        buf: 'Buf 兼容配置',
+                        multilang: '多语言生成'
+                    };
+                    return names[type] || type;
+                },
+
+                yamlPreview() {
+                    const cfg = JSON.parse(JSON.stringify(this.config));
+                    
+                    // Clean up for display
+                    cfg.root = cfg.root.filter(s => s);
+                    cfg.includes = cfg.includes.filter(s => s);
+                    cfg.excludes = cfg.excludes.filter(s => s);
+                    cfg.installers = cfg.installers.filter(s => s);
+                    cfg.plugins = cfg.plugins.map(p => {
+                        const cleaned = {...p};
+                        delete cleaned._optStr;
+                        cleaned.opt = (cleaned.opt || []).filter(s => s);
+                        // Remove empty fields
+                        Object.keys(cleaned).forEach(k => {
+                            if (cleaned[k] === '' || cleaned[k] === false || 
+                                (Array.isArray(cleaned[k]) && cleaned[k].length === 0)) {
+                                delete cleaned[k];
+                            }
+                        });
+                        return cleaned;
+                    });
+
+                    if (!cfg.base?.out && !cfg.base?.paths && !cfg.base?.module) {
+                        delete cfg.base;
+                    }
+                    if (!cfg.excludes?.length) delete cfg.excludes;
+                    if (!cfg.installers?.length) delete cfg.installers;
+                    if (!cfg.deps?.length) delete cfg.deps;
+                    if (!cfg.plugins?.length) delete cfg.plugins;
+                    
+                    delete cfg.checksum;
+
+                    return jsyaml ? jsyaml.dump(cfg, {indent: 2, lineWidth: -1}) : JSON.stringify(cfg, null, 2);
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+</body>
+</html>
