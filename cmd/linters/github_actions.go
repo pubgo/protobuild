@@ -3,11 +3,11 @@ package linters
 import (
 	"bytes"
 	"fmt"
-	"github.com/samber/lo"
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/api-linter/lint"
+	"github.com/googleapis/api-linter/v2/lint"
+	"github.com/samber/lo"
 )
 
 // formatGitHubActionOutput returns lint errors in GitHub actions format.

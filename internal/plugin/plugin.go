@@ -1,3 +1,4 @@
+// Package plugin provides protoc plugin utilities.
 package plugin
 
 import (
@@ -9,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )

@@ -1,3 +1,4 @@
+// Package depresolver provides multi-source dependency resolution for protobuf files.
 package depresolver
 
 import (
@@ -16,6 +17,7 @@ import (
 // Source represents the dependency source type
 type Source string
 
+// Supported source types.
 const (
 	SourceAuto  Source = ""      // auto-detect
 	SourceGoMod Source = "gomod" // Go module (default)
@@ -26,7 +28,7 @@ const (
 	SourceLocal Source = "local" // Local path
 )
 
-// SourceDisplayName returns a human-readable name for the source type
+// DisplayName returns a human-readable name for the source type.
 func (s Source) DisplayName() string {
 	switch s {
 	case SourceGoMod:
@@ -128,7 +130,7 @@ type Manager struct {
 }
 
 // NewManager creates a new dependency manager
-func NewManager(cacheDir string, gomodPath string) *Manager {
+func NewManager(cacheDir, gomodPath string) *Manager {
 	if cacheDir == "" {
 		home, _ := os.UserHomeDir()
 		if home == "" {
@@ -256,7 +258,7 @@ func (m *Manager) resolveWithGetter(ctx context.Context, dep *Dependency, source
 		changed = true
 
 		// Ensure cache directory exists
-		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
 			return nil, &ResolveError{
 				Dependency: dep,
 				Source:     source,

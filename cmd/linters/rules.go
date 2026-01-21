@@ -5,13 +5,11 @@ import (
 	"os"
 	"sort"
 
-	"github.com/googleapis/api-linter/lint"
-	"github.com/googleapis/api-linter/rules"
+	"github.com/googleapis/api-linter/v2/lint"
+	"github.com/googleapis/api-linter/v2/rules"
 )
 
-var (
-	globalRules = lint.NewRuleRegistry()
-)
+var globalRules = lint.NewRuleRegistry()
 
 func init() {
 	if err := rules.Add(globalRules); err != nil {

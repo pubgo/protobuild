@@ -1,6 +1,7 @@
 // Refer: https://github.com/emicklei/proto-contrib/tree/master/cmd/protofmt
 // https://github.com/bufbuild/buf/blob/main/private/buf/bufformat/bufformat.go
 
+// Package format provides proto file formatting utilities.
 package format
 
 import (

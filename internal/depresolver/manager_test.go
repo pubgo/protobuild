@@ -129,10 +129,10 @@ func TestResolveLocal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	testFile := filepath.Join(tmpDir, "test.proto")
-	if err := os.WriteFile(testFile, []byte("syntax = \"proto3\";"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("syntax = \"proto3\";"), 0o644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
@@ -281,12 +281,12 @@ func TestCleanCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	m := NewManager(tmpDir, "")
 
 	testDir := filepath.Join(tmpDir, "git", "test123")
-	if err := os.MkdirAll(testDir, 0755); err != nil {
+	if err := os.MkdirAll(testDir, 0o755); err != nil {
 		t.Fatalf("Failed to create test dir: %v", err)
 	}
 

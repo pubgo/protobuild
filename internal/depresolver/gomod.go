@@ -8,9 +8,10 @@ import (
 	"strings"
 
 	"github.com/pubgo/funk/pathutil"
+	"github.com/schollz/progressbar/v3"
+
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
-	"github.com/schollz/progressbar/v3"
 )
 
 // resolveGoMod resolves dependencies using Go modules

@@ -1,3 +1,4 @@
+// Package modutil provides Go module utilities.
 package modutil
 
 import (
@@ -10,9 +11,10 @@ import (
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/pathutil"
 	"github.com/pubgo/funk/v2/result"
-	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
+
+	"github.com/pubgo/protobuild/internal/shutil"
 )
 
 func getFileByRecursion(file, path string) string {
@@ -28,11 +30,13 @@ func getFileByRecursion(file, path string) string {
 	return getFileByRecursion(file, filepath.Dir(path))
 }
 
+// GoModPath returns the path to go.mod file by searching recursively.
 func GoModPath() string {
 	pwd := assert.Must1(os.Getwd())
 	return getFileByRecursion("go.mod", pwd)
 }
 
+// LoadVersionGraph loads the module version graph from 'go mod graph'.
 func LoadVersionGraph() map[string]string {
 	modList := strings.Split(result.Wrap(shutil.GoModGraph()).Must(), "\n")
 	modSet := mapset.NewSet[string]()
@@ -42,7 +46,7 @@ func LoadVersionGraph() map[string]string {
 		}
 	}
 
-	var modMap = make(map[string][]*ver.Version)
+	modMap := make(map[string][]*ver.Version)
 	modSet.Each(func(s string) bool {
 		ver2 := strings.Split(s, "@")
 		if len(ver2) != 2 {
@@ -57,11 +61,12 @@ func LoadVersionGraph() map[string]string {
 		return false
 	})
 
-	return lo.MapValues(modMap, func(versions []*ver.Version, path string) string {
+	return lo.MapValues(modMap, func(versions []*ver.Version, _ string) string {
 		return "v" + maxVersion(versions).String()
 	})
 }
 
+// LoadVersions loads module versions from go.mod file.
 func LoadVersions() map[string]string {
 	path := GoModPath()
 	assert.Assert(path == "", "go.mod not exists")
@@ -87,5 +92,5 @@ func LoadVersions() map[string]string {
 }
 
 func maxVersion(versions []*ver.Version) *ver.Version {
-	return lo.MaxBy(versions, func(a *ver.Version, b *ver.Version) bool { return a.GreaterThan(b) })
+	return lo.MaxBy(versions, func(a, b *ver.Version) bool { return a.GreaterThan(b) })
 }

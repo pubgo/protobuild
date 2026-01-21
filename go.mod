@@ -11,11 +11,10 @@ require (
 	github.com/emicklei/proto-contrib v0.18.2
 	github.com/flosch/pongo2/v5 v5.0.0
 	github.com/golang/protobuf v1.5.4
-	github.com/googleapis/api-linter v1.69.2
+	github.com/googleapis/api-linter/v2 v2.1.0
 	github.com/hashicorp/go-getter v1.8.4
 	github.com/hashicorp/go-version v1.8.0
 	github.com/huandu/go-clone v1.7.3
-	github.com/jhump/protoreflect v1.17.0
 	github.com/pubgo/funk v0.5.68
 	github.com/pubgo/redant v0.0.5
 	github.com/samber/lo v1.51.0
@@ -37,7 +36,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
 	cloud.google.com/go/longrunning v0.7.0 // indirect
-	cloud.google.com/go/monitoring v1.24.2 // indirect
+	cloud.google.com/go/monitoring v1.24.3 // indirect
 	cloud.google.com/go/storage v1.58.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0 // indirect
@@ -63,7 +62,7 @@ require (
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
-	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
 	github.com/coder/pretty v0.0.0-20230908205945-e89ba86370e0 // indirect
@@ -126,7 +125,7 @@ require (
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.256.0 // indirect
-	google.golang.org/genproto v0.0.0-20250922171735-9219d122eba9 // indirect
+	google.golang.org/genproto v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/grpc v1.76.0 // indirect
 )
