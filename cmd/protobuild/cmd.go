@@ -25,7 +25,6 @@ import (
 	"github.com/pubgo/protobuild/internal/modutil"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
-	"github.com/pubgo/protobuild/version"
 	"github.com/samber/lo"
 	cli "github.com/urfave/cli/v3"
 	"golang.org/x/term"
@@ -50,13 +49,13 @@ const (
 	reTagPluginName = "retag"
 )
 
-func Main() *cli.Command {
+func Main(ver string) *cli.Command {
 	var force bool
-	cliArgs, flags := linters.NewCli()
+	liArgs, flags := linters.NewCli()
 	app := &cli.Command{
 		Name:                  "protobuf",
 		Usage:                 "protobuf generation, configuration and management",
-		Version:               version.Version,
+		Version:               ver,
 		ShellComplete:         cli.DefaultAppComplete,
 		EnableShellCompletion: true,
 		Suggest:               true,
