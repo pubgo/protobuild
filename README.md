@@ -17,6 +17,9 @@
 - ⚙️ **Configuration-driven** - YAML-based project configuration
 - 📊 **Progress Display** - Visual progress bars and detailed error messages
 - 🗑️ **Cache Management** - Clean and manage dependency cache
+- 🌐 **Web UI** - Visual configuration editor with proto file browser
+- 🏥 **Environment Check** - Doctor command to diagnose development environment
+- 🎯 **Project Initialization** - Quick project setup with templates
 
 ## Installation
 
@@ -71,8 +74,14 @@ protobuild gen
 | `format -w` | Format and write changes to files |
 | `format --diff` | Show diff of formatting changes |
 | `format --builtin` | Use builtin formatter instead of buf |
+| `web` | Start web-based configuration UI |
+| `web --port 9090` | Start web UI on custom port |
 | `clean` | Clean dependency cache |
 | `clean --dry-run` | Show what would be cleaned without deleting |
+| `init` | Initialize a new protobuild project |
+| `init --template grpc` | Initialize with specific template (basic, grpc, minimal) |
+| `doctor` | Check development environment and dependencies |
+| `doctor --fix` | Auto-install missing Go plugins |
 | `version` | Show version information |
 
 ## Configuration
@@ -238,6 +247,69 @@ protobuild format --builtin
 protobuild format -w proto/ api/
 ```
 
+### Web Configuration UI
+
+```bash
+# Start web UI on default port (8080)
+protobuild web
+
+# Start web UI on custom port
+protobuild web --port 9090
+```
+
+The web interface provides:
+- 📝 Visual configuration editor
+- 📦 Dependency management
+- 🔌 Plugin configuration
+- 🚀 One-click build, lint, format operations
+- 📄 Real-time YAML preview
+- 📊 Project statistics dashboard
+- 🔍 Proto file browser with syntax highlighting
+- 📚 Configuration examples reference
+
+### Initialize New Project
+
+```bash
+# Interactive initialization
+protobuild init
+
+# Use specific template
+protobuild init --template basic    # Basic Go + gRPC project
+protobuild init --template grpc     # Full gRPC-Gateway project
+protobuild init --template minimal  # Minimal configuration
+
+# Specify output directory
+protobuild init -o ./my-project
+```
+
+### Check Development Environment
+
+```bash
+# Diagnose environment issues
+protobuild doctor
+
+# Auto-install missing Go plugins
+protobuild doctor --fix
+```
+
+Example output:
+```
+🏥 Protobuild Doctor
+
+  Checking development environment...
+
+  ✅ protoc                 installed (v25.1)
+  ✅ protoc-gen-go          installed
+  ✅ protoc-gen-go-grpc     installed
+  ✅ buf                    installed (v1.28.1)
+  ✅ api-linter             installed
+  ✅ go                     installed (go1.21.5)
+  ✅ Configuration          protobuf.yaml found
+  ⚠️  Vendor directory       not found (run 'protobuild vendor')
+
+  ✅ Environment check passed!
+```
+
 ### Force Vendor Update
 
 ```bash
@@ -339,7 +411,11 @@ protobuild
 │   │   └── yaml_types.go    # YAML type definitions
 │   ├── format/              # Proto file formatting (builtin)
 │   ├── formatcmd/           # Format command (buf integration)
-│   └── linters/             # AIP linting rules
+│   ├── linters/             # AIP linting rules
+│   └── webcmd/              # Web configuration UI
+│       ├── cmd.go           # Web command entry
+│       ├── server.go        # HTTP server and API
+│       └── templates/       # HTML templates (Alpine.js + Tailwind)
 └── internal/
     ├── depresolver/         # Multi-source dependency resolver
     ├── modutil/             # Go module utilities
@@ -354,6 +430,20 @@ protobuild
 - [Configuration Examples](./docs/EXAMPLES.md) - Detailed configuration examples for various use cases
 - [Multi-Source Dependencies](./docs/MULTI_SOURCE_DEPS.md) - Design document for multi-source dependency resolution
 - [Design Document](./docs/DESIGN.md) - Architecture and design documentation
+
+## Roadmap
+
+Upcoming features planned for future releases:
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🔗 **Dependency Graph** | Visualize proto file import dependencies | Planned |
+| ⚠️ **Breaking Change Detection** | Detect incompatible changes between versions | Planned |
+| 📚 **API Documentation Generator** | Auto-generate Markdown/HTML docs from proto comments | Planned |
+| 🎭 **Mock Server** | Auto-start mock gRPC/HTTP server for testing | Planned |
+| 📝 **Proto Templates** | Quick generation of common proto patterns (CRUD, pagination) | Planned |
+| 📊 **Field Statistics** | Analyze field naming conventions and type distribution | Planned |
+| ✏️ **Online Editor** | Edit proto files directly in Web UI | Planned |
 
 ## License
 

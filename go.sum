@@ -195,6 +195,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRI
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pubgo/funk v0.5.68 h1:3fDJAt+QHhPnbAxUr8kLLAh6vra/C3vb7/LoSMQl788=
 github.com/pubgo/funk v0.5.68/go.mod h1:CQDKnci4zmCyb0LSD9YiKx/6QBh3Z+PRyCLmJb6ZTOg=
+github.com/pubgo/protoc-gen-retag v0.0.5 h1:tF++mxmAUILb3IkVvSM0el+ww0jcLyPTkIXYzwgiv1A=
+github.com/pubgo/protoc-gen-retag v0.0.5/go.mod h1:/TD5yIvhQpb6ttvpmhpQPUnQ73Rtj23QlXeoczGyAHs=
 github.com/pubgo/redant v0.0.5 h1:iDq0cQJNtST8pu9bFSgxZ78JoQ0aVW+svZyOMouWjfM=
 github.com/pubgo/redant v0.0.5/go.mod h1:FOBNjL8pPLOBcZS3SL2R5GusFz/bNBwDJzSinGuKs7A=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=

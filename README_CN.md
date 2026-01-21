@@ -17,6 +17,9 @@
 - ⚙️ **配置驱动** - 基于 YAML 的项目配置
 - 📊 **进度显示** - 可视化进度条和详细错误信息
 - 🗑️ **缓存管理** - 清理和管理依赖缓存
+- 🌐 **Web 界面** - 可视化配置编辑器，支持 Proto 文件浏览
+- 🏥 **环境诊断** - Doctor 命令检查开发环境配置
+- 🎯 **项目初始化** - 快速项目设置，支持多种模板
 
 ## 安装
 
@@ -72,8 +75,14 @@ protobuild gen
 | `format --diff` | 显示格式化差异 |
 | `format --exit-code` | 需要格式化时返回错误码（CI 适用）|
 | `format --builtin` | 使用内置格式化器 |
+| `web` | 启动 Web 配置管理界面 |
+| `web --port 9090` | 指定端口启动 Web 界面 |
 | `clean` | 清理依赖缓存 |
 | `clean --dry-run` | 预览将被清理的内容 |
+| `init` | 初始化新的 protobuild 项目 |
+| `init --template grpc` | 使用指定模板初始化（basic、grpc、minimal）|
+| `doctor` | 检查开发环境和依赖配置 |
+| `doctor --fix` | 自动安装缺失的 Go 插件 |
 | `version` | 显示版本信息 |
 
 ## 配置说明
@@ -239,6 +248,69 @@ protobuild format --builtin
 protobuild format -w proto/ api/
 ```
 
+### Web 配置管理界面
+
+```bash
+# 在默认端口 (8080) 启动 Web 界面
+protobuild web
+
+# 在指定端口启动 Web 界面
+protobuild web --port 9090
+```
+
+Web 界面提供：
+- 📝 可视化配置编辑器
+- 📦 依赖管理
+- 🔌 插件配置
+- 🚀 一键执行构建、检查、格式化等操作
+- 📄 实时 YAML 配置预览
+- 📊 项目统计仪表盘
+- 🔍 Proto 文件浏览器（支持语法高亮）
+- 📚 配置示例参考
+
+### 初始化新项目
+
+```bash
+# 交互式初始化
+protobuild init
+
+# 使用指定模板
+protobuild init --template basic    # 基础 Go + gRPC 项目
+protobuild init --template grpc     # 完整 gRPC-Gateway 项目
+protobuild init --template minimal  # 最小化配置
+
+# 指定输出目录
+protobuild init -o ./my-project
+```
+
+### 检查开发环境
+
+```bash
+# 诊断环境问题
+protobuild doctor
+
+# 自动安装缺失的 Go 插件
+protobuild doctor --fix
+```
+
+输出示例：
+```
+🏥 Protobuild Doctor
+
+  正在检查开发环境...
+
+  ✅ protoc                 已安装 (v25.1)
+  ✅ protoc-gen-go          已安装
+  ✅ protoc-gen-go-grpc     已安装
+  ✅ buf                    已安装 (v1.28.1)
+  ✅ api-linter             已安装
+  ✅ go                     已安装 (go1.21.5)
+  ✅ 配置文件               已找到 protobuf.yaml
+  ⚠️  Vendor 目录            未找到（请运行 'protobuild vendor'）
+
+  ✅ 环境检查通过！
+```
+
 ### 强制更新 Vendor
 
 ```bash
@@ -330,6 +402,20 @@ plugins:
 - [多源依赖设计](./docs/MULTI_SOURCE_DEPS.md) - 多源依赖解析设计文档
 - [设计文档](./docs/DESIGN_CN.md) - 架构和设计文档
 
+## 路线图
+
+以下是计划在未来版本中实现的功能：
+
+| 功能 | 描述 | 状态 |
+|------|------|------|
+| 🔗 **依赖关系图** | 可视化 proto 文件的 import 依赖关系 | 计划中 |
+| ⚠️ **Breaking Change 检测** | 检测版本间的不兼容变更 | 计划中 |
+| 📚 **API 文档生成** | 从 proto 注释自动生成 Markdown/HTML 文档 | 计划中 |
+| 🎭 **Mock 服务器** | 自动启动用于测试的 mock gRPC/HTTP 服务器 | 计划中 |
+| 📝 **Proto 模板** | 快速生成常用 proto 模式（CRUD、分页等）| 计划中 |
+| 📊 **字段统计分析** | 分析字段命名规范和类型分布 | 计划中 |
+| ✏️ **在线编辑器** | 在 Web 界面直接编辑 proto 文件 | 计划中 |
+
 ## 项目架构
 
 ```
@@ -346,7 +432,11 @@ protobuild
 │   │   └── yaml_types.go    # YAML 类型定义
 │   ├── format/              # Proto 文件格式化（内置）
 │   ├── formatcmd/           # 格式化命令（buf 集成）
-│   └── linters/             # AIP 检查规则
+│   ├── linters/             # AIP 检查规则
+│   └── webcmd/              # Web 配置管理界面
+│       ├── cmd.go           # Web 命令入口
+│       ├── server.go        # HTTP 服务器和 API
+│       └── templates/       # HTML 模板 (Alpine.js + Tailwind)
 └── internal/
     ├── depresolver/         # 多源依赖解析器
     ├── modutil/             # Go 模块工具
