@@ -51,7 +51,7 @@ const (
 
 func Main(ver string) *cli.Command {
 	var force bool
-	liArgs, flags := linters.NewCli()
+	cliArgs, flags := linters.NewCli()
 	app := &cli.Command{
 		Name:                  "protobuf",
 		Usage:                 "protobuf generation, configuration and management",
