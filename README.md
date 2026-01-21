@@ -17,6 +17,9 @@
 - ⚙️ **Configuration-driven** - YAML-based project configuration
 - 📊 **Progress Display** - Visual progress bars and detailed error messages
 - 🗑️ **Cache Management** - Clean and manage dependency cache
+- 🌐 **Web UI** - Visual configuration editor with proto file browser
+- 🏥 **Environment Check** - Doctor command to diagnose development environment
+- 🎯 **Project Initialization** - Quick project setup with templates
 
 ## Installation
 
@@ -75,6 +78,10 @@ protobuild gen
 | `web --port 9090` | Start web UI on custom port |
 | `clean` | Clean dependency cache |
 | `clean --dry-run` | Show what would be cleaned without deleting |
+| `init` | Initialize a new protobuild project |
+| `init --template grpc` | Initialize with specific template (basic, grpc, minimal) |
+| `doctor` | Check development environment and dependencies |
+| `doctor --fix` | Auto-install missing Go plugins |
 | `version` | Show version information |
 
 ## Configuration
@@ -256,6 +263,52 @@ The web interface provides:
 - 🔌 Plugin configuration
 - 🚀 One-click build, lint, format operations
 - 📄 Real-time YAML preview
+- 📊 Project statistics dashboard
+- 🔍 Proto file browser with syntax highlighting
+- 📚 Configuration examples reference
+
+### Initialize New Project
+
+```bash
+# Interactive initialization
+protobuild init
+
+# Use specific template
+protobuild init --template basic    # Basic Go + gRPC project
+protobuild init --template grpc     # Full gRPC-Gateway project
+protobuild init --template minimal  # Minimal configuration
+
+# Specify output directory
+protobuild init -o ./my-project
+```
+
+### Check Development Environment
+
+```bash
+# Diagnose environment issues
+protobuild doctor
+
+# Auto-install missing Go plugins
+protobuild doctor --fix
+```
+
+Example output:
+```
+🏥 Protobuild Doctor
+
+  Checking development environment...
+
+  ✅ protoc                 installed (v25.1)
+  ✅ protoc-gen-go          installed
+  ✅ protoc-gen-go-grpc     installed
+  ✅ buf                    installed (v1.28.1)
+  ✅ api-linter             installed
+  ✅ go                     installed (go1.21.5)
+  ✅ Configuration          protobuf.yaml found
+  ⚠️  Vendor directory       not found (run 'protobuild vendor')
+
+  ✅ Environment check passed!
+```
 
 ### Force Vendor Update
 
@@ -377,6 +430,20 @@ protobuild
 - [Configuration Examples](./docs/EXAMPLES.md) - Detailed configuration examples for various use cases
 - [Multi-Source Dependencies](./docs/MULTI_SOURCE_DEPS.md) - Design document for multi-source dependency resolution
 - [Design Document](./docs/DESIGN.md) - Architecture and design documentation
+
+## Roadmap
+
+Upcoming features planned for future releases:
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🔗 **Dependency Graph** | Visualize proto file import dependencies | Planned |
+| ⚠️ **Breaking Change Detection** | Detect incompatible changes between versions | Planned |
+| 📚 **API Documentation Generator** | Auto-generate Markdown/HTML docs from proto comments | Planned |
+| 🎭 **Mock Server** | Auto-start mock gRPC/HTTP server for testing | Planned |
+| 📝 **Proto Templates** | Quick generation of common proto patterns (CRUD, pagination) | Planned |
+| 📊 **Field Statistics** | Analyze field naming conventions and type distribution | Planned |
+| ✏️ **Online Editor** | Edit proto files directly in Web UI | Planned |
 
 ## License
 

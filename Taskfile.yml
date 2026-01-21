@@ -131,4 +131,4 @@ tasks:
   web:
     desc: Run web server
     cmds:
-      - go run *.go web
+      - go run -v *.go web

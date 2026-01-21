@@ -479,15 +479,15 @@ func (s *Server) handleProtoContent(w http.ResponseWriter, r *http.Request) {
 
 // ProjectStats represents project statistics.
 type ProjectStats struct {
-	ProtoFiles     int      `json:"proto_files"`
-	TotalLines     int      `json:"total_lines"`
-	MessageCount   int      `json:"message_count"`
-	ServiceCount   int      `json:"service_count"`
-	DependencyCount int     `json:"dependency_count"`
-	PluginCount    int      `json:"plugin_count"`
-	ProtoRoots     []string `json:"proto_roots"`
-	VendorDir      string   `json:"vendor_dir"`
-	VendorFiles    int      `json:"vendor_files"`
+	ProtoFiles      int      `json:"proto_files"`
+	TotalLines      int      `json:"total_lines"`
+	MessageCount    int      `json:"message_count"`
+	ServiceCount    int      `json:"service_count"`
+	DependencyCount int      `json:"dependency_count"`
+	PluginCount     int      `json:"plugin_count"`
+	ProtoRoots      []string `json:"proto_roots"`
+	VendorDir       string   `json:"vendor_dir"`
+	VendorFiles     int      `json:"vendor_files"`
 }
 
 // handleProjectStats returns project statistics.
