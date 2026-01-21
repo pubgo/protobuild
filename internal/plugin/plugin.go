@@ -3,7 +3,6 @@ package plugin
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -74,7 +73,7 @@ func RunPlugin(plugin string, req *pluginpb.CodeGeneratorRequest, stderr io.Writ
 
 // ReadRequest Unmarshal CodeGeneratorRequest.
 func ReadRequest() (*pluginpb.CodeGeneratorRequest, error) {
-	in, err := ioutil.ReadAll(os.Stdin)
+	in, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +100,7 @@ func WriteResponse(w io.Writer, res *pluginpb.CodeGeneratorResponse) error {
 func readDesc(path string) (*descriptor.FileDescriptorSet, error) {
 	var desc descriptor.FileDescriptorSet
 
-	p, err := ioutil.ReadFile(path)
+	p, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

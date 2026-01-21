@@ -49,6 +49,18 @@ const (
 	reTagPluginName = "retag"
 )
 
+// withParseConfig 返回一个解析配置的中间件
+func withParseConfig() redant.MiddlewareFunc {
+	return func(next redant.HandlerFunc) redant.HandlerFunc {
+		return func(ctx context.Context, inv *redant.Invocation) error {
+			if err := parseConfig(); err != nil {
+				return err
+			}
+			return next(ctx, inv)
+		}
+	}
+}
+
 func Main(ver string) *redant.Command {
 	var force bool
 	cliArgs, options := linters.NewCli()
@@ -134,16 +146,9 @@ func Main(ver string) *redant.Command {
 		},
 		Children: typex.Commands{
 			&redant.Command{
-				Use:   "gen",
-				Short: "编译 protobuf 文件",
-				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
-					return func(ctx context.Context, inv *redant.Invocation) error {
-						if err := parseConfig(); err != nil {
-							return err
-						}
-						return next(ctx, inv)
-					}
-				}),
+				Use:        "gen",
+				Short:      "编译 protobuf 文件",
+				Middleware: withParseConfig(),
 				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
@@ -205,7 +210,7 @@ func Main(ver string) *redant.Command {
 							data := ""
 
 							includes := lo.Uniq(append(pluginCfg.Includes, pluginCfg.Vendor, pwd))
-							base := fmt.Sprintf("protoc")
+							base := "protoc"
 							for i := range includes {
 								base += fmt.Sprintf(" -I %s", includes[i])
 							}
@@ -249,29 +254,19 @@ func Main(ver string) *redant.Command {
 								assert.Exit(pathutil.IsNotExistMkDir(out))
 
 								opts := append(plg.Opt, plg.Opts...)
-								hasPath := func() bool {
-									for _, opt := range opts {
-										if strings.HasPrefix(opt, "paths=") {
-											return true
-										}
-									}
-									return false
-								}
+								hasPath := lo.ContainsBy(opts, func(opt string) bool {
+									return strings.HasPrefix(opt, "paths=")
+								})
 
-								hasModule := func() bool {
-									for _, opt := range opts {
-										if strings.HasPrefix(opt, "module=") {
-											return true
-										}
-									}
-									return false
-								}
+								hasModule := lo.ContainsBy(opts, func(opt string) bool {
+									return strings.HasPrefix(opt, "module=")
+								})
 
-								if !hasPath() && pluginCfg.BasePlugin.Paths != "" && !plg.SkipBase {
+								if !hasPath && pluginCfg.BasePlugin.Paths != "" && !plg.SkipBase {
 									opts = append(opts, fmt.Sprintf("paths=%s", pluginCfg.BasePlugin.Paths))
 								}
 
-								if !hasModule() && pluginCfg.BasePlugin.Module != "" && !plg.SkipBase {
+								if !hasModule && pluginCfg.BasePlugin.Module != "" && !plg.SkipBase {
 									opts = append(opts, fmt.Sprintf("module=%s", pluginCfg.BasePlugin.Module))
 								}
 
@@ -296,7 +291,7 @@ func Main(ver string) *redant.Command {
 								if len(opts) > 0 {
 									var protoOpt []string
 									for _, opt := range opts {
-										if !hasAny(plg.ExcludeOpts, func(d string) bool { return strings.HasPrefix(opt, d) }) {
+										if !lo.ContainsBy(plg.ExcludeOpts, func(d string) bool { return strings.HasPrefix(opt, d) }) {
 											protoOpt = append(protoOpt, opt)
 										}
 									}
@@ -328,14 +323,7 @@ func Main(ver string) *redant.Command {
 						Value:       redant.BoolOf(&force),
 					},
 				},
-				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
-					return func(ctx context.Context, inv *redant.Invocation) error {
-						if err := parseConfig(); err != nil {
-							return err
-						}
-						return next(ctx, inv)
-					}
-				}),
+				Middleware: withParseConfig(),
 				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
@@ -499,14 +487,7 @@ func Main(ver string) *redant.Command {
 						Value:       redant.BoolOf(&force),
 					},
 				},
-				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
-					return func(ctx context.Context, inv *redant.Invocation) error {
-						if err := parseConfig(); err != nil {
-							return err
-						}
-						return next(ctx, inv)
-					}
-				}),
+				Middleware: withParseConfig(),
 				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					defer recovery.Exit()
 
@@ -534,17 +515,10 @@ func Main(ver string) *redant.Command {
 				},
 			},
 			&redant.Command{
-				Use:     "lint",
-				Short:   "lint protobuf https://linter.aip.dev/rules/",
-				Options: options,
-				Middleware: redant.Chain(func(next redant.HandlerFunc) redant.HandlerFunc {
-					return func(ctx context.Context, inv *redant.Invocation) error {
-						if err := parseConfig(); err != nil {
-							return err
-						}
-						return next(ctx, inv)
-					}
-				}),
+				Use:        "lint",
+				Short:      "lint protobuf https://linter.aip.dev/rules/",
+				Options:    options,
+				Middleware: withParseConfig(),
 				Handler: func(ctx context.Context, inv *redant.Invocation) error {
 					var protoPaths []string
 					for i := range globalCfg.Root {
@@ -611,16 +585,7 @@ func copyFile(dstFilePath, srcFilePath string) (written int64, err error) {
 
 	dstFile, err := os.Create(dstFilePath)
 	assert.Must(err, "打开目标文件错误", dstFilePath)
-	defer srcFile.Close()
+	defer dstFile.Close()
 
 	return io.Copy(dstFile, srcFile)
-}
-
-func hasAny(data []string, fn func(d string) bool) bool {
-	for _, d := range data {
-		if fn(d) {
-			return true
-		}
-	}
-	return false
 }

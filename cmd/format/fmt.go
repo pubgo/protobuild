@@ -6,7 +6,6 @@ package format
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/emicklei/proto"
@@ -78,7 +77,7 @@ func readFormatWrite(filename string) {
 
 	if overwrite {
 		// write back to input
-		assert.Must(ioutil.WriteFile(filename, buf.Bytes(), os.ModePerm))
+		assert.Must(os.WriteFile(filename, buf.Bytes(), os.ModePerm))
 	} else {
 		// write to stdout
 		buf.WriteString("\n================================================================================================\n")

@@ -8,9 +8,7 @@ import (
 
 	"github.com/a8m/envsubst"
 	"github.com/cnf/structhash"
-	_ "github.com/deckarep/golang-set/v2"
 	"github.com/huandu/go-clone"
-	_ "github.com/huandu/go-clone"
 	"github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/pathutil"
