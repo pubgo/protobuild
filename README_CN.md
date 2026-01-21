@@ -10,11 +10,13 @@
 ## 特性
 
 - 🚀 **统一构建** - 一条命令编译所有 proto 文件
-- 📦 **依赖管理** - 自动管理 proto 依赖的 vendor
+- 📦 **多源依赖** - 支持 Go 模块、Git、HTTP、S3、GCS 和本地路径
 - 🔌 **插件支持** - 灵活的 protoc 插件配置
 - 🔍 **代码检查** - 内置基于 AIP 规则的 proto 文件检查
 - 📝 **格式化** - 自动格式化 proto 文件
 - ⚙️ **配置驱动** - 基于 YAML 的项目配置
+- 📊 **进度显示** - 可视化进度条和详细错误信息
+- 🗑️ **缓存管理** - 清理和管理依赖缓存
 
 ## 安装
 
@@ -61,9 +63,13 @@ protobuild gen
 |------|------|
 | `gen` | 编译 protobuf 文件 |
 | `vendor` | 同步 proto 依赖到 vendor 目录 |
+| `vendor -u` | 强制重新下载所有依赖（忽略缓存）|
+| `deps` | 显示依赖列表及状态 |
 | `install` | 安装 protoc 插件 |
 | `lint` | 使用 AIP 规则检查 proto 文件 |
 | `format` | 格式化 proto 文件 |
+| `clean` | 清理依赖缓存 |
+| `clean --dry-run` | 预览将被清理的内容 |
 | `version` | 显示版本信息 |
 
 ## 配置说明
@@ -152,10 +158,44 @@ linter:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `name` | string | vendor 目录中的本地名称/路径 |
-| `url` | string | Go 模块路径或本地路径 |
-| `path` | string | 模块内的子目录 |
-| `version` | string | 指定版本（可选）|
+| `url` | string | 源 URL（Go 模块、Git URL、HTTP 归档、S3、GCS 或本地路径）|
+| `path` | string | 源内的子目录 |
+| `version` | string | 指定版本（用于 Go 模块）|
+| `ref` | string | Git 引用（分支、标签、提交）用于 Git 源 |
+| `source` | string | 源类型：`gomod`、`git`、`http`、`s3`、`gcs`、`local`（未指定时自动检测）|
 | `optional` | bool | 找不到时跳过 |
+
+#### 支持的依赖源
+
+```yaml
+deps:
+  # Go 模块（默认）
+  - name: google/protobuf
+    url: github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+
+  # Git 仓库
+  - name: googleapis
+    url: https://github.com/googleapis/googleapis.git
+    ref: master
+
+  # HTTP 归档
+  - name: envoy
+    url: https://github.com/envoyproxy/envoy/archive/v1.28.0.tar.gz
+    path: api
+
+  # 本地路径
+  - name: local-protos
+    url: ./third_party/protos
+
+  # S3 存储桶
+  - name: internal-protos
+    url: s3://my-bucket/protos.tar.gz
+
+  # GCS 存储桶
+  - name: shared-protos
+    url: gs://my-bucket/protos.tar.gz
+```
 
 ## 使用示例
 
@@ -182,7 +222,33 @@ protobuild format
 ### 强制更新 Vendor
 
 ```bash
-protobuild vendor -f
+protobuild vendor -f      # 强制更新，即使没有检测到变更
+protobuild vendor -u      # 重新下载所有依赖（忽略缓存）
+```
+
+### 显示依赖状态
+
+```bash
+protobuild deps
+```
+
+输出示例：
+```
+📦 Dependencies:
+
+  NAME                                SOURCE     VERSION      STATUS
+  ----                                ------     -------      ------
+  google/protobuf                     Go Module  v21.0        🟢 cached
+  googleapis                          Git        master       ⚪ not cached
+
+  Total: 2 dependencies
+```
+
+### 清理依赖缓存
+
+```bash
+protobuild clean           # 清理所有缓存的依赖
+protobuild clean --dry-run # 预览将被清理的内容
 ```
 
 ### 安装插件
@@ -215,10 +281,44 @@ plugins:
 - `github.com/bufbuild/protoc-gen-validate/cmd/protoc-gen-validate@latest`
 - 以及更多...
 
-## 许可证
+## 错误处理
 
-[MIT License](LICENSE)
+当依赖解析失败时，protobuild 会提供详细的错误信息和建议：
 
-## 贡献
+```
+❌ Failed to download dependency: google/protobuf
+   Source:  Git
+   URL:     git::https://github.com/protocolbuffers/protobuf.git?ref=v99.0
+   Ref:     v99.0
+   Error:   reference not found
 
-欢迎贡献！请随时提交 Pull Request。
+💡 Suggestions:
+   • 检查仓库 URL 是否正确且可访问
+   • 验证 ref（标签/分支/提交）是否存在
+   • 确保您有正确的身份验证（SSH 密钥或令牌）
+```
+
+## 缓存位置
+
+依赖缓存在：
+- **macOS/Linux**: `~/.cache/protobuild/deps/`
+- **Go 模块**: 标准 Go 模块缓存 (`$GOPATH/pkg/mod`)
+
+## 项目架构
+
+```
+protobuild
+├── cmd/
+│   ├── protobuild/     # 主要 CLI 命令
+│   ├── format/         # Proto 文件格式化
+│   ├── formatcmd/      # 格式化命令包装器
+│   └── linters/        # AIP 检查规则
+└── internal/
+    ├── depresolver/    # 多源依赖解析器
+    ├── modutil/        # Go 模块工具
+    ├── plugin/         # 插件管理
+    ├── protoutil/      # Protobuf 工具
+    ├── shutil/         # Shell 工具
+    └── template/       # 模板工具
+```
+

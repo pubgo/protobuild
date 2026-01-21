@@ -10,11 +10,13 @@
 ## Features
 
 - 🚀 **Unified Build** - One command to compile all proto files
-- 📦 **Dependency Management** - Automatic proto dependency vendoring
+- 📦 **Multi-Source Dependencies** - Support Go modules, Git, HTTP, S3, GCS, and local paths
 - 🔌 **Plugin Support** - Flexible protoc plugin configuration
 - 🔍 **Linting** - Built-in proto file linting with AIP rules
 - 📝 **Formatting** - Auto-format proto files
 - ⚙️ **Configuration-driven** - YAML-based project configuration
+- 📊 **Progress Display** - Visual progress bars and detailed error messages
+- 🗑️ **Cache Management** - Clean and manage dependency cache
 
 ## Installation
 
@@ -61,9 +63,13 @@ protobuild gen
 |---------|-------------|
 | `gen` | Compile protobuf files |
 | `vendor` | Sync proto dependencies to vendor directory |
+| `vendor -u` | Force re-download all dependencies (ignore cache) |
+| `deps` | Show dependency list and status |
 | `install` | Install protoc plugins |
 | `lint` | Lint proto files using AIP rules |
 | `format` | Format proto files |
+| `clean` | Clean dependency cache |
+| `clean --dry-run` | Show what would be cleaned without deleting |
 | `version` | Show version information |
 
 ## Configuration
@@ -152,10 +158,44 @@ Each plugin supports the following options:
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Local name/path in vendor directory |
-| `url` | string | Go module path or local path |
-| `path` | string | Subdirectory within the module |
-| `version` | string | Specific version (optional) |
+| `url` | string | Source URL (Go module, Git URL, HTTP archive, S3, GCS, or local path) |
+| `path` | string | Subdirectory within the source |
+| `version` | string | Specific version (for Go modules) |
+| `ref` | string | Git ref (branch, tag, commit) for Git sources |
+| `source` | string | Source type: `gomod`, `git`, `http`, `s3`, `gcs`, `local` (auto-detected if not specified) |
 | `optional` | bool | Skip if not found |
+
+#### Supported Dependency Sources
+
+```yaml
+deps:
+  # Go Module (default)
+  - name: google/protobuf
+    url: github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+
+  # Git Repository
+  - name: googleapis
+    url: https://github.com/googleapis/googleapis.git
+    ref: master
+
+  # HTTP Archive
+  - name: envoy
+    url: https://github.com/envoyproxy/envoy/archive/v1.28.0.tar.gz
+    path: api
+
+  # Local Path
+  - name: local-protos
+    url: ./third_party/protos
+
+  # S3 Bucket
+  - name: internal-protos
+    url: s3://my-bucket/protos.tar.gz
+
+  # GCS Bucket
+  - name: shared-protos
+    url: gs://my-bucket/protos.tar.gz
+```
 
 ## Usage Examples
 
@@ -182,7 +222,33 @@ protobuild format
 ### Force Vendor Update
 
 ```bash
-protobuild vendor -f
+protobuild vendor -f      # Force update even if no changes detected
+protobuild vendor -u      # Re-download all dependencies (ignore cache)
+```
+
+### Show Dependency Status
+
+```bash
+protobuild deps
+```
+
+Example output:
+```
+📦 Dependencies:
+
+  NAME                                SOURCE     VERSION      STATUS
+  ----                                ------     -------      ------
+  google/protobuf                     Go Module  v21.0        🟢 cached
+  googleapis                          Git        master       ⚪ not cached
+
+  Total: 2 dependencies
+```
+
+### Clean Dependency Cache
+
+```bash
+protobuild clean           # Clean all cached dependencies
+protobuild clean --dry-run # Preview what will be cleaned
 ```
 
 ### Install Plugins
@@ -214,6 +280,47 @@ plugins:
 - `github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest`
 - `github.com/bufbuild/protoc-gen-validate/cmd/protoc-gen-validate@latest`
 - And many more...
+
+## Error Handling
+
+When dependency resolution fails, protobuild provides detailed error messages with suggestions:
+
+```
+❌ Failed to download dependency: google/protobuf
+   Source:  Git
+   URL:     git::https://github.com/protocolbuffers/protobuf.git?ref=v99.0
+   Ref:     v99.0
+   Error:   reference not found
+
+💡 Suggestions:
+   • Check if the repository URL is correct and accessible
+   • Verify the ref (tag/branch/commit) exists
+   • Ensure you have proper authentication (SSH key or token)
+```
+
+## Cache Location
+
+Dependencies are cached in:
+- **macOS/Linux**: `~/.cache/protobuild/deps/`
+- **Go modules**: Standard Go module cache (`$GOPATH/pkg/mod`)
+
+## Architecture
+
+```
+protobuild
+├── cmd/
+│   ├── protobuild/     # Main CLI commands
+│   ├── format/         # Proto file formatting
+│   ├── formatcmd/      # Format command wrapper
+│   └── linters/        # AIP linting rules
+└── internal/
+    ├── depresolver/    # Multi-source dependency resolver
+    ├── modutil/        # Go module utilities
+    ├── plugin/         # Plugin management
+    ├── protoutil/      # Protobuf utilities
+    ├── shutil/         # Shell utilities
+    └── template/       # Template utilities
+```
 
 ## License
 
