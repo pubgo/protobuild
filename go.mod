@@ -7,8 +7,6 @@ require (
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/cnf/structhash v0.0.0-20250313080605-df4c6cc74a9a
 	github.com/deckarep/golang-set/v2 v2.8.0
-	github.com/emicklei/proto v1.14.2
-	github.com/emicklei/proto-contrib v0.18.2
 	github.com/flosch/pongo2/v5 v5.0.0
 	github.com/golang/protobuf v1.5.4
 	github.com/googleapis/api-linter/v2 v2.1.0

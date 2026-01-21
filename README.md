@@ -67,7 +67,10 @@ protobuild gen
 | `deps` | Show dependency list and status |
 | `install` | Install protoc plugins |
 | `lint` | Lint proto files using AIP rules |
-| `format` | Format proto files |
+| `format` | Format proto files using buf |
+| `format -w` | Format and write changes to files |
+| `format --diff` | Show diff of formatting changes |
+| `format --builtin` | Use builtin formatter instead of buf |
 | `clean` | Clean dependency cache |
 | `clean --dry-run` | Show what would be cleaned without deleting |
 | `version` | Show version information |
@@ -216,7 +219,23 @@ protobuild lint --debug       # Debug mode
 ### Format Proto Files
 
 ```bash
+# Format and preview changes (dry run)
 protobuild format
+
+# Format and write changes to files
+protobuild format -w
+
+# Show diff of formatting changes
+protobuild format --diff
+
+# Exit with error if files need formatting (useful for CI)
+protobuild format --exit-code
+
+# Use builtin formatter instead of buf
+protobuild format --builtin
+
+# Format specific directories
+protobuild format -w proto/ api/
 ```
 
 ### Force Vendor Update
@@ -309,17 +328,25 @@ Dependencies are cached in:
 ```
 protobuild
 ├── cmd/
-│   ├── protobuild/     # Main CLI commands
-│   ├── format/         # Proto file formatting
-│   ├── formatcmd/      # Format command wrapper
-│   └── linters/        # AIP linting rules
+│   ├── protobuild/          # Main CLI application
+│   │   ├── cmd.go           # Entry point and core handlers
+│   │   ├── commands.go      # Command factory functions
+│   │   ├── config.go        # Configuration structs
+│   │   ├── proto_walker.go  # Proto file walking utilities
+│   │   ├── protoc_builder.go# Protoc command builder
+│   │   ├── vendor_service.go# Dependency vendoring
+│   │   ├── util.go          # Shared utilities
+│   │   └── yaml_types.go    # YAML type definitions
+│   ├── format/              # Proto file formatting (builtin)
+│   ├── formatcmd/           # Format command (buf integration)
+│   └── linters/             # AIP linting rules
 └── internal/
-    ├── depresolver/    # Multi-source dependency resolver
-    ├── modutil/        # Go module utilities
-    ├── plugin/         # Plugin management
-    ├── protoutil/      # Protobuf utilities
-    ├── shutil/         # Shell utilities
-    └── template/       # Template utilities
+    ├── depresolver/         # Multi-source dependency resolver
+    ├── modutil/             # Go module utilities
+    ├── plugin/              # Plugin management
+    ├── protoutil/           # Protobuf utilities
+    ├── shutil/              # Shell utilities
+    └── typex/               # Type extensions
 ```
 
 ## Documentation

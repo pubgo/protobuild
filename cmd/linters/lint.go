@@ -54,36 +54,6 @@ func NewCli() (*CliArgs, typex.Options) {
 			Description: "Print the rules and exit.  Honors the output-format flag.",
 			Value:       redant.BoolOf(&cliArgs.ListRulesFlag),
 		},
-
-		//&cli.StringFlag{
-		//	Name:        "output-format",
-		//	Usage:       "The format of the linting results.\nSupported formats include \"yaml\", \"json\",\"github\" and \"summary\" table.\nYAML is the default.",
-		//	Aliases:     []string{"f"},
-		//	Value:       "",
-		//	Destination: &cliArgs.FormatType,
-		//},
-
-		//&cli.StringSliceFlag{
-		//	Name:        "proto-path",
-		//	Usage:       "The folder for searching proto imports.\\nMay be specified multiple times; directories will be searched in order.\\nThe current working directory is always used.",
-		//	Aliases:     []string{"I"},
-		//	Value:       nil,
-		//	Destination: &cliArgs.ProtoImportPaths,
-		//},
-
-		//&cli.StringSliceFlag{
-		//	Name:        "enable-rule",
-		//	Usage:       "Enable a rule with the given name.\nMay be specified multiple times.",
-		//	Value:       nil,
-		//	Destination: &cliArgs.EnabledRules,
-		//},
-		//
-		//&cli.StringSliceFlag{
-		//	Name:        "disable-rule",
-		//	Usage:       "Disable a rule with the given name.\nMay be specified multiple times.",
-		//	Value:       nil,
-		//	Destination: &cliArgs.DisabledRules,
-		//},
 	}
 }
 

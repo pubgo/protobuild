@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/pubgo/protobuild/proto/example/v1;examplev1";
+option java_multiple_files = true;
+option java_package = "com.example.v1";
+
+// User represents a user in the system.
+message User {
+  // Unique identifier for the user.
+  string id = 1;
+  // User's display name.
+  string name = 2;
+  // User's email address.
+  string email = 3;
+  // User's age.
+  int32 age = 4;
+  // When the user was created.
+  google.protobuf.Timestamp created_at = 5;
+  // When the user was last updated.
+  google.protobuf.Timestamp updated_at = 6;
+  // User's status.
+  UserStatus status = 7;
+  // User's profile.
+  Profile profile = 8;
+}
+
+// UserStatus represents the status of a user.
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_INACTIVE = 2;
+  USER_STATUS_BANNED = 3;
+}
+
+// Profile contains user profile information.
+message Profile {
+  string avatar_url = 1;
+  string bio = 2;
+  string location = 3;
+  string website = 4;
+}
+
+// CreateUserRequest is the request for creating a user.
+message CreateUserRequest {
+  User user = 1;
+}
+
+// CreateUserResponse is the response for creating a user.
+message CreateUserResponse {
+  User user = 1;
+}
+
+// GetUserRequest is the request for getting a user.
+message GetUserRequest {
+  string id = 1;
+}
+
+// GetUserResponse is the response for getting a user.
+message GetUserResponse {
+  User user = 1;
+}
+
+// UpdateUserRequest is the request for updating a user.
+message UpdateUserRequest {
+  User user = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+// UpdateUserResponse is the response for updating a user.
+message UpdateUserResponse {
+  User user = 1;
+}
+
+// DeleteUserRequest is the request for deleting a user.
+message DeleteUserRequest {
+  string id = 1;
+}
+
+// DeleteUserResponse is the response for deleting a user.
+message DeleteUserResponse {}
+
+// ListUsersRequest is the request for listing users.
+message ListUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+// ListUsersResponse is the response for listing users.
+message ListUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
+// UserService provides user management functionality.
+service UserService {
+  // CreateUser creates a new user.
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  // GetUser retrieves a user by ID.
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  // UpdateUser updates an existing user.
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  // DeleteUser deletes a user.
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  // ListUsers lists all users.
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+}

@@ -15,6 +15,8 @@ package docs
 
 // https://github.com/containerd/protobuild
 // https://github.com/bufbuild/buf
+// https://github.com/josharian/tstruct
+// https://github.com/rsc/tmplfunc
 
 import (
 	_ "github.com/samber/lo"

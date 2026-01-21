@@ -67,7 +67,11 @@ protobuild gen
 | `deps` | 显示依赖列表及状态 |
 | `install` | 安装 protoc 插件 |
 | `lint` | 使用 AIP 规则检查 proto 文件 |
-| `format` | 格式化 proto 文件 |
+| `format` | 使用 buf 格式化 proto 文件 |
+| `format -w` | 格式化并写入文件 |
+| `format --diff` | 显示格式化差异 |
+| `format --exit-code` | 需要格式化时返回错误码（CI 适用）|
+| `format --builtin` | 使用内置格式化器 |
 | `clean` | 清理依赖缓存 |
 | `clean --dry-run` | 预览将被清理的内容 |
 | `version` | 显示版本信息 |
@@ -216,7 +220,23 @@ protobuild lint --debug       # 调试模式
 ### 格式化 Proto 文件
 
 ```bash
+# 格式化并预览变更（不写入文件）
 protobuild format
+
+# 格式化并写入文件
+protobuild format -w
+
+# 显示格式化差异
+protobuild format --diff
+
+# 如果文件需要格式化则返回错误码（适用于 CI）
+protobuild format --exit-code
+
+# 使用内置格式化器而非 buf
+protobuild format --builtin
+
+# 格式化指定目录
+protobuild format -w proto/ api/
 ```
 
 ### 强制更新 Vendor
@@ -315,16 +335,24 @@ plugins:
 ```
 protobuild
 ├── cmd/
-│   ├── protobuild/     # 主要 CLI 命令
-│   ├── format/         # Proto 文件格式化
-│   ├── formatcmd/      # 格式化命令包装器
-│   └── linters/        # AIP 检查规则
+│   ├── protobuild/          # 主要 CLI 应用
+│   │   ├── cmd.go           # 入口和核心处理器
+│   │   ├── commands.go      # 命令工厂函数
+│   │   ├── config.go        # 配置结构体
+│   │   ├── proto_walker.go  # Proto 文件遍历工具
+│   │   ├── protoc_builder.go# Protoc 命令构建器
+│   │   ├── vendor_service.go# 依赖 vendor 服务
+│   │   ├── util.go          # 共享工具函数
+│   │   └── yaml_types.go    # YAML 类型定义
+│   ├── format/              # Proto 文件格式化（内置）
+│   ├── formatcmd/           # 格式化命令（buf 集成）
+│   └── linters/             # AIP 检查规则
 └── internal/
-    ├── depresolver/    # 多源依赖解析器
-    ├── modutil/        # Go 模块工具
-    ├── plugin/         # 插件管理
-    ├── protoutil/      # Protobuf 工具
-    ├── shutil/         # Shell 工具
-    └── template/       # 模板工具
+    ├── depresolver/         # 多源依赖解析器
+    ├── modutil/             # Go 模块工具
+    ├── plugin/              # 插件管理
+    ├── protoutil/           # Protobuf 工具
+    ├── shutil/              # Shell 工具
+    └── typex/               # 类型扩展
 ```
 
