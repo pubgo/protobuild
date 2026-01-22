@@ -17,6 +17,7 @@ import (
 	"github.com/pubgo/funk/running"
 	"github.com/pubgo/protobuild/cmd/formatcmd"
 	"github.com/pubgo/protobuild/cmd/linters"
+	"github.com/pubgo/protobuild/cmd/protobuild/upgradecmd"
 	"github.com/pubgo/protobuild/cmd/webcmd"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
@@ -54,14 +55,14 @@ func withParseConfig() redant.MiddlewareFunc {
 	}
 }
 
-// Main creates the main CLI application.
-func Main(ver string) *redant.Command {
+// Main creates and returns the root CLI command with all subcommands.
+func Main(version string) *redant.Command {
 	var force, update, dryRun bool
 	cliArgs, options := linters.NewCli()
 
 	app := &redant.Command{
-		Use:   "protobuf",
-		Short: "protobuf generation, configuration and management",
+		Use:   "protobuild",
+		Short: "Protobuf generation, configuration and management tool",
 		Options: typex.Options{
 			redant.Option{
 				Flag:        "conf",
@@ -84,6 +85,7 @@ func Main(ver string) *redant.Command {
 			newCleanCommand(&dryRun),
 			webcmd.New(&protoCfg),
 			newVersionCommand(),
+			upgradecmd.New(),
 		},
 	}
 
@@ -92,18 +94,14 @@ func Main(ver string) *redant.Command {
 
 // handleStdinPlugin handles protoc plugin mode when invoked via stdin.
 func handleStdinPlugin(ctx context.Context, inv *redant.Invocation) error {
-	if shutil.IsHelp() {
-		return nil
-	}
-
 	file := os.Stdin
 	if term.IsTerminal(int(file.Fd())) {
-		return nil
+		return redant.DefaultHelpFn()(ctx, inv)
 	}
 
 	fi := assert.Exit1(file.Stat())
 	if fi.Size() == 0 {
-		return nil
+		return redant.DefaultHelpFn()(ctx, inv)
 	}
 
 	in := assert.Must1(io.ReadAll(file))

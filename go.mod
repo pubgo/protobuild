@@ -5,6 +5,7 @@ go 1.24.6
 require (
 	github.com/a8m/envsubst v1.4.3
 	github.com/bufbuild/protocompile v0.14.1
+	github.com/cheggaaa/pb/v3 v3.1.7
 	github.com/cnf/structhash v0.0.0-20250313080605-df4c6cc74a9a
 	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/flosch/pongo2/v5 v5.0.0
@@ -40,6 +41,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.54.0 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.6 // indirect
@@ -68,6 +70,7 @@ require (
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.2 // indirect
