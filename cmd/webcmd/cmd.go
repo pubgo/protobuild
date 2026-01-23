@@ -8,8 +8,9 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/redant"
+
+	"github.com/pubgo/protobuild/internal/typex"
 )
 
 // New creates the web command.

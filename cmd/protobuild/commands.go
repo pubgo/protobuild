@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pubgo/funk/pathutil"
-	"github.com/pubgo/funk/recovery"
+	"github.com/pubgo/funk/v2/pathutil"
+	"github.com/pubgo/funk/v2/recovery"
 	"github.com/pubgo/protobuild/internal/depresolver"
 	"github.com/pubgo/redant"
 	"gopkg.in/yaml.v3"

@@ -1,8 +1,8 @@
 package protobuild
 
 import (
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/errors"
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/errors"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -34,7 +34,7 @@ func (p *YamlListType[T]) UnmarshalYAML(value *yaml.Node) error {
 	default:
 		var val any
 		assert.Exit(value.Decode(&val))
-		return errors.Format("yaml kind type error, kind=%v data=%v", value.Kind, val)
+		return errors.Errorf("yaml kind type error, kind=%v data=%v", value.Kind, val)
 	}
 }
 
@@ -65,6 +65,6 @@ func (p *strOrObject) UnmarshalYAML(value *yaml.Node) error {
 	default:
 		var val any
 		assert.Exit(value.Decode(&val))
-		return errors.Format("yaml kind type error,kind=%v data=%v", value.Kind, val)
+		return errors.Errorf("yaml kind type error,kind=%v data=%v", value.Kind, val)
 	}
 }

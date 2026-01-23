@@ -12,7 +12,7 @@ import (
 	pongo "github.com/flosch/pongo2/v5"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/v2/assert"
 	options "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
 	gp "google.golang.org/protobuf/proto"

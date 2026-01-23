@@ -10,14 +10,13 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/generic"
-	"github.com/pubgo/funk/log"
-	"github.com/pubgo/funk/recovery"
-	"github.com/pubgo/funk/running"
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/cmds/upgradecmd"
+	"github.com/pubgo/funk/v2/log"
+	"github.com/pubgo/funk/v2/recovery"
+	"github.com/pubgo/funk/v2/running"
 	"github.com/pubgo/protobuild/cmd/formatcmd"
 	"github.com/pubgo/protobuild/cmd/linters"
-	"github.com/pubgo/protobuild/cmd/protobuild/upgradecmd"
 	"github.com/pubgo/protobuild/cmd/webcmd"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/pubgo/protobuild/internal/typex"
@@ -30,8 +29,7 @@ import (
 )
 
 var (
-	globalCfg Config
-
+	globalCfg      Config
 	protoCfg       = "protobuf.yaml"
 	protoPluginCfg = "protobuf.plugin.yaml"
 	pwd            = assert.Exit1(os.Getwd())
@@ -56,7 +54,7 @@ func withParseConfig() redant.MiddlewareFunc {
 }
 
 // Main creates and returns the root CLI command with all subcommands.
-func Main(version string) *redant.Command {
+func Main() *redant.Command {
 	var force, update, dryRun bool
 	cliArgs, options := linters.NewCli()
 
@@ -85,7 +83,7 @@ func Main(version string) *redant.Command {
 			newCleanCommand(&dryRun),
 			webcmd.New(&protoCfg),
 			newVersionCommand(),
-			upgradecmd.New(),
+			upgradecmd.New("pubgo", "protobuild"),
 		},
 	}
 
@@ -119,7 +117,7 @@ func handleStdinPlugin(ctx context.Context, inv *redant.Invocation) error {
 
 	plgName, params := parsePluginParams(req.GetParameter())
 	if len(params) > 0 {
-		req.Parameter = generic.Ptr(strings.Join(params, ","))
+		req.Parameter = lo.ToPtr(strings.Join(params, ","))
 	}
 
 	return executeWrapperPlugin(plgName, req)
@@ -219,9 +217,9 @@ func newVersionCommand() *redant.Command {
 		Short: "version info",
 		Handler: func(ctx context.Context, inv *redant.Invocation) error {
 			defer recovery.Exit()
-			fmt.Printf("Project:   %s\n", running.Project)
-			fmt.Printf("Version:   %s\n", running.Version)
-			fmt.Printf("GitCommit: %s\n", running.CommitID)
+			fmt.Printf("Project:   %s\n", running.Project())
+			fmt.Printf("Version:   %s\n", running.Version())
+			fmt.Printf("GitCommit: %s\n", running.CommitID())
 			return nil
 		},
 	}
