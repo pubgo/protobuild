@@ -17,6 +17,7 @@
   - [示例 5: 企业内部项目](#示例-5-企业内部项目-私有依赖)
   - [示例 6: 使用 Validate 验证](#示例-6-使用-validate-验证)
   - [示例 7: 完整生产项目 (推荐)](#示例-7-完整生产项目-推荐参考)
+    - [示例 8: 协议仓 + SDK 仓自动发布](#示例-8-协议仓--sdk-仓自动发布)
 - [高级用法](#高级用法--advanced-usage)
 
 ---
@@ -814,6 +815,111 @@ linter:
 
 | 特性 | 说明 |
 |------|------|
+
+  ### 示例 8: 协议仓 + SDK 仓自动发布
+
+  场景：所有 `.proto` 放在“协议仓”，生成的 SDK（多语言）放在“SDK 仓”。协议仓打 tag 后，CI 自动生成代码、提交到 SDK 仓并打同名 tag。
+
+  #### 协议仓目录示例
+
+  - `proto/`：协议源文件
+  - `protobuf.yaml`：现有生成配置（复用 protobuild）
+  - `scripts/generate.sh`：生成并推送 SDK 的脚本（见下）
+
+  #### scripts/generate.sh（简化示例，保持分支对齐）
+
+  ```bash
+  #!/usr/bin/env bash
+  set -euo pipefail
+
+  PROTO_ROOT="proto"
+  OUT_DIR="pkg"              # 生成物输出
+  SDK_REPO_URL="${SDK_REPO_URL:-git@github.com:your-org/proto-sdk-repo.git}"
+  SDK_REPO_DIR=".sdk-repo"
+  SDK_SUBDIR="go"            # SDK 仓中的子目录（按语言分 go/js/python）
+  SDK_BRANCH="${SDK_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"  # 与协议仓当前分支保持一致
+
+  # 安装工具（如已预装可跳过）
+  command -v protoc >/dev/null || { echo "missing protoc"; exit 1; }
+  command -v protoc-gen-go >/dev/null || go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  command -v protoc-gen-go-grpc >/dev/null || go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+  # 清理并生成
+  rm -rf "${OUT_DIR}" && mkdir -p "${OUT_DIR}"
+  go run . gen   # 复用 protobuild 的生成逻辑
+
+  # 克隆 SDK 仓并同步生成物
+  rm -rf "${SDK_REPO_DIR}"
+  git clone "${SDK_REPO_URL}" "${SDK_REPO_DIR}"
+  (
+    cd "${SDK_REPO_DIR}"
+    git checkout -B "${SDK_BRANCH}"  # 在 SDK 仓使用同名分支，避免覆盖他人分支
+  )
+  rsync -av --delete "${OUT_DIR}/" "${SDK_REPO_DIR}/${SDK_SUBDIR}/"
+
+  # 提交并打 tag（TAG 由 CI 传入，与协议仓 tag 对齐）
+  cd "${SDK_REPO_DIR}"
+  if git status --porcelain | grep -q .; then
+    COMMIT_MSG="chore: update proto SDK from $(git -C .. rev-parse --short HEAD)"
+    git add "${SDK_SUBDIR}"
+    git commit -m "${COMMIT_MSG}"
+    if [ -n "${TAG:-}" ]; then git tag -f "${TAG}"; fi
+    git push origin "${SDK_BRANCH}"
+    if [ -n "${TAG:-}" ]; then git push origin "${TAG}" --force; fi
+  else
+    echo "No changes to commit."
+  fi
+  ```
+
+  #### GitHub Actions（协议仓 .github/workflows/publish-sdk.yml）
+
+  ```yaml
+  name: Publish SDK
+
+  on:
+    push:
+      tags:
+        - 'v*'
+
+  jobs:
+    build-publish:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+
+        - name: Setup Go
+          uses: actions/setup-go@v5
+          with:
+            go-version: '1.21'
+
+        - name: Set TAG and branch from ref
+          run: |
+            echo "TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+            echo "SDK_BRANCH=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+        - name: Publish SDK
+          env:
+            SDK_REPO_URL: git@github.com:your-org/proto-sdk-repo.git
+            TAG: ${{ env.TAG }}
+            SDK_BRANCH: ${{ env.SDK_BRANCH }}
+          run: |
+            chmod +x scripts/generate.sh
+            scripts/generate.sh
+          # 需要写 SDK 仓的 deploy key / PAT：
+          # - uses: webfactory/ssh-agent@v0.9.0
+          #   with:
+          #     ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  ```
+
+  #### 实践要点
+
+  - 协议仓 tag 与 SDK 仓 tag 一一对应，避免版本漂移。
+  - 分支对齐：在 SDK 仓使用与协议仓相同的分支名（CI 传入 `SDK_BRANCH`），避免覆盖他人分支。
+  - 多语言时在脚本中按语言追加生成命令和 `SDK_SUBDIR`，同一提交推送。
+  - 固定生成工具版本（protoc/插件），避免无谓 diff。
+  - 无变更不提交；有变更才生成 commit/tag。
 | `base` | 全局插件配置，避免重复设置 `out`、`paths`、`module` |
 | `optional: true` | 可选依赖，适用于不同系统的本地路径差异 |
 | `skip_base: true` | 特定插件跳过全局配置，如 OpenAPI 单独输出到 docs 目录 |
