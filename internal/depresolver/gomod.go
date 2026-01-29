@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pubgo/funk/pathutil"
+	"github.com/pubgo/funk/v2/pathutil"
 	"github.com/schollz/progressbar/v3"
 
 	"github.com/pubgo/protobuild/internal/modutil"

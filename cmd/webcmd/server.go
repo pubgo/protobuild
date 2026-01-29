@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pubgo/funk/v2/assert"
+
 	"github.com/pubgo/protobuild/internal/config"
 )
 
@@ -129,7 +131,7 @@ func (s *Server) Start(ctx context.Context, port int) error {
 	// Open browser
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		openBrowser(url)
+		assert.Must(openBrowser(url))
 	}()
 
 	// Handle graceful shutdown
@@ -137,7 +139,7 @@ func (s *Server) Start(ctx context.Context, port int) error {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		s.server.Shutdown(shutdownCtx)
+		assert.Must(s.server.Shutdown(shutdownCtx))
 	}()
 
 	return s.server.Serve(listener)
@@ -154,7 +156,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	cfg := s.config
 	s.mu.RUnlock()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Config":     cfg,
 		"ConfigPath": s.configPath,
 	}
@@ -169,14 +171,14 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		// Reload config from file
-		s.loadConfig()
+		assert.Must(s.loadConfig())
 
 		s.mu.RLock()
 		cfg := s.config
 		s.mu.RUnlock()
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cfg)
+		assert.Must(json.NewEncoder(w).Encode(cfg))
 		return
 	}
 
@@ -202,18 +204,18 @@ func (s *Server) handleSaveConfig(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.saveConfig(); err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(CommandResult{
+		assert.Must(json.NewEncoder(w).Encode(CommandResult{
 			Success: false,
 			Error:   err.Error(),
-		})
+		}))
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(CommandResult{
+	assert.Must(json.NewEncoder(w).Encode(CommandResult{
 		Success: true,
 		Output:  "Configuration saved successfully",
-	})
+	}))
 }
 
 // handleCommand executes protobuild commands.
@@ -234,7 +236,7 @@ func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
 	args := []string{"-c", s.configPath, cmdName}
 
 	// Parse additional flags from request body
-	var flags map[string]interface{}
+	var flags map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&flags); err == nil {
 		for key, val := range flags {
 			switch v := val.(type) {
@@ -264,7 +266,7 @@ func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
 	cmd.Dir = filepath.Dir(s.configPath)
 
 	output, err := cmd.CombinedOutput()
-
+	assert.Must(err)
 	result := CommandResult{
 		Success: err == nil,
 		Output:  string(output),
@@ -274,7 +276,7 @@ func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	assert.Must(json.NewEncoder(w).Encode(result))
 }
 
 // handleProtoFiles returns a list of proto files in the project.
@@ -288,7 +290,7 @@ func (s *Server) handleProtoFiles(w http.ResponseWriter, r *http.Request) {
 
 	for _, root := range cfg.Root {
 		rootPath := filepath.Join(baseDir, root)
-		filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
+		assert.Must(filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
@@ -297,11 +299,11 @@ func (s *Server) handleProtoFiles(w http.ResponseWriter, r *http.Request) {
 				files = append(files, relPath)
 			}
 			return nil
-		})
+		}))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(files)
+	assert.Must(json.NewEncoder(w).Encode(files))
 }
 
 // handleDepsStatus returns the status of dependencies.
@@ -317,9 +319,9 @@ func (s *Server) handleDepsStatus(w http.ResponseWriter, r *http.Request) {
 	output, _ := cmd.CombinedOutput()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	assert.Must(json.NewEncoder(w).Encode(map[string]string{
 		"output": string(output),
-	})
+	}))
 }
 
 // openBrowser opens the URL in the default browser.
@@ -391,7 +393,7 @@ func (s *Server) handleCommandStream(w http.ResponseWriter, r *http.Request) {
 	stderr, _ := cmd.StderrPipe()
 
 	if err := cmd.Start(); err != nil {
-		fmt.Fprintf(w, "data: {\"type\":\"error\",\"data\":\"%s\"}\n\n", err.Error())
+		assert.Must1(fmt.Fprintf(w, "data: {\"type\":\"error\",\"data\":\"%s\"}\n\n", err.Error()))
 		flusher.Flush()
 		return
 	}
@@ -401,7 +403,7 @@ func (s *Server) handleCommandStream(w http.ResponseWriter, r *http.Request) {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
-			fmt.Fprintf(w, "data: {\"type\":\"stdout\",\"data\":\"%s\"}\n\n", escapeJSON(line))
+			assert.Must1(fmt.Fprintf(w, "data: {\"type\":\"stdout\",\"data\":\"%s\"}\n\n", escapeJSON(line)))
 			flusher.Flush()
 		}
 	}()
@@ -410,16 +412,16 @@ func (s *Server) handleCommandStream(w http.ResponseWriter, r *http.Request) {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
-			fmt.Fprintf(w, "data: {\"type\":\"stderr\",\"data\":\"%s\"}\n\n", escapeJSON(line))
+			assert.Must1(fmt.Fprintf(w, "data: {\"type\":\"stderr\",\"data\":\"%s\"}\n\n", escapeJSON(line)))
 			flusher.Flush()
 		}
 	}()
 
 	err = cmd.Wait()
 	if err != nil {
-		fmt.Fprintf(w, "data: {\"type\":\"error\",\"data\":\"%s\"}\n\n", err.Error())
+		assert.Must1(fmt.Fprintf(w, "data: {\"type\":\"error\",\"data\":\"%s\"}\n\n", err.Error()))
 	} else {
-		fmt.Fprintf(w, "data: {\"type\":\"done\",\"data\":\"Command completed successfully\"}\n\n")
+		assert.Must1(fmt.Fprintf(w, "data: {\"type\":\"done\",\"data\":\"Command completed successfully\"}\n\n"))
 	}
 	flusher.Flush()
 }
@@ -469,12 +471,12 @@ func (s *Server) handleProtoContent(w http.ResponseWriter, r *http.Request) {
 	info, _ := os.Stat(fullPath)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	assert.Must(json.NewEncoder(w).Encode(map[string]any{
 		"path":     filePath,
 		"content":  string(content),
 		"size":     info.Size(),
 		"modified": info.ModTime().Format(time.RFC3339),
-	})
+	}))
 }
 
 // ProjectStats represents project statistics.
@@ -508,7 +510,7 @@ func (s *Server) handleProjectStats(w http.ResponseWriter, r *http.Request) {
 	// Count proto files in root directories
 	for _, root := range cfg.Root {
 		rootPath := filepath.Join(baseDir, root)
-		filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
+		assert.Must(filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
@@ -532,13 +534,13 @@ func (s *Server) handleProjectStats(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			return nil
-		})
+		}))
 	}
 
 	// Count vendor files
 	if cfg.Vendor != "" {
 		vendorPath := filepath.Join(baseDir, cfg.Vendor)
-		filepath.Walk(vendorPath, func(path string, info fs.FileInfo, err error) error {
+		assert.Must(filepath.Walk(vendorPath, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
@@ -546,9 +548,9 @@ func (s *Server) handleProjectStats(w http.ResponseWriter, r *http.Request) {
 				stats.VendorFiles++
 			}
 			return nil
-		})
+		}))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	assert.Must(json.NewEncoder(w).Encode(stats))
 }

@@ -29,7 +29,7 @@ func Save(path string, cfg *Config) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0o644)
 }
 
 // Default returns a default configuration.

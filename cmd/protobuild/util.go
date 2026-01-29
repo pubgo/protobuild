@@ -10,10 +10,10 @@ import (
 	"github.com/cnf/structhash"
 	"github.com/googleapis/api-linter/v2/lint"
 	"github.com/huandu/go-clone"
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/errors"
-	"github.com/pubgo/funk/pathutil"
-	"github.com/pubgo/funk/strutil"
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/errors"
+	"github.com/pubgo/funk/v2/pathutil"
+	"github.com/pubgo/funk/v2/strutil"
 	"github.com/pubgo/protobuild/cmd/linters"
 	"github.com/pubgo/protobuild/internal/config"
 	"gopkg.in/yaml.v3"
@@ -135,11 +135,11 @@ var checkSumPath = func(vendorPath string) string {
 func getChecksumData(vendorPath string) (string, error) {
 	var path = checkSumPath(vendorPath)
 	if pathutil.IsNotExist(vendorPath) {
-		return "", errors.NewFmt("file not found")
+		return "", errors.New("file not found")
 	}
 
 	if pathutil.IsNotExist(path) {
-		return "", errors.NewFmt("file not found")
+		return "", errors.New("file not found")
 	}
 
 	data, err := os.ReadFile(path)
