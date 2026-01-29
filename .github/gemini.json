@@ -1,28 +1,55 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Gemini Code Assist Configuration",
-  
   "reviews": {
     "auto_review": true,
     "instructions_file": ".github/gemini-instructions.md",
     "language": "en",
-    
     "focus_areas": [
       "correctness",
-      "security", 
+      "security",
       "performance",
       "maintainability",
       "best_practices"
     ],
-    
     "severity_levels": {
-      "critical": ["REQ", "LOGI", "SEC", "AUTH"],
-      "high": ["DSN", "RBST", "TRANS", "CONC", "PERF"],
-      "medium": ["CPT", "IDE", "MAIN", "CPL"],
-      "normal": ["READ", "SIMPL", "CONS", "DUP", "NAM", "DOCS"],
-      "low": ["COMM", "LOGG", "ERR", "FOR", "GRAM", "PRAC", "PR"]
+      "critical": [
+        "REQ",
+        "LOGI",
+        "SEC",
+        "AUTH"
+      ],
+      "high": [
+        "DSN",
+        "RBST",
+        "TRANS",
+        "CONC",
+        "PERF"
+      ],
+      "medium": [
+        "CPT",
+        "IDE",
+        "MAIN",
+        "CPL"
+      ],
+      "normal": [
+        "READ",
+        "SIMPL",
+        "CONS",
+        "DUP",
+        "NAM",
+        "DOCS"
+      ],
+      "low": [
+        "COMM",
+        "LOGG",
+        "ERR",
+        "FOR",
+        "GRAM",
+        "PRAC",
+        "PR"
+      ]
     },
-    
     "path_filters": {
       "include": [
         "**/*.go",
@@ -57,7 +84,6 @@
       ]
     }
   },
-  
   "chat": {
     "instructions_file": ".github/gemini-instructions.md"
   }
