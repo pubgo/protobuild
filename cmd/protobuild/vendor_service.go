@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/errors"
-	"github.com/pubgo/funk/pathutil"
-	"github.com/pubgo/funk/recovery"
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/errors"
+	"github.com/pubgo/funk/v2/pathutil"
+	"github.com/pubgo/funk/v2/recovery"
 	"github.com/pubgo/protobuild/internal/depresolver"
 	"github.com/schollz/progressbar/v3"
 )
@@ -128,10 +128,10 @@ func (s *VendorService) CopyToVendor(resolvedPaths map[string]string) (int, erro
 			}
 
 			defer recovery.Err(&gErr, func(err error) error {
-				return errors.WrapTag(err,
-					errors.T("path", path),
-					errors.T("name", info.Name()),
-				)
+				return errors.WrapTags(err, errors.Tags{
+					"path": path,
+					"name": info.Name(),
+				})
 			})
 
 			if info.IsDir() || !strings.HasSuffix(info.Name(), ".proto") {

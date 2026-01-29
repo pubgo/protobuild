@@ -8,8 +8,8 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	ver "github.com/hashicorp/go-version"
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/pathutil"
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/pathutil"
 	"github.com/pubgo/funk/v2/result"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
@@ -38,7 +38,7 @@ func GoModPath() string {
 
 // LoadVersionGraph loads the module version graph from 'go mod graph'.
 func LoadVersionGraph() map[string]string {
-	modList := strings.Split(result.Wrap(shutil.GoModGraph()).Must(), "\n")
+	modList := strings.Split(result.Wrap(shutil.GoModGraph()).Unwrap(), "\n")
 	modSet := mapset.NewSet[string]()
 	for _, m := range modList {
 		for _, v := range strings.Split(m, " ") {

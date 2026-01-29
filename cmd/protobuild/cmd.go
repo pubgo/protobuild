@@ -10,11 +10,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/generic"
-	"github.com/pubgo/funk/log"
-	"github.com/pubgo/funk/recovery"
-	"github.com/pubgo/funk/running"
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/cmds/upgradecmd"
+	"github.com/pubgo/funk/v2/log"
+	"github.com/pubgo/funk/v2/recovery"
+	"github.com/pubgo/funk/v2/running"
 	"github.com/pubgo/protobuild/cmd/formatcmd"
 	"github.com/pubgo/protobuild/cmd/linters"
 	"github.com/pubgo/protobuild/cmd/webcmd"
@@ -29,8 +29,7 @@ import (
 )
 
 var (
-	globalCfg Config
-
+	globalCfg      Config
 	protoCfg       = "protobuf.yaml"
 	protoPluginCfg = "protobuf.plugin.yaml"
 	pwd            = assert.Exit1(os.Getwd())
@@ -54,14 +53,14 @@ func withParseConfig() redant.MiddlewareFunc {
 	}
 }
 
-// Main creates the main CLI application.
-func Main(ver string) *redant.Command {
+// Main creates and returns the root CLI command with all subcommands.
+func Main() *redant.Command {
 	var force, update, dryRun bool
 	cliArgs, options := linters.NewCli()
 
 	app := &redant.Command{
-		Use:   "protobuf",
-		Short: "protobuf generation, configuration and management",
+		Use:   "protobuild",
+		Short: "Protobuf generation, configuration and management tool",
 		Options: typex.Options{
 			redant.Option{
 				Flag:        "conf",
@@ -84,6 +83,7 @@ func Main(ver string) *redant.Command {
 			newCleanCommand(&dryRun),
 			webcmd.New(&protoCfg),
 			newVersionCommand(),
+			upgradecmd.New("pubgo", "protobuild"),
 		},
 	}
 
@@ -92,18 +92,14 @@ func Main(ver string) *redant.Command {
 
 // handleStdinPlugin handles protoc plugin mode when invoked via stdin.
 func handleStdinPlugin(ctx context.Context, inv *redant.Invocation) error {
-	if shutil.IsHelp() {
-		return nil
-	}
-
 	file := os.Stdin
 	if term.IsTerminal(int(file.Fd())) {
-		return nil
+		return redant.DefaultHelpFn()(ctx, inv)
 	}
 
 	fi := assert.Exit1(file.Stat())
 	if fi.Size() == 0 {
-		return nil
+		return redant.DefaultHelpFn()(ctx, inv)
 	}
 
 	in := assert.Must1(io.ReadAll(file))
@@ -121,7 +117,7 @@ func handleStdinPlugin(ctx context.Context, inv *redant.Invocation) error {
 
 	plgName, params := parsePluginParams(req.GetParameter())
 	if len(params) > 0 {
-		req.Parameter = generic.Ptr(strings.Join(params, ","))
+		req.Parameter = lo.ToPtr(strings.Join(params, ","))
 	}
 
 	return executeWrapperPlugin(plgName, req)
@@ -221,9 +217,9 @@ func newVersionCommand() *redant.Command {
 		Short: "version info",
 		Handler: func(ctx context.Context, inv *redant.Invocation) error {
 			defer recovery.Exit()
-			fmt.Printf("Project:   %s\n", running.Project)
-			fmt.Printf("Version:   %s\n", running.Version)
-			fmt.Printf("GitCommit: %s\n", running.CommitID)
+			fmt.Printf("Project:   %s\n", running.Project())
+			fmt.Printf("Version:   %s\n", running.Version())
+			fmt.Printf("GitCommit: %s\n", running.CommitID())
 			return nil
 		},
 	}

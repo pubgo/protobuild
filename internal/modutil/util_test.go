@@ -6,7 +6,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	ver "github.com/hashicorp/go-version"
-	"github.com/pubgo/funk/pretty"
+	"github.com/pubgo/funk/v2/pretty"
 	"github.com/pubgo/funk/v2/result"
 	"github.com/samber/lo"
 
@@ -20,7 +20,7 @@ func TestName(t *testing.T) {
 	}
 	pretty.Println(versions)
 
-	modList := strings.Split(result.Wrap(shutil.GoModGraph()).Must(), "\n")
+	modList := strings.Split(result.Wrap(shutil.GoModGraph()).Unwrap(), "\n")
 	modSet := mapset.NewSet[string]()
 	for _, m := range modList {
 		for _, v := range strings.Split(m, " ") {

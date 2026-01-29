@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pubgo/funk/errors"
+	"github.com/pubgo/funk/v2/errors"
 	"github.com/pubgo/redant"
 
 	"github.com/pubgo/protobuild/cmd/format"

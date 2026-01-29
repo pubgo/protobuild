@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pubgo/funk/recovery"
+	"github.com/pubgo/funk/v2/recovery"
 	"github.com/pubgo/protobuild/internal/config"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/redant"

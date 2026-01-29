@@ -2,7 +2,7 @@
 package config
 
 import (
-	"github.com/pubgo/funk/errors"
+	"github.com/pubgo/funk/v2/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -32,6 +32,6 @@ func (p *PluginOpts) UnmarshalYAML(value *yaml.Node) error {
 		*p = data
 		return nil
 	default:
-		return errors.Format("yaml kind type error, kind=%v data=%s", value.Kind, value.Value)
+		return errors.Errorf("yaml kind type error, kind=%v data=%s", value.Kind, value.Value)
 	}
 }

@@ -3,19 +3,17 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
-	"os"
+
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/buildinfo/version"
 
 	"github.com/pubgo/protobuild/cmd/protobuild"
 )
 
 //go:embed .version/VERSION
-var version string
+var ver string
+var _ = version.SetVersion(ver)
 
 func main() {
-	err := protobuild.Main(version).Invoke().WithOS().Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+	assert.Exit(protobuild.Main().Invoke().WithOS().Run())
 }

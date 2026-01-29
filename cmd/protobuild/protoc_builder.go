@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/log"
-	"github.com/pubgo/funk/pathutil"
+	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/log"
+	"github.com/pubgo/funk/v2/pathutil"
 	"github.com/pubgo/protobuild/internal/shutil"
 	"github.com/samber/lo"
 )

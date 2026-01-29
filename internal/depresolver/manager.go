@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-getter"
-	"github.com/pubgo/funk/pathutil"
+	"github.com/pubgo/funk/v2/pathutil"
 	"github.com/schollz/progressbar/v3"
 )
 
