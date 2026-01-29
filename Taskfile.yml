@@ -96,6 +96,12 @@ tasks:
     cmds:
       - go run . gen
 
+  proto:gen:diff:
+    desc: Generate protobuf code then show git diff for pkg/
+    cmds:
+      - go run . gen
+      - git diff --stat pkg
+
   proto:lint:
     desc: Lint proto files
     cmds:

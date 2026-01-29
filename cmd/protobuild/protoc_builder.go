@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pubgo/funk/v2/assert"
+	"github.com/pubgo/funk/v2/errors"
 	"github.com/pubgo/funk/v2/log"
 	"github.com/pubgo/funk/v2/pathutil"
 	"github.com/pubgo/protobuild/internal/shutil"
@@ -51,21 +52,93 @@ type ProtocCommand struct {
 
 // Execute runs the protoc command.
 func (c *ProtocCommand) Execute() error {
+	if err := c.preflight(); err != nil {
+		return err
+	}
+
 	mainCmd, retagCmd := c.build()
 
 	logger := log.GetLogger("protobuild")
 	logger.Info().Msg(mainCmd)
 
 	if err := shutil.Shell(mainCmd).Run(); err != nil {
-		return fmt.Errorf("protoc failed: %w", err)
+		logger.Error().Err(err).Msg("protoc failed")
+		return errors.Wrap(err, "protoc failed")
 	}
 
 	// Run retag plugin separately if configured
 	if retagCmd != "" {
 		logger.Info().Bool(reTagPluginName, true).Msg(retagCmd)
 		if err := shutil.Shell(retagCmd).Run(); err != nil {
-			return fmt.Errorf("retag failed: %w", err)
+			logger.Error().Err(err).Msg("retag failed")
+			return errors.Wrap(err, "retag failed")
 		}
+	}
+
+	return nil
+}
+
+// preflight validates binaries and include paths before building commands.
+func (c *ProtocCommand) preflight() error {
+	if _, err := exec.LookPath("protoc"); err != nil {
+		return errors.Wrap(err, "protoc not found in PATH; install protobuf compiler (e.g. brew install protobuf)")
+	}
+
+	for _, inc := range lo.Uniq(append(c.includes, c.vendor, c.pwd)) {
+		if inc == "" {
+			continue
+		}
+		if pathutil.IsNotExist(inc) {
+			return errors.Errorf("include path not found: %s (check vendor sync or includes config)", inc)
+		}
+	}
+
+	for _, plg := range c.cfg.Plugins {
+		if plg == nil || plg.SkipRun {
+			continue
+		}
+		if err := c.checkPluginBinary(plg); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// checkPluginBinary ensures the plugin binary exists and provides actionable errors.
+func (c *ProtocCommand) checkPluginBinary(plg *plugin) error {
+	name := plg.Name
+
+	suggest := map[string]string{
+		"go":      "go install google.golang.org/protobuf/cmd/protoc-gen-go@latest",
+		"go-grpc": "go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest",
+		"retag":   "go install github.com/pubgo/protoc-gen-retag@v0.0.5",
+	}
+
+	hint := func(msg string) error {
+		if s, ok := suggest[name]; ok {
+			return errors.Errorf("%s; try `%s`", msg, s)
+		}
+		return errors.Errorf(msg)
+	}
+
+	if plg.Path != "" {
+		if _, err := exec.LookPath(plg.Path); err != nil {
+			return hint(fmt.Sprintf("plugin %s: binary %q not found in PATH", name, plg.Path))
+		}
+		return nil
+	}
+
+	if plg.Shell != "" || plg.Docker != "" {
+		if _, err := exec.LookPath("protobuild"); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("plugin %s: wrapper 'protobuild' not found in PATH; reinstall or add to PATH", name))
+		}
+		return nil
+	}
+
+	binName := "protoc-gen-" + name
+	if _, err := exec.LookPath(binName); err != nil {
+		return hint(fmt.Sprintf("plugin %s: %q not found in PATH", name, binName))
 	}
 
 	return nil

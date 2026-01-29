@@ -30,6 +30,8 @@
 ### High Priority / 高优先级 🟠
 - [ ] Design is appropriate `[DSN]` / 设计合理
 - [ ] Error handling is robust `[RBST]` / 错误处理健壮
+	- [ ] Returned errors carry context（`errors.Wrap/Wrapf` 等）/ 错误返回包含上下文
+	- [ ] Critical paths log error before returning / 关键路径返回前已记录错误日志
 - [ ] Transactions handled correctly `[TRANS]` / 事务处理正确
 - [ ] No concurrency issues `[CONC]` / 无并发问题
 - [ ] Performance is acceptable `[PERF]` / 性能可接受
@@ -61,4 +63,4 @@
 
 ---
 
-> 💡 **Review Guidelines**: This PR will be reviewed following our [Code Review Guide / 代码审查指南](docs/codereview/CODE_REVIEW_GUIDE_CN.md)
+> 💡 **Review Guidelines**: This PR will be reviewed following our [Code Review Guide / 代码审查指南](../docs/codereview/CODE_REVIEW_GUIDE_CN.md)
