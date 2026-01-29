@@ -61,4 +61,4 @@
 
 ---
 
-> 💡 **Review Guidelines**: This PR will be reviewed following our [Code Review Guide](docs/codereview/CODE_REVIEW_GUIDE_EN.md) | [代码审查指南](docs/codereview/CODE_REVIEW_GUIDE_CN.md)
+> 💡 **Review Guidelines**: This PR will be reviewed following our [Code Review Guide / 代码审查指南](docs/codereview/CODE_REVIEW_GUIDE_CN.md)
