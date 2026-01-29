@@ -119,7 +119,7 @@ func (c *ProtocCommand) checkPluginBinary(plg *plugin) error {
 		if s, ok := suggest[name]; ok {
 			return errors.Errorf("%s; try `%s`", msg, s)
 		}
-		return errors.Errorf(msg)
+		return errors.New(msg)
 	}
 
 	if plg.Path != "" {
