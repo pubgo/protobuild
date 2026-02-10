@@ -3,11 +3,14 @@ package protobuild
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/pubgo/funk/v2/assert"
@@ -34,6 +37,57 @@ var (
 	protoPluginCfg = "protobuf.plugin.yaml"
 	pwd            = assert.Exit1(os.Getwd())
 	logger         = log.GetLogger("protobuild")
+
+	defaultSkillContent = `---
+name: protobuild
+description: "Manage protobuf projects: vendor dependencies, generate code, lint/format. Use only when protobuf.yaml is present in the project root."
+license: MIT
+metadata:
+	author: pubgo
+	version: "1.0.0"
+compatibility: "Requires protobuild CLI, protoc, plugins; run in repo root with protobuf.yaml."
+allowed-tools: "Bash(protobuild:*)"
+---
+
+## When to use
+- 项目存在 ` + "`protobuf.yaml`" + `，需要下载依赖、生成代码、lint/format proto。
+- 先 vendor 再 gen；只检查格式/规范，使用 lint 或 format --exit-code。
+
+## Safety / Constraints
+- 会写盘的命令：gen、format -w、install（需告知用户）。
+- 必须在包含 protobuf.yaml 的项目根目录执行。
+- 如未 vendor 过依赖，先运行 protobuild vendor。
+
+## Inputs
+- command: one of [gen, vendor, lint, format, clean, deps, install, doctor, web]
+- args: optional string list, e.g. ["-w", "--diff"]
+- working_dir: project root (defaults to current CWD if已在项目根)
+
+## Steps
+1) 确认 working_dir 内存在 protobuf.yaml，否则提示用户补全。
+2) 如 command=gen 且依赖未就绪，先运行 protobuild vendor。
+3) 执行：protobuild <command> <args...>（在 working_dir）。
+4) 收集 stdout/stderr/exit_code，若命令会写盘（gen/format -w/install），提示用户查看变更。
+5) 失败时给出 stderr 摘要与下一步建议（如检查路径/依赖/插件）。
+
+## Examples
+- protobuild vendor
+- protobuild gen
+- protobuild format --exit-code
+- protobuild lint
+`
+
+	defaultOpenAIContent = `interface:
+	display_name: "Protobuild"
+	short_description: "Proto build/lint/format tool"
+	icon_small: "./assets/protobuild-16.png"
+	icon_large: "./assets/protobuild-64.png"
+	brand_color: "#0F9D58"
+	default_prompt: "Use protobuild to vendor deps and generate proto code."
+
+dependencies:
+	tools: []
+`
 )
 
 const (
@@ -81,6 +135,7 @@ func Main() *redant.Command {
 			newFormatCommand(),
 			newDepsCommand(),
 			newCleanCommand(&dryRun),
+			newSkillsCommand(),
 			webcmd.New(&protoCfg),
 			newVersionCommand(),
 			upgradecmd.New("pubgo", "protobuild"),
@@ -88,6 +143,79 @@ func Main() *redant.Command {
 	}
 
 	return app
+}
+
+// newSkillsCommand installs the Agent Skills template into the current repository.
+func newSkillsCommand() *redant.Command {
+	var outDir = ".agents/skills/protobuild"
+	var withOpenAI bool
+	var force bool
+
+	return &redant.Command{
+		Use:   "skills",
+		Short: "install Agent Skills template (.agents/skills/protobuild)",
+		Options: typex.Options{
+			redant.Option{
+				Flag:        "path",
+				Shorthand:   "p",
+				Description: "skills output directory",
+				Value:       redant.StringOf(&outDir),
+			},
+			redant.Option{
+				Flag:        "openai",
+				Description: "also generate agents/openai.yaml",
+				Value:       redant.BoolOf(&withOpenAI),
+			},
+			redant.Option{
+				Flag:        "force",
+				Shorthand:   "f",
+				Description: "overwrite existing files",
+				Value:       redant.BoolOf(&force),
+			},
+		},
+		Handler: func(ctx context.Context, inv *redant.Invocation) error {
+			defer recovery.Exit()
+
+			skillPath := filepath.Join(outDir, "SKILL.md")
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
+				return err
+			}
+
+			if err := writeFileIfNeeded(skillPath, []byte(defaultSkillContent), force); err != nil {
+				return err
+			}
+
+			if withOpenAI {
+				openaiDir := filepath.Join(outDir, "agents")
+				if err := os.MkdirAll(openaiDir, 0o755); err != nil {
+					return err
+				}
+				openaiPath := filepath.Join(openaiDir, "openai.yaml")
+				if err := writeFileIfNeeded(openaiPath, []byte(defaultOpenAIContent), force); err != nil {
+					return err
+				}
+			}
+
+			fmt.Printf("Skill installed at %s\n", skillPath)
+			if withOpenAI {
+				fmt.Printf("OpenAI metadata at %s\n", filepath.Join(outDir, "agents", "openai.yaml"))
+			}
+			fmt.Println("You can validate with: skills-ref validate", outDir)
+			return nil
+		},
+	}
+}
+
+func writeFileIfNeeded(path string, data []byte, force bool) error {
+	if _, err := os.Stat(path); err == nil {
+		if !force {
+			return fmt.Errorf("file already exists: %s (use --force to overwrite)", path)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0o644)
 }
 
 // handleStdinPlugin handles protoc plugin mode when invoked via stdin.
