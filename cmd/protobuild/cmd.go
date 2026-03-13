@@ -43,10 +43,9 @@ name: protobuild
 description: "Manage protobuf projects: vendor dependencies, generate code, lint/format. Use only when protobuf.yaml is present in the project root."
 license: MIT
 metadata:
-	author: pubgo
-	version: "1.0.0"
+	  author: pubgo
+	  version: "1.0.0"
 compatibility: "Requires protobuild CLI, protoc, plugins; run in repo root with protobuf.yaml."
-allowed-tools: "Bash(protobuild:*)"
 ---
 
 ## When to use
@@ -61,7 +60,7 @@ allowed-tools: "Bash(protobuild:*)"
 ## Inputs
 - command: one of [gen, vendor, lint, format, clean, deps, install, doctor, web]
 - args: optional string list, e.g. ["-w", "--diff"]
-- working_dir: project root (defaults to current CWD if已在项目根)
+- working_dir: project root (defaults to current CWD if 已在项目根)
 
 ## Steps
 1) 确认 working_dir 内存在 protobuf.yaml，否则提示用户补全。
@@ -78,15 +77,15 @@ allowed-tools: "Bash(protobuild:*)"
 `
 
 	defaultOpenAIContent = `interface:
-	display_name: "Protobuild"
-	short_description: "Proto build/lint/format tool"
-	icon_small: "./assets/protobuild-16.png"
-	icon_large: "./assets/protobuild-64.png"
-	brand_color: "#0F9D58"
-	default_prompt: "Use protobuild to vendor deps and generate proto code."
+	  display_name: "Protobuild"
+	  short_description: "Proto build/lint/format tool"
+	  icon_small: "./assets/protobuild-16.png"
+	  icon_large: "./assets/protobuild-64.png"
+	  brand_color: "#0F9D58"
+	  default_prompt: "Use protobuild to vendor deps and generate proto code."
 
 dependencies:
-	tools: []
+	  tools: []
 `
 )
 
@@ -181,7 +180,8 @@ func newSkillsCommand() *redant.Command {
 				return err
 			}
 
-			if err := writeFileIfNeeded(skillPath, []byte(defaultSkillContent), force); err != nil {
+			skillContent := normalizeTemplateIndent(defaultSkillContent)
+			if err := writeFileIfNeeded(skillPath, []byte(skillContent), force); err != nil {
 				return err
 			}
 
@@ -191,7 +191,8 @@ func newSkillsCommand() *redant.Command {
 					return err
 				}
 				openaiPath := filepath.Join(openaiDir, "openai.yaml")
-				if err := writeFileIfNeeded(openaiPath, []byte(defaultOpenAIContent), force); err != nil {
+				openaiContent := normalizeTemplateIndent(defaultOpenAIContent)
+				if err := writeFileIfNeeded(openaiPath, []byte(openaiContent), force); err != nil {
 					return err
 				}
 			}
@@ -204,6 +205,10 @@ func newSkillsCommand() *redant.Command {
 			return nil
 		},
 	}
+}
+
+func normalizeTemplateIndent(content string) string {
+	return strings.ReplaceAll(content, "\n\t", "\n")
 }
 
 func writeFileIfNeeded(path string, data []byte, force bool) error {

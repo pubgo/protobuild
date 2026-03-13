@@ -3,33 +3,31 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/pubgo/protobuild)](https://goreportcard.com/report/github.com/pubgo/protobuild)
 [![License](https://img.shields.io/github/license/pubgo/protobuild)](LICENSE)
 
-> A powerful Protocol Buffers build and management tool
+> 一个强大的 Protocol Buffers 构建和管理工具
 
-[中文文档](./README_CN.md)
+## 特性
 
-## Features
+- 🚀 **统一构建** - 一条命令编译所有 proto 文件
+- 📦 **多源依赖** - 支持 Go 模块、Git、HTTP、S3、GCS 和本地路径
+- 🔌 **插件支持** - 灵活的 protoc 插件配置
+- 🔍 **代码检查** - 内置基于 AIP 规则的 proto 文件检查
+- 📝 **格式化** - 自动格式化 proto 文件
+- ⚙️ **配置驱动** - 基于 YAML 的项目配置
+- 📊 **进度显示** - 可视化进度条和详细错误信息
+- 🗑️ **缓存管理** - 清理和管理依赖缓存
+- 🌐 **Web 界面** - 可视化配置编辑器，支持 Proto 文件浏览
+- 🏥 **环境诊断** - Doctor 命令检查开发环境配置
+- 🎯 **项目初始化** - 快速项目设置，支持多种模板
 
-- 🚀 **Unified Build** - One command to compile all proto files
-- 📦 **Multi-Source Dependencies** - Support Go modules, Git, HTTP, S3, GCS, and local paths
-- 🔌 **Plugin Support** - Flexible protoc plugin configuration
-- 🔍 **Linting** - Built-in proto file linting with AIP rules
-- 📝 **Formatting** - Auto-format proto files
-- ⚙️ **Configuration-driven** - YAML-based project configuration
-- 📊 **Progress Display** - Visual progress bars and detailed error messages
-- 🗑️ **Cache Management** - Clean and manage dependency cache
-- 🌐 **Web UI** - Visual configuration editor with proto file browser
-- 🏥 **Environment Check** - Doctor command to diagnose development environment
-- 🎯 **Project Initialization** - Quick project setup with templates
-
-## Installation
+## 安装
 
 ```bash
 go install github.com/pubgo/protobuild@latest
 ```
 
-## Quick Start
+## 快速开始
 
-1. Create a `protobuf.yaml` configuration file in your project root:
+1. 在项目根目录创建 `protobuf.yaml` 配置文件：
 
 ```yaml
 vendor: .proto
@@ -48,74 +46,75 @@ plugins:
       - paths=source_relative
 ```
 
-2. Vendor dependencies:
+2. 同步依赖：
 
 ```bash
 protobuild vendor
 ```
 
-3. Generate code:
+3. 生成代码：
 
 ```bash
 protobuild gen
 ```
 
-## Commands
+## 命令说明
 
-| Command | Description |
-|---------|-------------|
-| `gen` | Compile protobuf files |
-| `vendor` | Sync proto dependencies to vendor directory |
-| `vendor -u` | Force re-download all dependencies (ignore cache) |
-| `deps` | Show dependency list and status |
-| `install` | Install protoc plugins |
-| `lint` | Lint proto files using AIP rules |
-| `format` | Format proto files using buf |
-| `format -w` | Format and write changes to files |
-| `format --diff` | Show diff of formatting changes |
-| `format --builtin` | Use builtin formatter instead of buf |
-| `web` | Start web-based configuration UI |
-| `web --port 9090` | Start web UI on custom port |
-| `clean` | Clean dependency cache |
-| `clean --dry-run` | Show what would be cleaned without deleting |
-| `init` | Initialize a new protobuild project |
-| `init --template grpc` | Initialize with specific template (basic, grpc, minimal) |
-| `doctor` | Check development environment and dependencies |
-| `doctor --fix` | Auto-install missing Go plugins |
-| `version` | Show version information |
+| 命令                   | 说明                                       |
+| ---------------------- | ------------------------------------------ |
+| `gen`                  | 编译 protobuf 文件                         |
+| `vendor`               | 同步 proto 依赖到 vendor 目录              |
+| `vendor -u`            | 强制重新下载所有依赖（忽略缓存）           |
+| `deps`                 | 显示依赖列表及状态                         |
+| `install`              | 安装 protoc 插件                           |
+| `lint`                 | 使用 AIP 规则检查 proto 文件               |
+| `format`               | 使用 buf 格式化 proto 文件                 |
+| `format -w`            | 格式化并写入文件                           |
+| `format --diff`        | 显示格式化差异                             |
+| `format --exit-code`   | 需要格式化时返回错误码（CI 适用）          |
+| `format --builtin`     | 使用内置格式化器                           |
+| `web`                  | 启动 Web 配置管理界面                      |
+| `web --port 9090`      | 指定端口启动 Web 界面                      |
+| `clean`                | 清理依赖缓存                               |
+| `clean --dry-run`      | 预览将被清理的内容                         |
+| `init`                 | 初始化新的 protobuild 项目                 |
+| `init --template grpc` | 使用指定模板初始化（basic、grpc、minimal） |
+| `doctor`               | 检查开发环境和依赖配置                     |
+| `doctor --fix`         | 自动安装缺失的 Go 插件                     |
+| `version`              | 显示版本信息                               |
 
-## Configuration
+## 配置说明
 
-### Configuration File Structure
+### 配置文件结构
 
 ```yaml
-# Checksum for tracking changes (auto-generated)
+# 校验和，用于追踪变更（自动生成）
 checksum: ""
 
-# Vendor directory for proto dependencies
+# proto 依赖的 vendor 目录
 vendor: .proto
 
-# Base plugin configuration (applied to all plugins)
+# 基础插件配置（应用于所有插件）
 base:
   out: pkg
   paths: source_relative
   module: github.com/your/module
 
-# Proto source directories
+# proto 源文件目录
 root:
   - proto
   - api
 
-# Include paths for protoc
+# protoc 的 include 路径
 includes:
   - proto
   - .proto
 
-# Exclude paths from compilation
+# 排除的路径
 excludes:
   - proto/internal
 
-# Proto dependencies
+# proto 依赖配置
 deps:
   - name: google/protobuf
     url: github.com/protocolbuffers/protobuf
@@ -123,7 +122,7 @@ deps:
     version: v21.0
     optional: false
 
-# Protoc plugins configuration
+# protoc 插件配置
 plugins:
   - name: go
     out: pkg
@@ -134,12 +133,12 @@ plugins:
     opt:
       - paths=source_relative
 
-# Plugin installers (go install)
+# 插件安装器（go install）
 installers:
   - google.golang.org/protobuf/cmd/protoc-gen-go@latest
   - google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
-# Linter configuration
+# 检查器配置
 linter:
   rules:
     enabled_rules:
@@ -149,181 +148,181 @@ linter:
   format_type: yaml
 ```
 
-### Plugin Configuration
+### 插件配置
 
-Each plugin supports the following options:
+每个插件支持以下选项：
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Plugin name (used as protoc-gen-{name}) |
-| `path` | string | Custom plugin binary path |
-| `out` | string | Output directory |
-| `opt` | string/list | Plugin options |
-| `shell` | string | Run via shell command |
-| `docker` | string | Run via Docker container |
-| `skip_base` | bool | Skip base configuration |
-| `skip_run` | bool | Skip this plugin |
-| `exclude_opts` | list | Options to exclude |
+| 字段           | 类型        | 说明                               |
+| -------------- | ----------- | ---------------------------------- |
+| `name`         | string      | 插件名称（用作 protoc-gen-{name}） |
+| `path`         | string      | 自定义插件二进制路径               |
+| `out`          | string      | 输出目录                           |
+| `opt`          | string/list | 插件选项                           |
+| `shell`        | string      | 通过 shell 命令运行                |
+| `docker`       | string      | 通过 Docker 容器运行               |
+| `skip_base`    | bool        | 跳过基础配置                       |
+| `skip_run`     | bool        | 跳过此插件                         |
+| `exclude_opts` | list        | 排除的选项                         |
 
-### Dependency Configuration
+### 依赖配置
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Local name/path in vendor directory |
-| `url` | string | Source URL (Go module, Git URL, HTTP archive, S3, GCS, or local path) |
-| `path` | string | Subdirectory within the source |
-| `version` | string | Specific version (for Go modules) |
-| `ref` | string | Git ref (branch, tag, commit) for Git sources |
-| `source` | string | Source type: `gomod`, `git`, `http`, `s3`, `gcs`, `local` (auto-detected if not specified) |
-| `optional` | bool | Skip if not found |
+| 字段       | 类型   | 说明                                                                     |
+| ---------- | ------ | ------------------------------------------------------------------------ |
+| `name`     | string | vendor 目录中的本地名称/路径                                             |
+| `url`      | string | 源 URL（Go 模块、Git URL、HTTP 归档、S3、GCS 或本地路径）                |
+| `path`     | string | 源内的子目录                                                             |
+| `version`  | string | 指定版本（用于 Go 模块）                                                 |
+| `ref`      | string | Git 引用（分支、标签、提交）用于 Git 源                                  |
+| `source`   | string | 源类型：`gomod`、`git`、`http`、`s3`、`gcs`、`local`（未指定时自动检测） |
+| `optional` | bool   | 找不到时跳过                                                             |
 
-#### Supported Dependency Sources
+#### 支持的依赖源
 
 ```yaml
 deps:
-  # Go Module (default)
+  # Go 模块（默认）
   - name: google/protobuf
     url: github.com/protocolbuffers/protobuf
     path: src/google/protobuf
 
-  # Git Repository
+  # Git 仓库
   - name: googleapis
     url: https://github.com/googleapis/googleapis.git
     ref: master
 
-  # HTTP Archive
+  # HTTP 归档
   - name: envoy
     url: https://github.com/envoyproxy/envoy/archive/v1.28.0.tar.gz
     path: api
 
-  # Local Path
+  # 本地路径
   - name: local-protos
     url: ./third_party/protos
 
-  # S3 Bucket
+  # S3 存储桶
   - name: internal-protos
     url: s3://my-bucket/protos.tar.gz
 
-  # GCS Bucket
+  # GCS 存储桶
   - name: shared-protos
     url: gs://my-bucket/protos.tar.gz
 ```
 
-## Usage Examples
+## 使用示例
 
-### Custom Config File
+### 使用自定义配置文件
 
 ```bash
 protobuild -c protobuf.custom.yaml gen
 ```
 
-### Lint Proto Files
+### 检查 Proto 文件
 
 ```bash
 protobuild lint
-protobuild lint --list-rules  # Show available rules
-protobuild lint --debug       # Debug mode
+protobuild lint --list-rules  # 显示可用规则
+protobuild lint --debug       # 调试模式
 ```
 
-### Format Proto Files
+### 格式化 Proto 文件
 
 ```bash
-# Format and preview changes (dry run)
+# 格式化并预览变更（不写入文件）
 protobuild format
 
-# Format and write changes to files
+# 格式化并写入文件
 protobuild format -w
 
-# Show diff of formatting changes
+# 显示格式化差异
 protobuild format --diff
 
-# Exit with error if files need formatting (useful for CI)
+# 如果文件需要格式化则返回错误码（适用于 CI）
 protobuild format --exit-code
 
-# Use builtin formatter instead of buf
+# 使用内置格式化器而非 buf
 protobuild format --builtin
 
-# Format specific directories
+# 格式化指定目录
 protobuild format -w proto/ api/
 ```
 
-### Web Configuration UI
+### Web 配置管理界面
 
 ```bash
-# Start web UI on default port (8080)
+# 在默认端口 (8080) 启动 Web 界面
 protobuild web
 
-# Start web UI on custom port
+# 在指定端口启动 Web 界面
 protobuild web --port 9090
 ```
 
-The web interface provides:
-- 📝 Visual configuration editor
-- 📦 Dependency management
-- 🔌 Plugin configuration
-- 🚀 One-click build, lint, format operations
-- 📄 Real-time YAML preview
-- 📊 Project statistics dashboard
-- 🔍 Proto file browser with syntax highlighting
-- 📚 Configuration examples reference
+Web 界面提供：
+- 📝 可视化配置编辑器
+- 📦 依赖管理
+- 🔌 插件配置
+- 🚀 一键执行构建、检查、格式化等操作
+- 📄 实时 YAML 配置预览
+- 📊 项目统计仪表盘
+- 🔍 Proto 文件浏览器（支持语法高亮）
+- 📚 配置示例参考
 
-### Initialize New Project
+### 初始化新项目
 
 ```bash
-# Interactive initialization
+# 交互式初始化
 protobuild init
 
-# Use specific template
-protobuild init --template basic    # Basic Go + gRPC project
-protobuild init --template grpc     # Full gRPC-Gateway project
-protobuild init --template minimal  # Minimal configuration
+# 使用指定模板
+protobuild init --template basic    # 基础 Go + gRPC 项目
+protobuild init --template grpc     # 完整 gRPC-Gateway 项目
+protobuild init --template minimal  # 最小化配置
 
-# Specify output directory
+# 指定输出目录
 protobuild init -o ./my-project
 ```
 
-### Check Development Environment
+### 检查开发环境
 
 ```bash
-# Diagnose environment issues
+# 诊断环境问题
 protobuild doctor
 
-# Auto-install missing Go plugins
+# 自动安装缺失的 Go 插件
 protobuild doctor --fix
 ```
 
-Example output:
+输出示例：
 ```
 🏥 Protobuild Doctor
 
-  Checking development environment...
+  正在检查开发环境...
 
-  ✅ protoc                 installed (v25.1)
-  ✅ protoc-gen-go          installed
-  ✅ protoc-gen-go-grpc     installed
-  ✅ buf                    installed (v1.28.1)
-  ✅ api-linter             installed
-  ✅ go                     installed (go1.21.5)
-  ✅ Configuration          protobuf.yaml found
-  ⚠️  Vendor directory       not found (run 'protobuild vendor')
+  ✅ protoc                 已安装 (v25.1)
+  ✅ protoc-gen-go          已安装
+  ✅ protoc-gen-go-grpc     已安装
+  ✅ buf                    已安装 (v1.28.1)
+  ✅ api-linter             已安装
+  ✅ go                     已安装 (go1.21.5)
+  ✅ 配置文件               已找到 protobuf.yaml
+  ⚠️  Vendor 目录            未找到（请运行 'protobuild vendor'）
 
-  ✅ Environment check passed!
+  ✅ 环境检查通过！
 ```
 
-### Force Vendor Update
+### 强制更新 Vendor
 
 ```bash
-protobuild vendor -f      # Force update even if no changes detected
-protobuild vendor -u      # Re-download all dependencies (ignore cache)
+protobuild vendor -f      # 强制更新，即使没有检测到变更
+protobuild vendor -u      # 重新下载所有依赖（忽略缓存）
 ```
 
-### Show Dependency Status
+### 显示依赖状态
 
 ```bash
 protobuild deps
 ```
 
-Example output:
+输出示例：
 ```
 📦 Dependencies:
 
@@ -335,23 +334,23 @@ Example output:
   Total: 2 dependencies
 ```
 
-### Clean Dependency Cache
+### 清理依赖缓存
 
 ```bash
-protobuild clean           # Clean all cached dependencies
-protobuild clean --dry-run # Preview what will be cleaned
+protobuild clean           # 清理所有缓存的依赖
+protobuild clean --dry-run # 预览将被清理的内容
 ```
 
-### Install Plugins
+### 安装插件
 
 ```bash
 protobuild install
-protobuild install -f  # Force reinstall
+protobuild install -f  # 强制重新安装
 ```
 
-## Directory-level Configuration
+## 目录级配置
 
-You can place a `protobuf.plugin.yaml` file in any proto directory to override the root configuration for that directory and its subdirectories.
+你可以在任何 proto 目录中放置 `protobuf.plugin.yaml` 文件，以覆盖该目录及其子目录的根配置。
 
 ```yaml
 # proto/api/protobuf.plugin.yaml
@@ -362,7 +361,7 @@ plugins:
       - paths=source_relative
 ```
 
-## Supported Protoc Plugins
+## 支持的 Protoc 插件
 
 - `google.golang.org/protobuf/cmd/protoc-gen-go@latest`
 - `google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest`
@@ -370,11 +369,11 @@ plugins:
 - `github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest`
 - `github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest`
 - `github.com/bufbuild/protoc-gen-validate/cmd/protoc-gen-validate@latest`
-- And many more...
+- 以及更多...
 
-## Error Handling
+## 错误处理
 
-When dependency resolution fails, protobuild provides detailed error messages with suggestions:
+当依赖解析失败时，protobuild 会提供详细的错误信息和建议：
 
 ```
 ❌ Failed to download dependency: google/protobuf
@@ -384,71 +383,69 @@ When dependency resolution fails, protobuild provides detailed error messages wi
    Error:   reference not found
 
 💡 Suggestions:
-   • Check if the repository URL is correct and accessible
-   • Verify the ref (tag/branch/commit) exists
-   • Ensure you have proper authentication (SSH key or token)
+   • 检查仓库 URL 是否正确且可访问
+   • 验证 ref（标签/分支/提交）是否存在
+   • 确保您有正确的身份验证（SSH 密钥或令牌）
 ```
 
-## Cache Location
+## 缓存位置
 
-Dependencies are cached in:
+依赖缓存在：
 - **macOS/Linux**: `~/.cache/protobuild/deps/`
-- **Go modules**: Standard Go module cache (`$GOPATH/pkg/mod`)
+- **Go 模块**: 标准 Go 模块缓存 (`$GOPATH/pkg/mod`)
 
-## Architecture
+## 文档
 
+- [配置示例](./docs/EXAMPLES.md) - 各种使用场景的详细配置示例
+- [多源依赖设计](./docs/MULTI_SOURCE_DEPS.md) - 多源依赖解析设计文档
+- [设计文档](./docs/DESIGN.md) - 架构和设计文档
+
+## 路线图
+
+以下是计划在未来版本中实现的功能：
+
+| 功能                       | 描述                                     | 状态   |
+| -------------------------- | ---------------------------------------- | ------ |
+| 🔗 **依赖关系图**           | 可视化 proto 文件的 import 依赖关系      | 计划中 |
+| ⚠️ **Breaking Change 检测** | 检测版本间的不兼容变更                   | 计划中 |
+| 📚 **API 文档生成**         | 从 proto 注释自动生成 Markdown/HTML 文档 | 计划中 |
+| 🎭 **Mock 服务器**          | 自动启动用于测试的 mock gRPC/HTTP 服务器 | 计划中 |
+| 📝 **Proto 模板**           | 快速生成常用 proto 模式（CRUD、分页等）  | 计划中 |
+| 📊 **字段统计分析**         | 分析字段命名规范和类型分布               | 计划中 |
+| ✏️ **在线编辑器**           | 在 Web 界面直接编辑 proto 文件           | 计划中 |
+
+## 项目架构
+
+```mermaid
+flowchart TD
+  ROOT[protobuild]
+
+  ROOT --> CMD[cmd]
+  ROOT --> INTERNAL[internal]
+
+  CMD --> CMDPB[protobuild（主 CLI）]
+  CMD --> CMDFMT[format（内置格式化）]
+  CMD --> CMDFMTCMD[formatcmd（buf 集成）]
+  CMD --> CMDLINT[linters（AIP 规则）]
+  CMD --> CMDWEB[webcmd（Web 管理）]
+
+  CMDPB --> F1[cmd.go]
+  CMDPB --> F2[commands.go]
+  CMDPB --> F3[config.go]
+  CMDPB --> F4[proto_walker.go]
+  CMDPB --> F5[protoc_builder.go]
+  CMDPB --> F6[vendor_service.go]
+  CMDPB --> F7[util.go]
+  CMDPB --> F8[yaml_types.go]
+
+  CMDWEB --> W1[cmd.go]
+  CMDWEB --> W2[server.go]
+  CMDWEB --> W3[templates]
+
+  INTERNAL --> I1[depresolver]
+  INTERNAL --> I2[modutil]
+  INTERNAL --> I3[plugin]
+  INTERNAL --> I4[protoutil]
+  INTERNAL --> I5[shutil]
+  INTERNAL --> I6[typex]
 ```
-protobuild
-├── cmd/
-│   ├── protobuild/          # Main CLI application
-│   │   ├── cmd.go           # Entry point and core handlers
-│   │   ├── commands.go      # Command factory functions
-│   │   ├── config.go        # Configuration structs
-│   │   ├── proto_walker.go  # Proto file walking utilities
-│   │   ├── protoc_builder.go# Protoc command builder
-│   │   ├── vendor_service.go# Dependency vendoring
-│   │   ├── util.go          # Shared utilities
-│   │   └── yaml_types.go    # YAML type definitions
-│   ├── format/              # Proto file formatting (builtin)
-│   ├── formatcmd/           # Format command (buf integration)
-│   ├── linters/             # AIP linting rules
-│   └── webcmd/              # Web configuration UI
-│       ├── cmd.go           # Web command entry
-│       ├── server.go        # HTTP server and API
-│       └── templates/       # HTML templates (Alpine.js + Tailwind)
-└── internal/
-    ├── depresolver/         # Multi-source dependency resolver
-    ├── modutil/             # Go module utilities
-    ├── plugin/              # Plugin management
-    ├── protoutil/           # Protobuf utilities
-    ├── shutil/              # Shell utilities
-    └── typex/               # Type extensions
-```
-
-## Documentation
-
-- [Configuration Examples](./docs/EXAMPLES.md) - Detailed configuration examples for various use cases
-- [Multi-Source Dependencies](./docs/MULTI_SOURCE_DEPS.md) - Design document for multi-source dependency resolution
-- [Design Document](./docs/DESIGN.md) - Architecture and design documentation
-
-## Roadmap
-
-Upcoming features planned for future releases:
-
-| Feature | Description | Status |
-|---------|-------------|--------|
-| 🔗 **Dependency Graph** | Visualize proto file import dependencies | Planned |
-| ⚠️ **Breaking Change Detection** | Detect incompatible changes between versions | Planned |
-| 📚 **API Documentation Generator** | Auto-generate Markdown/HTML docs from proto comments | Planned |
-| 🎭 **Mock Server** | Auto-start mock gRPC/HTTP server for testing | Planned |
-| 📝 **Proto Templates** | Quick generation of common proto patterns (CRUD, pagination) | Planned |
-| 📊 **Field Statistics** | Analyze field naming conventions and type distribution | Planned |
-| ✏️ **Online Editor** | Edit proto files directly in Web UI | Planned |
-
-## License
-
-[MIT License](LICENSE)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.

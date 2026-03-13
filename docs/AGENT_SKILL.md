@@ -65,7 +65,6 @@ metadata:
   author: pubgo
   version: "1.0.0"
 compatibility: "Requires protobuild CLI, protoc, plugins; run in repo root with protobuf.yaml."  # 可选
-allowed-tools: "Bash(protobuild:* )"  # 可选、实验字段，按需填写
 ---
 
 ## When to use

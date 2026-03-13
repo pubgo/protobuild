@@ -1,15 +1,15 @@
-# protobuild 配置示例 / Configuration Examples
+# protobuild 配置示例
 
 本文档提供了各种使用场景的详细配置示例。
 
 ---
 
-## 目录 / Table of Contents
+## 目录
 
-- [基础配置](#基础配置--basic-configuration)
-- [依赖配置示例](#依赖配置示例--dependency-examples)
-- [插件配置示例](#插件配置示例--plugin-examples)
-- [完整项目示例](#完整项目示例--complete-project-examples)
+- [基础配置](#基础配置)
+- [依赖配置示例](#依赖配置示例)
+- [插件配置示例](#插件配置示例)
+- [完整项目示例](#完整项目示例)
   - [示例 1: 标准 Go 微服务](#示例-1-标准-go-微服务)
   - [示例 2: gRPC Gateway 项目](#示例-2-grpc-gateway-项目)
   - [示例 3: Python 项目](#示例-3-python-项目)
@@ -17,11 +17,11 @@
   - [示例 5: 企业内部项目](#示例-5-企业内部项目-私有依赖)
   - [示例 6: 使用 Validate 验证](#示例-6-使用-validate-验证)
   - [示例 7: 完整生产项目 (推荐)](#示例-7-完整生产项目-推荐参考)
-- [高级用法](#高级用法--advanced-usage)
+- [高级用法](#高级用法)
 
 ---
 
-## 基础配置 / Basic Configuration
+## 基础配置
 
 ### 最小配置 (Minimal)
 
@@ -68,7 +68,7 @@ plugins:
 
 ---
 
-## 依赖配置示例 / Dependency Examples
+## 依赖配置示例
 
 ### 1. Go Module 源 (默认)
 
@@ -273,7 +273,7 @@ deps:
 
 ---
 
-## 插件配置示例 / Plugin Examples
+## 插件配置示例
 
 ### 1. Go 插件
 
@@ -410,7 +410,7 @@ plugins:
 
 ---
 
-## 完整项目示例 / Complete Project Examples
+## 完整项目示例
 
 ### 示例 1: 标准 Go 微服务
 
@@ -812,17 +812,17 @@ linter:
 
 **配置要点说明：**
 
-| 特性 | 说明 |
-|------|------|
-| `base` | 全局插件配置，避免重复设置 `out`、`paths`、`module` |
-| `optional: true` | 可选依赖，适用于不同系统的本地路径差异 |
+| 特性              | 说明                                                  |
+| ----------------- | ----------------------------------------------------- |
+| `base`            | 全局插件配置，避免重复设置 `out`、`paths`、`module`   |
+| `optional: true`  | 可选依赖，适用于不同系统的本地路径差异                |
 | `skip_base: true` | 特定插件跳过全局配置，如 OpenAPI 单独输出到 docs 目录 |
-| `version` 指定 | 锁定依赖版本，确保构建可重复性 |
-| `installers` | 一键安装所有需要的 protoc 插件 |
+| `version` 指定    | 锁定依赖版本，确保构建可重复性                        |
+| `installers`      | 一键安装所有需要的 protoc 插件                        |
 
 ---
 
-## 高级用法 / Advanced Usage
+## 高级用法
 
 ### 目录级配置覆盖
 
@@ -904,21 +904,21 @@ protobuild -c protobuf.ci.yaml gen
 
 ---
 
-## 常见问题 / FAQ
+## 常见问题
 
-### Q: 如何查看依赖状态？
+### 问：如何查看依赖状态？
 
 ```bash
 protobuild deps
 ```
 
-### Q: 如何强制重新下载依赖？
+### 问：如何强制重新下载依赖？
 
 ```bash
 protobuild vendor -u
 ```
 
-### Q: 如何清理缓存？
+### 问：如何清理缓存？
 
 ```bash
 # 预览将被清理的内容
@@ -928,7 +928,7 @@ protobuild clean --dry-run
 protobuild clean
 ```
 
-### Q: 如何使用私有 Git 仓库？
+### 问：如何使用私有 Git 仓库？
 
 确保 SSH 密钥已配置，或使用 HTTPS + Token：
 
@@ -947,7 +947,7 @@ deps:
     ref: main
 ```
 
-### Q: 错误提示 "reference not found" 怎么办？
+### 问：错误提示 "reference not found" 怎么办？
 
 检查 `ref` 字段的值是否正确：
 
@@ -961,7 +961,7 @@ git ls-remote --heads https://github.com/user/repo.git
 
 ---
 
-## 更多资源 / More Resources
+## 更多资源
 
 - [MULTI_SOURCE_DEPS.md](./MULTI_SOURCE_DEPS.md) - 多源依赖设计文档
 - [DESIGN.md](./DESIGN.md) - 架构设计文档

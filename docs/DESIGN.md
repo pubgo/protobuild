@@ -1,182 +1,174 @@
-# protobuild Design Document
+# protobuild 设计文档
 
-## Overview
+## 概述
 
-protobuild is a command-line tool designed to simplify Protocol Buffers development workflow. It provides unified configuration management, dependency handling, code generation, linting, and formatting capabilities.
+protobuild 是一个命令行工具，旨在简化 Protocol Buffers 的开发工作流程。它提供统一的配置管理、依赖处理、代码生成、代码检查和格式化功能。
 
-## Architecture
+## 架构
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      protobuild CLI                         │
-├─────────────────────────────────────────────────────────────┤
-│  Commands: gen | vendor | install | lint | format | version │
-├─────────────────────────────────────────────────────────────┤
-│                    Configuration Layer                       │
-│              (protobuf.yaml / protobuf.plugin.yaml)          │
-├─────────────────────────────────────────────────────────────┤
-│   Dependency    │    Plugin      │   Linter    │  Formatter │
-│   Manager       │    Manager     │   Engine    │   Engine   │
-├─────────────────────────────────────────────────────────────┤
-│                      protoc / Go Modules                     │
-└─────────────────────────────────────────────────────────────┘
-```
+```mermaid
+flowchart TB
+  CLI[protobuild CLI]
+  CMD[命令层: gen / vendor / install / lint / format / version]
+  CFG[配置层: protobuf.yaml / protobuf.plugin.yaml]
+  subgraph ENG["核心引擎层"]
+    DEP[依赖管理器]
+    PLG[插件管理器]
+    LINT[检查器引擎]
+    FMT[格式化引擎]
+  end
+  RT[执行层: protoc / Go Modules]
 
-## Core Components
-
-### 1. Configuration System
-
-The configuration system supports hierarchical configuration with inheritance:
-
-- **Root Configuration** (`protobuf.yaml`): Project-level configuration
-- **Directory Configuration** (`protobuf.plugin.yaml`): Directory-level overrides
-
-Configuration loading flow:
-
-```
-1. Load root protobuf.yaml
-2. Walk proto directories
-3. Check for protobuf.plugin.yaml in each directory
-4. Merge configurations with inheritance
-5. Apply base plugin settings
+  CLI --> CMD --> CFG --> ENG --> RT
 ```
 
-### 2. Dependency Manager
+## 核心组件
 
-Responsible for managing proto file dependencies:
+### 1. 配置系统
 
-**Features:**
-- Automatic version resolution via `go mod graph`
-- Go module cache integration (`$GOPATH/pkg/mod`)
-- Local path support
-- Checksum-based change detection
-- Optional dependencies
+配置系统支持具有继承性的层级配置：
 
-**Workflow:**
-```
-1. Parse dependencies from config
-2. Resolve versions from go.mod or specified
-3. Download/locate proto files
-4. Copy to vendor directory
-5. Update checksum
-```
+- **根配置** (`protobuf.yaml`)：项目级配置
+- **目录配置** (`protobuf.plugin.yaml`)：目录级覆盖配置
 
-### 3. Plugin Manager
+配置加载流程：
 
-Manages protoc plugin execution:
-
-**Plugin Types:**
-- Standard protoc plugins (protoc-gen-*)
-- Shell-based plugins
-- Docker-based plugins
-
-**Execution Flow:**
-```
-1. Load plugin configuration
-2. Apply base settings
-3. Build protoc command with options
-4. Execute for each proto directory
-5. Handle retag plugin specially (post-processing)
+```mermaid
+flowchart LR
+  C1[加载根配置: protobuf.yaml] --> C2[遍历 proto 目录]
+  C2 --> C3[检查目录中的 protobuf.plugin.yaml]
+  C3 --> C4[合并配置并处理继承]
+  C4 --> C5[应用基础插件设置]
 ```
 
-### 4. Linter Engine
+### 2. 依赖管理器
 
-Integrates with [api-linter](https://github.com/googleapis/api-linter) for proto file validation:
+负责管理 proto 文件依赖：
 
-**Features:**
-- AIP rule enforcement
-- Custom rule enable/disable
-- Multiple output formats (YAML, JSON, GitHub Actions)
-- Comment-based disable support
+**功能特性：**
+- 通过 `go mod graph` 自动解析版本
+- 集成 Go 模块缓存（`$GOPATH/pkg/mod`）
+- 支持本地路径
+- 基于校验和的变更检测
+- 可选依赖支持
 
-### 5. Formatter Engine
-
-Formats proto files using:
-- [protocompile](https://github.com/bufbuild/protocompile) parser
-- Custom formatting rules
-
-## Data Flow
-
-### Generation Flow
-
-```
-┌──────────────┐    ┌─────────────┐    ┌──────────────┐
-│ protobuf.yaml│───▶│   Config    │───▶│   Walk Dir   │
-└──────────────┘    │   Parser    │    │   (*.proto)  │
-                    └─────────────┘    └──────────────┘
-                                              │
-                                              ▼
-┌──────────────┐    ┌─────────────┐    ┌──────────────┐
-│  Generated   │◀───│   protoc    │◀───│   Build Cmd  │
-│    Code      │    │   Execute   │    │   with Opts  │
-└──────────────┘    └─────────────┘    └──────────────┘
+**工作流程：**
+```mermaid
+flowchart LR
+  D1[解析依赖配置] --> D2[从 go.mod 或显式配置解析版本]
+  D2 --> D3[下载或定位 proto 文件]
+  D3 --> D4[复制到 vendor 目录]
+  D4 --> D5[更新校验和]
 ```
 
-### Vendor Flow
+### 3. 插件管理器
 
+管理 protoc 插件的执行：
+
+**插件类型：**
+- 标准 protoc 插件 (protoc-gen-*)
+- Shell 脚本插件
+- Docker 容器插件
+
+**执行流程：**
+```mermaid
+flowchart LR
+  P1[加载插件配置] --> P2[应用基础设置]
+  P2 --> P3[构建带选项的 protoc 命令]
+  P3 --> P4[按 proto 目录执行]
+  P4 --> P5[retag 插件后处理]
 ```
-┌──────────────┐    ┌─────────────┐    ┌──────────────┐
-│     deps     │───▶│   Resolve   │───▶│   Download   │
-│   config     │    │   Version   │    │   /Locate    │
-└──────────────┘    └─────────────┘    └──────────────┘
-                                              │
-                                              ▼
-┌──────────────┐    ┌─────────────┐    ┌──────────────┐
-│   Update     │◀───│    Copy     │◀───│   Filter     │
-│   Checksum   │    │   to Vendor │    │   .proto     │
-└──────────────┘    └─────────────┘    └──────────────┘
+
+### 4. 检查器引擎
+
+集成 [api-linter](https://github.com/googleapis/api-linter) 进行 proto 文件验证：
+
+**功能特性：**
+- AIP 规则执行
+- 自定义规则启用/禁用
+- 多种输出格式（YAML、JSON、GitHub Actions）
+- 支持注释禁用
+
+### 5. 格式化引擎
+
+使用以下工具格式化 proto 文件：
+- [protocompile](https://github.com/bufbuild/protocompile) 解析器
+- 自定义格式化规则
+
+## 数据流
+
+### 生成流程
+
+```mermaid
+flowchart LR
+  G1[protobuf.yaml] --> G2[配置解析]
+  G2 --> G3[遍历目录中的 proto 文件]
+  G3 --> G4[构建命令并附加插件选项]
+  G4 --> G5[执行 protoc]
+  G5 --> G6[生成代码]
 ```
 
-## Configuration Schema
+### Vendor 流程
 
-### Main Configuration (protobuf.yaml)
+```mermaid
+flowchart LR
+  V1[deps 配置] --> V2[解析版本]
+  V2 --> V3[下载或定位依赖]
+  V3 --> V4[筛选 .proto]
+  V4 --> V5[复制到 vendor]
+  V5 --> V6[更新校验和]
+```
+
+## 配置模式
+
+### 主配置 (protobuf.yaml)
 
 ```yaml
-# Auto-generated checksum for change detection
+# 自动生成的校验和，用于变更检测
 checksum: string
 
-# Vendor directory path
-vendor: string (default: .proto)
+# vendor 目录路径
+vendor: string (默认: .proto)
 
-# Base plugin configuration
+# 基础插件配置
 base:
-  out: string      # Default output directory
-  paths: string    # paths option (source_relative|import)
-  module: string   # module prefix
+  out: string      # 默认输出目录
+  paths: string    # paths 选项 (source_relative|import)
+  module: string   # 模块前缀
 
-# Proto source directories
+# proto 源文件目录
 root: []string
 
-# Include paths for protoc -I
+# protoc -I 的 include 路径
 includes: []string
 
-# Exclude paths from processing
+# 排除处理的路径
 excludes: []string
 
-# Proto dependencies
+# proto 依赖
 deps:
-  - name: string     # Local path in vendor
-    url: string      # Module path or local path
-    path: string     # Subdirectory in module
-    version: string  # Specific version
-    optional: bool   # Skip if not found
+  - name: string     # vendor 中的本地路径
+    url: string      # 模块路径或本地路径
+    path: string     # 模块内子目录
+    version: string  # 指定版本
+    optional: bool   # 找不到时跳过
 
-# Plugin configurations
+# 插件配置
 plugins:
-  - name: string         # Plugin name
-    path: string         # Custom binary path
-    out: string          # Output directory
-    opt: string|[]string # Plugin options
-    shell: string        # Shell command
-    docker: string       # Docker image
-    skip_base: bool      # Skip base config
-    skip_run: bool       # Skip execution
-    exclude_opts: []string # Excluded options
+  - name: string         # 插件名称
+    path: string         # 自定义二进制路径
+    out: string          # 输出目录
+    opt: string|[]string # 插件选项
+    shell: string        # Shell 命令
+    docker: string       # Docker 镜像
+    skip_base: bool      # 跳过基础配置
+    skip_run: bool       # 跳过执行
+    exclude_opts: []string # 排除的选项
 
-# Plugin installers
+# 插件安装器
 installers: []string
 
-# Linter configuration
+# 检查器配置
 linter:
   rules:
     enabled_rules: []string
@@ -185,72 +177,72 @@ linter:
   ignore_comment_disables_flag: bool
 ```
 
-## Key Design Decisions
+## 关键设计决策
 
-### 1. YAML Configuration
+### 1. YAML 配置
 
-**Rationale:** YAML provides a human-readable format with support for comments, making it easy to document and maintain configuration.
+**理由：** YAML 提供人类可读的格式，支持注释，便于文档化和维护配置。
 
-### 2. Go Module Integration
+### 2. Go 模块集成
 
-**Rationale:** Leverages existing Go toolchain for dependency resolution, avoiding the need for a separate dependency management system.
+**理由：** 利用现有的 Go 工具链进行依赖解析，避免需要单独的依赖管理系统。
 
-### 3. Middleware Pattern for Commands
+### 3. 命令中间件模式
 
-**Rationale:** The middleware pattern (via redant) allows clean separation of concerns:
-- Configuration parsing middleware
-- Error handling
-- Recovery mechanisms
+**理由：** 中间件模式（通过 redant）允许清晰地分离关注点：
+- 配置解析中间件
+- 错误处理
+- 恢复机制
 
-### 4. Checksum-based Change Detection
+### 4. 基于校验和的变更检测
 
-**Rationale:** Avoids unnecessary vendor updates by tracking configuration changes via SHA1 checksums.
+**理由：** 通过 SHA1 校验和跟踪配置变更，避免不必要的 vendor 更新。
 
-### 5. Hierarchical Configuration
+### 5. 层级配置
 
-**Rationale:** Allows directory-specific overrides while maintaining project-wide defaults, useful for monorepo structures.
+**理由：** 允许目录特定的覆盖配置，同时保持项目范围的默认值，适用于 monorepo 结构。
 
-## Error Handling
+## 错误处理
 
-The project uses a consistent error handling approach:
+项目使用一致的错误处理方法：
 
-1. **Assertions** (`assert.Must`, `assert.Exit`): For unrecoverable errors
-2. **Recovery** (`recovery.Exit`, `recovery.Err`): For panic recovery
-3. **Error Wrapping** (`errors.WrapTag`): For context-rich error messages
+1. **断言** (`assert.Must`, `assert.Exit`)：用于不可恢复的错误
+2. **恢复** (`recovery.Exit`, `recovery.Err`)：用于 panic 恢复
+3. **错误包装** (`errors.WrapTag`)：用于提供上下文丰富的错误消息
 
-## Extension Points
+## 扩展点
 
-### Custom Plugins
+### 自定义插件
 
-Support for three types of custom plugins:
+支持三种类型的自定义插件：
 
-1. **Binary Plugins**: Standard protoc plugins
-2. **Shell Plugins**: Execute via shell commands
-3. **Docker Plugins**: Execute via Docker containers
+1. **二进制插件**：标准 protoc 插件
+2. **Shell 插件**：通过 shell 命令执行
+3. **Docker 插件**：通过 Docker 容器执行
 
-### Custom Linter Rules
+### 自定义检查规则
 
-Via the linter configuration:
-- Enable specific AIP rules
-- Disable rules globally or per-file
-- Custom output formats
+通过检查器配置：
+- 启用特定 AIP 规则
+- 全局或按文件禁用规则
+- 自定义输出格式
 
-## Dependencies
+## 依赖项
 
-Key external dependencies:
+关键外部依赖：
 
-| Package | Purpose |
-|---------|---------|
-| `github.com/pubgo/redant` | CLI framework |
-| `github.com/googleapis/api-linter` | Proto linting |
-| `github.com/bufbuild/protocompile` | Proto parsing/formatting |
-| `github.com/samber/lo` | Utility functions |
-| `gopkg.in/yaml.v3` | YAML parsing |
+| 包                                 | 用途              |
+| ---------------------------------- | ----------------- |
+| `github.com/pubgo/redant`          | CLI 框架          |
+| `github.com/googleapis/api-linter` | Proto 检查        |
+| `github.com/bufbuild/protocompile` | Proto 解析/格式化 |
+| `github.com/samber/lo`             | 工具函数          |
+| `gopkg.in/yaml.v3`                 | YAML 解析         |
 
-## Future Considerations
+## 未来考虑
 
-1. **Remote Plugin Support**: Execute plugins via remote services
-2. **Parallel Execution**: Concurrent proto compilation
-3. **Watch Mode**: File watching for automatic regeneration
-4. **Plugin Caching**: Cache plugin binaries for faster execution
-5. **Proto Registry**: Integration with Buf Schema Registry
+1. **远程插件支持**：通过远程服务执行插件
+2. **并行执行**：并发 proto 编译
+3. **监视模式**：文件监视以自动重新生成
+4. **插件缓存**：缓存插件二进制文件以加快执行
+5. **Proto 注册表**：与 Buf Schema Registry 集成
