@@ -52,7 +52,7 @@ type ProjectConfig struct {
 // New creates a new format command.
 // The configProvider function is called to get project configuration.
 func New(name string, configProvider func() *ProjectConfig) *redant.Command {
-	var cfg = FormatConfig{ClangStyle: "file"}
+	var cfg = FormatConfig{ClangStyle: "google"}
 
 	return &redant.Command{
 		Use:   name,
@@ -115,7 +115,7 @@ Examples:
 			redant.Option{
 				Flag:        "clang-style",
 				Description: "clang-format style (file, google, llvm, ...)",
-				Default:     "file",
+				Default:     "google",
 				Value:       redant.StringOf(&cfg.ClangStyle),
 			},
 		},

@@ -13,31 +13,16 @@ option java_package = "com.example.v1";
 // User represents a user in the system.
 message User {
   // Unique identifier for the user.
-  string id = 1 [(retag.tags) = {
-    name: "xml"
-    value: "id,attr"
-  }];
+  string id = 1 [(retag.tags) = { name: "xml" value: "id,attr" }];
   // User's display name.
-  string name = 2 [(retag.tags) = {
-    name: "xml"
-    value: "name"
-  }];
+  string name = 2 [(retag.tags) = { name: "xml" value: "name" }];
   // User's email address.
   string email = 3 [
-    (retag.tags) = {
-      name: "xml"
-      value: "email"
-    },
-    (retag.tags) = {
-      name: "validate"
-      value: "required,email"
-    }
+    (retag.tags) = { name: "xml" value: "email" },
+    (retag.tags) = { name: "validate" value: "required,email" }
   ];
   // User's age.
-  int32 age = 4 [(retag.tags) = {
-    name: "xml"
-    value: "age,omitempty"
-  }];
+  int32 age = 4 [(retag.tags) = { name: "xml" value: "age,omitempty" }];
   // When the user was created.
   google.protobuf.Timestamp created_at = 5;
   // When the user was last updated.
@@ -58,27 +43,13 @@ enum UserStatus {
 
 // Profile contains user profile information.
 message Profile {
-  string avatar_url = 1 [(retag.tags) = {
-    name: "xml"
-    value: "avatarUrl"
-  }];
-  string bio = 2 [(retag.tags) = {
-    name: "xml"
-    value: "bio,omitempty"
-  }];
-  string location = 3 [(retag.tags) = {
-    name: "xml"
-    value: "location,omitempty"
-  }];
+  string avatar_url = 1 [(retag.tags) = { name: "xml" value: "avatarUrl" }];
+  string bio = 2 [(retag.tags) = { name: "xml" value: "bio,omitempty" }];
+  string location = 3
+      [(retag.tags) = { name: "xml" value: "location,omitempty" }];
   string website = 4 [
-    (retag.tags) = {
-      name: "xml"
-      value: "website,omitempty"
-    },
-    (retag.tags) = {
-      name: "validate"
-      value: "omitempty,url"
-    }
+    (retag.tags) = { name: "xml" value: "website,omitempty" },
+    (retag.tags) = { name: "validate" value: "omitempty,url" }
   ];
 }
 
