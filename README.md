@@ -60,28 +60,30 @@ protobuild gen
 
 ## 命令说明
 
-| 命令                   | 说明                                       |
-| ---------------------- | ------------------------------------------ |
-| `gen`                  | 编译 protobuf 文件                         |
-| `vendor`               | 同步 proto 依赖到 vendor 目录              |
-| `vendor -u`            | 强制重新下载所有依赖（忽略缓存）           |
-| `deps`                 | 显示依赖列表及状态                         |
-| `install`              | 安装 protoc 插件                           |
-| `lint`                 | 使用 AIP 规则检查 proto 文件               |
-| `format`               | 使用 buf 格式化 proto 文件                 |
-| `format -w`            | 格式化并写入文件                           |
-| `format --diff`        | 显示格式化差异                             |
-| `format --exit-code`   | 需要格式化时返回错误码（CI 适用）          |
-| `format --builtin`     | 使用内置格式化器                           |
-| `web`                  | 启动 Web 配置管理界面                      |
-| `web --port 9090`      | 指定端口启动 Web 界面                      |
-| `clean`                | 清理依赖缓存                               |
-| `clean --dry-run`      | 预览将被清理的内容                         |
-| `init`                 | 初始化新的 protobuild 项目                 |
-| `init --template grpc` | 使用指定模板初始化（basic、grpc、minimal） |
-| `doctor`               | 检查开发环境和依赖配置                     |
-| `doctor --fix`         | 自动安装缺失的 Go 插件                     |
-| `version`              | 显示版本信息                               |
+| 命令                    | 说明                                       |
+| ----------------------- | ------------------------------------------ |
+| `gen`                   | 编译 protobuf 文件                         |
+| `vendor`                | 同步 proto 依赖到 vendor 目录              |
+| `vendor -u`             | 强制重新下载所有依赖（忽略缓存）           |
+| `deps`                  | 显示依赖列表及状态                         |
+| `install`               | 安装 protoc 插件                           |
+| `lint`                  | 使用 AIP 规则检查 proto 文件               |
+| `format`                | 使用 buf 格式化 proto 文件                 |
+| `format -w`             | 格式化并写入文件                           |
+| `format --diff`         | 显示格式化差异                             |
+| `format --exit-code`    | 需要格式化时返回错误码（CI 适用）          |
+| `format --builtin`      | 使用内置格式化器                           |
+| `format --clang-format` | 使用 clang-format 进行格式化               |
+| `format --clang-style`  | 指定 clang-format 样式（如 file、google）  |
+| `web`                   | 启动 Web 配置管理界面                      |
+| `web --port 9090`       | 指定端口启动 Web 界面                      |
+| `clean`                 | 清理依赖缓存                               |
+| `clean --dry-run`       | 预览将被清理的内容                         |
+| `init`                  | 初始化新的 protobuild 项目                 |
+| `init --template grpc`  | 使用指定模板初始化（basic、grpc、minimal） |
+| `doctor`                | 检查开发环境和依赖配置                     |
+| `doctor --fix`          | 自动安装缺失的 Go 插件                     |
+| `version`               | 显示版本信息                               |
 
 ## 配置说明
 
@@ -241,6 +243,12 @@ protobuild format --exit-code
 
 # 使用内置格式化器而非 buf
 protobuild format --builtin
+
+# 使用 clang-format（默认 style=file）
+protobuild format --clang-format -w
+
+# 使用 clang-format 并指定 style
+protobuild format --clang-format --clang-style google -w
 
 # 格式化指定目录
 protobuild format -w proto/ api/
