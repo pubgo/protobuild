@@ -1,230 +1,124 @@
-# 多源依赖设计
+# 多源依赖设计文档
 
-## 问题背景
+## 文档定位
 
-当前实现对 Go 模块依赖较重，主要体现在：
+本文件说明多源依赖的目标、实现边界和使用方式。
 
-- 使用 `go mod graph` 解析版本
-- 使用 `go get` 下载依赖
-- 依赖内容主要位于 `$GOPATH/pkg/mod`
+- 上游文档：[`DESIGN.md`](./DESIGN.md)
+- 下游文档：[`EXAMPLES.md`](./EXAMPLES.md)
+- 总览入口：[`INDEX.md`](./INDEX.md)
 
-这会导致非 Go 项目（如 Python、Java、JavaScript）接入成本变高。
+## 目标与范围
 
-## 设计目标
+目标：在同一配置模型下，支持多种依赖来源并统一缓存与复制流程。
 
-实现统一的多源依赖解析能力，使不同语言项目都能使用同一套依赖拉取和缓存流程。
+当前版本支持的依赖源：
 
-## 配置结构
+- `gomod`
+- `git`
+- `http`
+- `s3`
+- `gcs`
+- `local`
+
+> 说明：当前版本不支持 `buf` 作为依赖源。
+
+## 依赖解析架构图
+
+```mermaid
+flowchart TB
+  M[依赖管理器]
+  D[来源识别]
+  R1[Go 模块解析]
+  R2[通用下载解析]
+  C[缓存目录]
+  V[vendor 复制]
+
+  M --> D
+  D --> R1
+  D --> R2
+  R1 --> C
+  R2 --> C
+  C --> V
+```
+
+## 自动识别流程图
+
+```mermaid
+flowchart TD
+  A[读取 url 与 source] --> B{是否显式声明 source}
+  B -->|是| C[按声明解析]
+  B -->|否| D{识别 url 特征}
+  D -->|本地路径| S1[local]
+  D -->|s3 前缀| S2[s3]
+  D -->|gs/gcs 前缀| S3[gcs]
+  D -->|git 特征| S4[git]
+  D -->|http/https| S5[http]
+  D -->|其他| S6[gomod]
+  C --> E[进入下载或缓存]
+  S1 --> E
+  S2 --> E
+  S3 --> E
+  S4 --> E
+  S5 --> E
+  S6 --> E
+```
+
+## 依赖状态图
+
+```mermaid
+stateDiagram-v2
+  [*] --> 待解析
+  待解析 --> 下载中: 未命中缓存
+  待解析 --> 已缓存: 命中缓存
+  下载中 --> 已缓存: 下载成功
+  下载中 --> 失败: 下载失败
+  已缓存 --> 已复制: 复制到 vendor
+  失败 --> [*]
+  已复制 --> [*]
+```
+
+## 配置字段
 
 ```yaml
 deps:
-  # 源类型：gomod（默认，向后兼容）
+  - name: google/protobuf
+    source: gomod
+    url: github.com/protocolbuffers/protobuf
+    path: src/google/protobuf
+    version: v25.0
+    ref: ""
+    optional: false
+```
+
+字段说明：
+
+| 字段       | 说明                       |
+| ---------- | -------------------------- |
+| `name`     | 复制到 `vendor` 后的目录名 |
+| `source`   | 依赖来源类型               |
+| `url`      | 依赖地址                   |
+| `path`     | 依赖中的子路径             |
+| `version`  | 版本（主要用于 `gomod`）   |
+| `ref`      | 引用（主要用于 `git`）     |
+| `optional` | 可选依赖，失败时可跳过     |
+
+## 场景示例
+
+### Go 模块源
+
+```yaml
+deps:
   - name: google/api
     source: gomod
     url: github.com/googleapis/googleapis
     path: google/api
-    version: v0.0.0-20230822172742-b8732ec3820d
-
-  # 源类型：git
-  - name: google/protobuf
-    source: git
-    url: https://github.com/protocolbuffers/protobuf.git
-    path: src/google/protobuf
-    ref: v21.0           # 标签、分支或提交
-    depth: 1             # 浅克隆深度（可选）
-
-  # 源类型：http（tar.gz、zip）
-  - name: envoy/api
-    source: http
-    url: https://github.com/envoyproxy/envoy/archive/refs/tags/v1.25.0.tar.gz
-    path: api/envoy
-    strip: 1             # 去掉归档前导目录层级
-
-  # 源类型：buf（Buf Schema Registry）
-  - name: buf/validate
-    source: buf
-    url: buf.build/bufbuild/protovalidate
-    version: v0.5.0
-
-  # 源类型：local（本地路径）
-  - name: local/proto
-    source: local
-    url: /path/to/proto
 ```
 
-## 架构设计
-
-```mermaid
-flowchart TB
-  MGR[依赖管理器]
-  ROUTER[源路由层]
-  subgraph RES[解析器层]
-    GM[GoMod 解析器]
-    GIT[Git 解析器]
-    HTTP[HTTP 解析器]
-    BUF[Buf 解析器]
-    LOCAL[Local 解析器]
-  end
-  CACHE[缓存管理层<br/>~/.cache/protobuild/deps]
-
-  MGR --> ROUTER --> RES --> CACHE
-```
-
-## 实现计划
-
-### 阶段一：抽象层
-
-```go
-// internal/depresolver/resolver.go
-
-type Source string
-
-const (
-    SourceGoMod Source = "gomod"
-    SourceGit   Source = "git"
-    SourceHTTP  Source = "http"
-    SourceBuf   Source = "buf"
-    SourceLocal Source = "local"
-)
-
-type Dependency struct {
-    Name     string `yaml:"name"`
-    Source   Source `yaml:"source,omitempty"`   // 默认自动检测或 gomod
-    URL      string `yaml:"url"`
-    Path     string `yaml:"path,omitempty"`
-    Version  string `yaml:"version,omitempty"`
-    Ref      string `yaml:"ref,omitempty"`      // git 用
-    Depth    int    `yaml:"depth,omitempty"`    // git 用
-    Strip    int    `yaml:"strip,omitempty"`    // 归档解压用
-    Optional bool   `yaml:"optional,omitempty"`
-}
-
-type Resolver interface {
-    // 解析依赖并返回本地路径
-    Resolve(dep *Dependency) (string, error)
-
-    // 判断是否支持该依赖
-    Supports(dep *Dependency) bool
-}
-
-type ResolverChain struct {
-    resolvers []Resolver
-    cache     *CacheManager
-}
-
-func (r *ResolverChain) Resolve(dep *Dependency) (string, error) {
-    for _, resolver := range r.resolvers {
-        if resolver.Supports(dep) {
-            return resolver.Resolve(dep)
-        }
-    }
-    return "", fmt.Errorf("no resolver found for source: %s", dep.Source)
-}
-```
-
-### 阶段二：各源解析器
-
-统一下载能力使用 [hashicorp/go-getter](https://github.com/hashicorp/go-getter)：
-
-- Git：通过 `git::` 前缀和 `?ref=` 指定版本
-- HTTP：自动识别并解压归档（tar.gz、zip 等）
-- S3：支持 `s3://` 或 `s3::` 前缀
-- GCS：支持 `gcs://` 或 `gs://` 前缀
-
-```go
-// Git 示例
-// url: git::https://github.com/protocolbuffers/protobuf.git?ref=v21.0
-
-// S3 示例
-// url: s3://bucket-name/path/to/proto.tar.gz
-
-// HTTP 示例（自动解压）
-// url: https://github.com/user/repo/archive/v1.0.0.tar.gz
-```
-
-Go 模块解析器保持现有机制，继续使用 `go mod download` 与 Go 模块缓存。
-
-Buf 解析器示例：
-
-```go
-type BufResolver struct {
-    cacheDir string
-}
-
-func (r *BufResolver) Resolve(dep *Dependency) (string, error) {
-    // 使用 buf CLI 导出到缓存目录
-    cmd := exec.Command("buf", "export", dep.URL, "-o", cachePath)
-    // ...
-}
-```
-
-### 阶段三：缓存管理
-
-```go
-type CacheManager struct {
-    baseDir string // ~/.cache/protobuild
-}
-
-func (c *CacheManager) GetPath(source Source, key string) string {
-    return filepath.Join(c.baseDir, string(source), hashString(key))
-}
-
-func (c *CacheManager) Clean() error {
-    return os.RemoveAll(c.baseDir)
-}
-```
-
-## 迁移策略
-
-1. 向后兼容（未指定 `source` 时自动检测）：
-   - URL 看起来像 Go 模块路径：使用 `gomod`
-   - URL 以 `.git` 结尾：使用 `git`
-   - URL 以 `http://` 或 `https://` 开头且为归档：使用 `http`
-   - URL 以 `buf.build/` 开头：使用 `buf`
-   - URL 是本地路径：使用 `local`
-
-2. 弃用提示：
-   - 对隐式 `gomod` 检测输出提示，建议显式声明 `source`
-
-自动检测流程如下：
-
-```mermaid
-flowchart TD
-  A[未指定 source] --> B{URL 特征}
-  B -->|Go 模块路径| S1[识别为 gomod]
-  B -->|.git 结尾| S2[识别为 git]
-  B -->|http/https 且为归档| S3[识别为 http]
-  B -->|buf.build/ 前缀| S4[识别为 buf]
-  B -->|本地路径| S5[识别为 local]
-  S1 --> W[输出隐式检测提示]
-  S2 --> N[继续解析]
-  S3 --> N
-  S4 --> N
-  S5 --> N
-  W --> N
-```
-
-## 方案收益
-
-1. 语言无关：可用于 Go 之外的项目
-2. 场景灵活：按需选择依赖来源
-3. 缓存统一：便于清理、复用和排障
-4. 向后兼容：历史配置可继续使用
-5. 便于扩展：后续可增加更多源类型
-
-## 配置示例
-
-### Python 项目
+### Git 源
 
 ```yaml
-vendor: .proto
 deps:
-  - name: google/protobuf
-    source: git
-    url: https://github.com/protocolbuffers/protobuf.git
-    ref: v21.0
-    path: src/google/protobuf
-
   - name: googleapis
     source: git
     url: https://github.com/googleapis/googleapis.git
@@ -232,29 +126,47 @@ deps:
     path: google
 ```
 
-### TypeScript 项目
+### HTTP 源
 
 ```yaml
-vendor: proto
 deps:
-  - name: validate
-    source: buf
-    url: buf.build/bufbuild/protovalidate
-
-  - name: google/api
+  - name: envoy
     source: http
-    url: https://github.com/googleapis/googleapis/archive/master.tar.gz
-    strip: 1
-    path: google/api
+    url: https://github.com/envoyproxy/envoy/archive/v1.28.0.tar.gz
+    path: api
 ```
 
-### Go 项目（兼容当前行为）
+### 对象存储源
 
 ```yaml
-vendor: .proto
 deps:
-  - name: google/api
-    url: github.com/googleapis/googleapis
-    path: google/api
-    # source: gomod（隐式）
+  - name: internal-protos
+    source: s3
+    url: s3://my-bucket/protos.tar.gz
+
+  - name: shared-protos
+    source: gcs
+    url: gs://my-bucket/protos.tar.gz
 ```
+
+### 本地路径源
+
+```yaml
+deps:
+  - name: local-protos
+    source: local
+    url: ./third_party/protos
+```
+
+## 实施建议
+
+1. 尽量显式声明 `source`，减少歧义。
+2. 对关键依赖锁定 `version` 或 `ref`。
+3. CI 场景使用 `vendor -u` 定期验证可重复性。
+4. 对私有源配置凭证与网络代理策略。
+
+## 关联阅读
+
+- 架构总览：[`DESIGN.md`](./DESIGN.md)
+- 可复用配置：[`EXAMPLES.md`](./EXAMPLES.md)
+- 版本评估：[`AUDIT_REVIEW.md`](./AUDIT_REVIEW.md)

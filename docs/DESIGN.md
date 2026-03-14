@@ -1,248 +1,99 @@
-# protobuild 设计文档
+# 架构设计文档
 
-## 概述
+## 文档定位
 
-protobuild 是一个命令行工具，旨在简化 Protocol Buffers 的开发工作流程。它提供统一的配置管理、依赖处理、代码生成、代码检查和格式化功能。
+本文件说明系统架构、核心流程与运行状态。
 
-## 架构
+- 上游文档：[`README.md`](../README.md)
+- 下游文档：[`MULTI_SOURCE_DEPS.md`](./MULTI_SOURCE_DEPS.md)、[`EXAMPLES.md`](./EXAMPLES.md)
+- 总览入口：[`INDEX.md`](./INDEX.md)
+
+## 总体架构图
 
 ```mermaid
 flowchart TB
-  CLI[protobuild CLI]
-  CMD[命令层: gen / vendor / install / lint / format / version]
-  CFG[配置层: protobuf.yaml / protobuf.plugin.yaml]
-  subgraph ENG["核心引擎层"]
-    DEP[依赖管理器]
-    PLG[插件管理器]
-    LINT[检查器引擎]
-    FMT[格式化引擎]
+  CLI[命令入口]
+  CFG[配置层\nprotobuf.yaml / protobuf.plugin.yaml]
+  CORE[核心层]
+  EXEC[执行层]
+
+  subgraph CORE
+    DEP[依赖管理]
+    GEN[代码生成]
+    LINT[规则检查]
+    FMT[代码格式化]
+    WEB[可视化界面]
   end
-  RT[执行层: protoc / Go Modules]
 
-  CLI --> CMD --> CFG --> ENG --> RT
+  CLI --> CFG
+  CFG --> CORE
+  CORE --> EXEC
+
+  EXEC --> PROTOC[protoc]
+  EXEC --> TOOL[外部插件与工具]
 ```
 
-## 核心组件
-
-### 1. 配置系统
-
-配置系统支持具有继承性的层级配置：
-
-- **根配置** (`protobuf.yaml`)：项目级配置
-- **目录配置** (`protobuf.plugin.yaml`)：目录级覆盖配置
-
-配置加载流程：
+## 模块关系图
 
 ```mermaid
 flowchart LR
-  C1[加载根配置: protobuf.yaml] --> C2[遍历 proto 目录]
-  C2 --> C3[检查目录中的 protobuf.plugin.yaml]
-  C3 --> C4[合并配置并处理继承]
-  C4 --> C5[应用基础插件设置]
+  P[cmd/protobuild] --> R[internal/config]
+  P --> D[internal/depresolver]
+  P --> U[internal/modutil]
+  P --> S[internal/shutil]
+  P --> T[internal/typex]
+  P --> W[cmd/webcmd]
+  P --> L[cmd/linters]
+  P --> F[cmd/formatcmd]
 ```
 
-### 2. 依赖管理器
-
-负责管理 proto 文件依赖：
-
-**功能特性：**
-- 通过 `go mod graph` 自动解析版本
-- 集成 Go 模块缓存（`$GOPATH/pkg/mod`）
-- 支持本地路径
-- 基于校验和的变更检测
-- 可选依赖支持
-
-**工作流程：**
-```mermaid
-flowchart LR
-  D1[解析依赖配置] --> D2[从 go.mod 或显式配置解析版本]
-  D2 --> D3[下载或定位 proto 文件]
-  D3 --> D4[复制到 vendor 目录]
-  D4 --> D5[更新校验和]
-```
-
-### 3. 插件管理器
-
-管理 protoc 插件的执行：
-
-**插件类型：**
-- 标准 protoc 插件 (protoc-gen-*)
-- Shell 脚本插件
-- Docker 容器插件
-
-**执行流程：**
-```mermaid
-flowchart LR
-  P1[加载插件配置] --> P2[应用基础设置]
-  P2 --> P3[构建带选项的 protoc 命令]
-  P3 --> P4[按 proto 目录执行]
-  P4 --> P5[retag 插件后处理]
-```
-
-### 4. 检查器引擎
-
-集成 [api-linter](https://github.com/googleapis/api-linter) 进行 proto 文件验证：
-
-**功能特性：**
-- AIP 规则执行
-- 自定义规则启用/禁用
-- 多种输出格式（YAML、JSON、GitHub Actions）
-- 支持注释禁用
-
-### 5. 格式化引擎
-
-使用以下工具格式化 proto 文件：
-- [protocompile](https://github.com/bufbuild/protocompile) 解析器
-- 自定义格式化规则
-
-## 数据流
+## 核心流程图
 
 ### 生成流程
 
 ```mermaid
-flowchart LR
-  G1[protobuf.yaml] --> G2[配置解析]
-  G2 --> G3[遍历目录中的 proto 文件]
-  G3 --> G4[构建命令并附加插件选项]
-  G4 --> G5[执行 protoc]
-  G5 --> G6[生成代码]
+flowchart TD
+  A[读取配置] --> B[遍历根目录]
+  B --> C[按目录合并插件配置]
+  C --> D[构建 protoc 命令]
+  D --> E[执行生成]
+  E --> F[输出代码]
 ```
 
-### Vendor 流程
+### 依赖同步流程
 
 ```mermaid
-flowchart LR
-  V1[deps 配置] --> V2[解析版本]
-  V2 --> V3[下载或定位依赖]
-  V3 --> V4[筛选 .proto]
-  V4 --> V5[复制到 vendor]
-  V5 --> V6[更新校验和]
+flowchart TD
+  A[读取 deps] --> B[识别依赖源]
+  B --> C[下载或命中缓存]
+  C --> D[复制 proto 到 vendor]
+  D --> E[更新校验信息]
 ```
 
-## 配置模式
+## 生命周期状态图
 
-### 主配置 (protobuf.yaml)
-
-```yaml
-# 自动生成的校验和，用于变更检测
-checksum: string
-
-# vendor 目录路径
-vendor: string (默认: .proto)
-
-# 基础插件配置
-base:
-  out: string      # 默认输出目录
-  paths: string    # paths 选项 (source_relative|import)
-  module: string   # 模块前缀
-
-# proto 源文件目录
-root: []string
-
-# protoc -I 的 include 路径
-includes: []string
-
-# 排除处理的路径
-excludes: []string
-
-# proto 依赖
-deps:
-  - name: string     # vendor 中的本地路径
-    url: string      # 模块路径或本地路径
-    path: string     # 模块内子目录
-    version: string  # 指定版本
-    optional: bool   # 找不到时跳过
-
-# 插件配置
-plugins:
-  - name: string         # 插件名称
-    path: string         # 自定义二进制路径
-    out: string          # 输出目录
-    opt: string|[]string # 插件选项
-    shell: string        # Shell 命令
-    docker: string       # Docker 镜像
-    skip_base: bool      # 跳过基础配置
-    skip_run: bool       # 跳过执行
-    exclude_opts: []string # 排除的选项
-
-# 插件安装器
-installers: []string
-
-# 检查器配置
-linter:
-  rules:
-    enabled_rules: []string
-    disabled_rules: []string
-  format_type: string
-  ignore_comment_disables_flag: bool
+```mermaid
+stateDiagram-v2
+  [*] --> 未初始化
+  未初始化 --> 已初始化: 创建配置
+  已初始化 --> 依赖已同步: 执行 vendor
+  依赖已同步 --> 可生成: 插件可用
+  可生成 --> 已生成: 执行 gen
+  已生成 --> 已检查: 执行 lint
+  已检查 --> 已格式化: 执行 format
+  已格式化 --> [*]
 ```
 
-## 关键设计决策
+## 设计要点
 
-### 1. YAML 配置
+1. 配置分层：根配置负责全局默认，目录配置负责局部覆盖。
+2. 依赖解耦：通过统一依赖管理层屏蔽不同依赖源差异。
+3. 执行分离：命令解析、构建命令、执行命令分层处理。
+4. 可观测性：关键操作提供进度与错误上下文。
+5. 可扩展性：插件、依赖源、规则引擎均可演进。
 
-**理由：** YAML 提供人类可读的格式，支持注释，便于文档化和维护配置。
+## 关联阅读
 
-### 2. Go 模块集成
-
-**理由：** 利用现有的 Go 工具链进行依赖解析，避免需要单独的依赖管理系统。
-
-### 3. 命令中间件模式
-
-**理由：** 中间件模式（通过 redant）允许清晰地分离关注点：
-- 配置解析中间件
-- 错误处理
-- 恢复机制
-
-### 4. 基于校验和的变更检测
-
-**理由：** 通过 SHA1 校验和跟踪配置变更，避免不必要的 vendor 更新。
-
-### 5. 层级配置
-
-**理由：** 允许目录特定的覆盖配置，同时保持项目范围的默认值，适用于 monorepo 结构。
-
-## 错误处理
-
-项目使用一致的错误处理方法：
-
-1. **断言** (`assert.Must`, `assert.Exit`)：用于不可恢复的错误
-2. **恢复** (`recovery.Exit`, `recovery.Err`)：用于 panic 恢复
-3. **错误包装** (`errors.WrapTag`)：用于提供上下文丰富的错误消息
-
-## 扩展点
-
-### 自定义插件
-
-支持三种类型的自定义插件：
-
-1. **二进制插件**：标准 protoc 插件
-2. **Shell 插件**：通过 shell 命令执行
-3. **Docker 插件**：通过 Docker 容器执行
-
-### 自定义检查规则
-
-通过检查器配置：
-- 启用特定 AIP 规则
-- 全局或按文件禁用规则
-- 自定义输出格式
-
-## 依赖项
-
-关键外部依赖：
-
-| 包                                 | 用途              |
-| ---------------------------------- | ----------------- |
-| `github.com/pubgo/redant`          | CLI 框架          |
-| `github.com/googleapis/api-linter` | Proto 检查        |
-| `github.com/bufbuild/protocompile` | Proto 解析/格式化 |
-| `github.com/samber/lo`             | 工具函数          |
-| `gopkg.in/yaml.v3`                 | YAML 解析         |
-
-## 未来考虑
-
-1. **远程插件支持**：通过远程服务执行插件
-2. **并行执行**：并发 proto 编译
-3. **监视模式**：文件监视以自动重新生成
-4. **插件缓存**：缓存插件二进制文件以加快执行
-5. **Proto 注册表**：与 Buf Schema Registry 集成
+- 依赖细节：[`MULTI_SOURCE_DEPS.md`](./MULTI_SOURCE_DEPS.md)
+- 可用配置：[`EXAMPLES.md`](./EXAMPLES.md)
+- 版本评估：[`AUDIT_REVIEW.md`](./AUDIT_REVIEW.md)
