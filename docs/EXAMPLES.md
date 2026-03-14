@@ -798,8 +798,6 @@ installers:
 # Linter 配置
 linter:
   rules:
-    included_paths: []
-    excluded_paths: []
     enabled_rules:
       - core::0131::http-method
       - core::0131::http-body
@@ -866,15 +864,6 @@ plugins:
 ```yaml
 linter:
   rules:
-    # 包含的路径
-    included_paths:
-      - proto/api
-      
-    # 排除的路径
-    excluded_paths:
-      - proto/internal
-      - proto/third_party
-      
     # 启用的规则
     enabled_rules:
       - core::0131::http-method
@@ -885,7 +874,7 @@ linter:
     disabled_rules:
       - all  # 先禁用所有，再单独启用
       
-  format_type: yaml  # 输出格式: yaml, json, text
+  format_type: yaml  # 输出格式: yaml, yml, json, github
   ignore_comment_disables_flag: false
 ```
 
