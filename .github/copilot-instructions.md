@@ -22,7 +22,7 @@
 
 ## 审查分类参考
 
-完整的审查分类检查清单请参见：docs/codereview/CODE_REVIEW_GUIDE_CN.md
+完整的审查分类检查清单请参见：.github/codereview/CODE_REVIEW_GUIDE_CN.md
 
 ### 问题分类速查表
 
