@@ -1,64 +1,63 @@
-## Description / 描述
+## 变更说明
 
-<!-- Briefly describe what this PR does / 简要描述此 PR 的内容 -->
+<!-- 简要说明本次变更内容 -->
 
-## Type of Change / 变更类型
+## 变更类型
 
-- [ ] 🐛 Bug fix / 缺陷修复
-- [ ] ✨ New feature / 新功能
-- [ ] 💥 Breaking change / 破坏性变更
-- [ ] 📝 Documentation / 文档更新
-- [ ] 🔧 Configuration / 配置变更
-- [ ] ♻️ Refactor / 代码重构
-- [ ] 🎨 Style / 代码风格
-- [ ] ⚡ Performance / 性能优化
-- [ ] ✅ Test / 测试相关
+- [ ] 缺陷修复
+- [ ] 新功能
+- [ ] 破坏性变更
+- [ ] 文档更新
+- [ ] 配置变更
+- [ ] 代码重构
+- [ ] 风格调整
+- [ ] 性能优化
+- [ ] 测试相关
 
-## Related Issues / 关联 Issue
+## 关联问题
 
-<!-- Link related issues: Fixes #123, Closes #456 -->
-<!-- 关联相关 Issue：Fixes #123, Closes #456 -->
+<!-- 填写关联问题编号，例如：修复 #123 -->
 
-## Pre-submission Checklist / 提交前检查清单
+## 提交前检查清单
 
-### Critical Issues / 关键问题 🔴
-- [ ] No requirements mismatch `[REQ]` / 无需求不匹配
-- [ ] No logic bugs `[LOGI]` / 无逻辑缺陷
-- [ ] No security vulnerabilities `[SEC]` / 无安全漏洞
-- [ ] No auth/permission issues `[AUTH]` / 无认证授权问题
+### 关键项
+- [ ] 无需求不匹配问题（`REQ`）
+- [ ] 无逻辑缺陷（`LOGI`）
+- [ ] 无安全问题（`SEC`）
+- [ ] 无认证授权问题（`AUTH`）
 
-### High Priority / 高优先级 🟠
-- [ ] Design is appropriate `[DSN]` / 设计合理
-- [ ] Error handling is robust `[RBST]` / 错误处理健壮
-- [ ] Transactions handled correctly `[TRANS]` / 事务处理正确
-- [ ] No concurrency issues `[CONC]` / 无并发问题
-- [ ] Performance is acceptable `[PERF]` / 性能可接受
+### 高优先级项
+- [ ] 设计合理（`DSN`）
+- [ ] 错误处理健壮（`RBST`）
+- [ ] 事务处理正确（`TRANS`）
+- [ ] 无并发问题（`CONC`）
+- [ ] 性能可接受（`PERF`）
 
-### Code Quality / 代码质量 🟡🟢
-- [ ] Code is maintainable `[MAIN]` / 代码可维护
-- [ ] No unnecessary coupling `[CPL]` / 无不必要耦合
-- [ ] Code is readable `[READ]` / 代码可读
-- [ ] No code duplication `[DUP]` / 无代码重复
-- [ ] Naming is clear `[NAM]` / 命名清晰
+### 质量项
+- [ ] 代码可维护（`MAIN`）
+- [ ] 无不必要耦合（`CPL`）
+- [ ] 代码可读（`READ`）
+- [ ] 无重复代码（`DUP`）
+- [ ] 命名清晰（`NAM`）
 
-### Testing / 测试
-- [ ] Unit tests added/updated / 已添加/更新单元测试
-- [ ] Integration tests passed / 集成测试通过
-- [ ] Manual testing completed / 已完成手动测试
+### 测试项
+- [ ] 已补充或更新单元测试
+- [ ] 集成测试通过
+- [ ] 已完成手动验证
 
-### Documentation / 文档
-- [ ] Code comments added where needed / 已添加必要的代码注释
-- [ ] README updated if needed / 如需要已更新 README
-- [ ] API docs updated if needed / 如需要已更新 API 文档
+### 文档项
+- [ ] 已补充必要注释
+- [ ] 如需已更新 README
+- [ ] 如需已更新相关文档
 
-## Screenshots / 截图
+## 截图（如适用）
 
-<!-- If applicable, add screenshots / 如适用，添加截图 -->
+<!-- 可选 -->
 
-## Additional Notes / 补充说明
+## 补充说明
 
-<!-- Any additional information for reviewers / 给审查者的其他信息 -->
+<!-- 可选 -->
 
 ---
 
-> 💡 **Review Guidelines**: This PR will be reviewed following our [Code Review Guide / 代码审查指南](docs/codereview/CODE_REVIEW_GUIDE_CN.md)
+> 审查请参考：`.github/codereview/CODE_REVIEW_GUIDE_CN.md`
