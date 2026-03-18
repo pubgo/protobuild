@@ -258,8 +258,8 @@ github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6Kllzaw
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
-github.com/yarlson/tap v0.11.0 h1:UU3XpN9YWVaDsGBuXZC+gkuI289t3kGRQ/JxgCqGNxg=
-github.com/yarlson/tap v0.11.0/go.mod h1:AuqXWK8npVwIM6spv9unFmQnz0koSrw7iU990bIQ0XY=
+github.com/yarlson/tap v0.13.1 h1:ghvYnWTPxts0w6qdZEXr/6gkYHTBT/3rElFVjuZLqj8=
+github.com/yarlson/tap v0.13.1/go.mod h1:AuqXWK8npVwIM6spv9unFmQnz0koSrw7iU990bIQ0XY=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/contrib/detectors/gcp v1.38.0 h1:ZoYbqX7OaA/TAikspPl3ozPI6iY6LiIY9I8cUfm+pJs=
