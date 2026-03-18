@@ -87,21 +87,19 @@ deps:
     url: github.com/protocolbuffers/protobuf
     path: src/google/protobuf
     version: v25.0
-    ref: ""
     optional: false
 ```
 
 字段说明：
 
-| 字段       | 说明                       |
-| ---------- | -------------------------- |
-| `name`     | 复制到 `vendor` 后的目录名 |
-| `source`   | 依赖来源类型               |
-| `url`      | 依赖地址                   |
-| `path`     | 依赖中的子路径             |
-| `version`  | 版本（主要用于 `gomod`）   |
-| `ref`      | 引用（主要用于 `git`）     |
-| `optional` | 可选依赖，失败时可跳过     |
+| 字段       | 说明                                   |
+| ---------- | -------------------------------------- |
+| `name`     | 复制到 `vendor` 后的目录名             |
+| `source`   | 依赖来源类型                           |
+| `url`      | 依赖地址                               |
+| `path`     | 依赖中的子路径                         |
+| `version`  | 版本；`git` 场景表示 tag/branch/commit |
+| `optional` | 可选依赖，失败时可跳过                 |
 
 ## 场景示例
 
@@ -122,7 +120,7 @@ deps:
   - name: googleapis
     source: git
     url: https://github.com/googleapis/googleapis.git
-    ref: master
+    version: master
     path: google
 ```
 
@@ -161,7 +159,7 @@ deps:
 ## 实施建议
 
 1. 尽量显式声明 `source`，减少歧义。
-2. 对关键依赖锁定 `version` 或 `ref`。
+2. 对关键依赖锁定 `version`。
 3. CI 场景使用 `vendor -u` 定期验证可重复性。
 4. 对私有源配置凭证与网络代理策略。
 

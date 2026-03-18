@@ -184,7 +184,6 @@ func (s *VendorService) toResolverDep(dep *depend) *depresolver.Dependency {
 		URL:      dep.Url,
 		Path:     dep.Path,
 		Version:  dep.Version,
-		Ref:      dep.Ref,
 		Optional: dep.Optional,
 	}
 }

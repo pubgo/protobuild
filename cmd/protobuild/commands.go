@@ -202,9 +202,6 @@ func getDepVersion(dep *depend) string {
 	if dep.Version != nil && *dep.Version != "" {
 		return *dep.Version
 	}
-	if dep.Ref != "" {
-		return dep.Ref
-	}
 	return "-"
 }
 
@@ -215,7 +212,6 @@ func getDepStatus(ctx context.Context, resolver *depresolver.Manager, dep *depen
 		URL:     dep.Url,
 		Path:    dep.Path,
 		Version: dep.Version,
-		Ref:     dep.Ref,
 	}
 
 	result, err := resolver.Resolve(ctx, resolverDep)

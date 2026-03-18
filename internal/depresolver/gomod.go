@@ -50,6 +50,23 @@ func (m *Manager) resolveGoMod(ctx context.Context, dep *Dependency) (*ResolveRe
 	if version == "" || pathutil.IsNotExist(modCachePath) {
 		changed = true
 
+		displayName := strings.TrimSpace(dep.Name)
+		if displayName == "" {
+			displayName = url
+		}
+
+		fmt.Printf("  📥 [Go Module] %s\n", displayName)
+		fmt.Printf("     URL: %s\n", url)
+		if version == "" {
+			fmt.Println("     Version: auto")
+		} else {
+			fmt.Printf("     Version: %s\n", version)
+			fmt.Printf("     Cache: %s\n", modCachePath)
+		}
+		if dep.Path != "" {
+			fmt.Printf("     Path: %s\n", dep.Path)
+		}
+
 		// Create progress bar for visual feedback
 		bar := progressbar.NewOptions(-1,
 			progressbar.OptionSetDescription(fmt.Sprintf("  ↓ [Go Module] %s", dep.Name)),

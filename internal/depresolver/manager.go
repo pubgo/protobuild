@@ -5,9 +5,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/hashicorp/go-getter"
 	"github.com/pubgo/funk/v2/pathutil"
@@ -27,6 +32,8 @@ const (
 	SourceGCS   Source = "gcs"   // Google Cloud Storage
 	SourceLocal Source = "local" // Local path
 )
+
+const defaultGitShallowDepth = 1
 
 // DisplayName returns a human-readable name for the source type.
 func (s Source) DisplayName() string {
@@ -54,8 +61,7 @@ type Dependency struct {
 	Source   Source  `yaml:"source,omitempty"` // default: auto-detect -> gomod
 	URL      string  `yaml:"url"`
 	Path     string  `yaml:"path,omitempty"`     // subdirectory within the source
-	Version  *string `yaml:"version,omitempty"`  // version for gomod
-	Ref      string  `yaml:"ref,omitempty"`      // for git: tag/branch/commit
+	Version  *string `yaml:"version,omitempty"`  // module version; for git it is used as tag/branch/commit
 	Optional *bool   `yaml:"optional,omitempty"` // skip if not found
 }
 
@@ -80,8 +86,8 @@ func (e *ResolveError) Error() string {
 	sb.WriteString(fmt.Sprintf("\n❌ Failed to %s dependency: %s\n", e.Operation, e.Dependency.Name))
 	sb.WriteString(fmt.Sprintf("   Source:  %s\n", e.Source.DisplayName()))
 	sb.WriteString(fmt.Sprintf("   URL:     %s\n", e.URL))
-	if e.Dependency.Ref != "" {
-		sb.WriteString(fmt.Sprintf("   Ref:     %s\n", e.Dependency.Ref))
+	if version := dependencyVersion(e.Dependency); version != "" {
+		sb.WriteString(fmt.Sprintf("   Version: %s\n", version))
 	}
 	if e.Dependency.Path != "" {
 		sb.WriteString(fmt.Sprintf("   Path:    %s\n", e.Dependency.Path))
@@ -93,7 +99,7 @@ func (e *ResolveError) Error() string {
 	switch e.Source {
 	case SourceGit:
 		sb.WriteString("   • Check if the repository URL is correct and accessible\n")
-		sb.WriteString("   • Verify the ref (tag/branch/commit) exists\n")
+		sb.WriteString("   • Verify the git version (tag/branch/commit) exists\n")
 		sb.WriteString("   • Ensure you have proper authentication (SSH key or token)\n")
 	case SourceHTTP:
 		sb.WriteString("   • Check if the URL is correct and the file exists\n")
@@ -150,9 +156,14 @@ func NewManager(cacheDir, gomodPath string) *Manager {
 
 // Resolve resolves a dependency
 func (m *Manager) Resolve(ctx context.Context, dep *Dependency) (*ResolveResult, error) {
+	if dep == nil {
+		return nil, fmt.Errorf("dependency is nil")
+	}
+
 	// Detect source if not specified
 	source := m.detectSource(dep)
 	dep.Source = source
+	m.normalizeVersion(dep)
 
 	switch source {
 	case SourceLocal:
@@ -162,6 +173,28 @@ func (m *Manager) Resolve(ctx context.Context, dep *Dependency) (*ResolveResult,
 	default:
 		// Use go-getter for git, http, s3, gcs sources
 		return m.resolveWithGetter(ctx, dep, source)
+	}
+}
+
+// normalizeVersion trims and normalizes the version field.
+func (m *Manager) normalizeVersion(dep *Dependency) {
+	if dep == nil {
+		return
+	}
+
+	if dep.Version == nil {
+		return
+	}
+
+	version := strings.TrimSpace(*dep.Version)
+	if version == "" {
+		dep.Version = nil
+		return
+	}
+
+	if version != *dep.Version {
+		v := version
+		dep.Version = &v
 	}
 }
 
@@ -248,14 +281,29 @@ func (m *Manager) resolveLocal(dep *Dependency) (*ResolveResult, error) {
 
 // resolveWithGetter resolves dependencies using go-getter (supports git, http, s3, gcs)
 func (m *Manager) resolveWithGetter(ctx context.Context, dep *Dependency, source Source) (*ResolveResult, error) {
-	// Generate cache path based on source type and URL hash
-	cacheKey := hashString(fmt.Sprintf("%s@%s", dep.URL, dep.Ref))
-	cachePath := filepath.Join(m.cacheDir, string(source), cacheKey)
+	// Generate cache path from normalized source URL to maximize cache reuse.
+	cachePath := m.cachePathForDependency(dep, source)
 
 	// Check if we need to download
 	changed := false
 	if pathutil.IsNotExist(cachePath) {
 		changed = true
+
+		displayName := strings.TrimSpace(dep.Name)
+		if displayName == "" {
+			displayName = strings.TrimSpace(dep.URL)
+		}
+
+		getterURL := m.buildGetterURL(dep, source)
+		fmt.Printf("  📥 [%s] %s\n", source.DisplayName(), displayName)
+		fmt.Printf("     URL: %s\n", getterURL)
+		if version := dependencyVersion(dep); version != "" {
+			fmt.Printf("     Version: %s\n", version)
+		}
+		if dep.Path != "" {
+			fmt.Printf("     Path: %s\n", dep.Path)
+		}
+		fmt.Printf("     Cache: %s\n", cachePath)
 
 		// Ensure cache directory exists
 		if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
@@ -299,55 +347,114 @@ func (m *Manager) resolveWithGetter(ctx context.Context, dep *Dependency, source
 
 	return &ResolveResult{
 		LocalPath: localPath,
-		Version:   dep.Ref,
+		Version:   dependencyVersion(dep),
 		Changed:   changed,
 	}, nil
+}
+
+// cachePathForDependency builds a stable cache path for getter-based sources.
+func (m *Manager) cachePathForDependency(dep *Dependency, source Source) string {
+	cacheKey := m.cacheKeyForDependency(dep, source)
+	return filepath.Join(m.cacheDir, string(source), cacheKey)
+}
+
+// cacheKeyForDependency returns a hash key from a normalized dependency seed.
+func (m *Manager) cacheKeyForDependency(dep *Dependency, source Source) string {
+	return hashString(m.cacheSeedForDependency(dep, source))
+}
+
+// cacheSeedForDependency normalizes dependency coordinates for stable caching.
+//
+// Notes:
+//   - dep.Path is intentionally excluded so multiple subpaths share one downloaded source.
+//   - For getter-based sources, URL normalization follows buildGetterURL behavior.
+func (m *Manager) cacheSeedForDependency(dep *Dependency, source Source) string {
+	if dep == nil {
+		return string(source)
+	}
+
+	trimmedURL := strings.TrimSpace(dep.URL)
+	trimmedVersion := dependencyVersion(dep)
+
+	// For getter-based sources, use canonical getter URL as the cache seed.
+	if source != SourceLocal && source != SourceGoMod {
+		normalized := *dep
+		normalized.URL = trimmedURL
+		if trimmedVersion == "" {
+			normalized.Version = nil
+		} else {
+			v := trimmedVersion
+			normalized.Version = &v
+		}
+		return fmt.Sprintf("%s|%s", source, m.buildGetterURL(&normalized, source))
+	}
+
+	if trimmedVersion == "" {
+		return fmt.Sprintf("%s|%s", source, trimmedURL)
+	}
+
+	return fmt.Sprintf("%s|%s|%s", source, trimmedURL, trimmedVersion)
 }
 
 // downloadWithGetter uses go-getter to download dependencies
 func (m *Manager) downloadWithGetter(ctx context.Context, dep *Dependency, source Source, destPath string) error {
 	// Build go-getter URL with appropriate prefix and query parameters
 	getterURL := m.buildGetterURL(dep, source)
+	displayName := strings.TrimSpace(dep.Name)
+	if displayName == "" {
+		displayName = strings.TrimSpace(dep.URL)
+	}
 
-	// Create progress bar for visual feedback
-	bar := progressbar.NewOptions(-1,
-		progressbar.OptionSetDescription(fmt.Sprintf("  ↓ [%s] %s", source.DisplayName(), dep.Name)),
+	// Create progress bar with getter-backed byte tracking
+	bar := progressbar.NewOptions64(-1,
+		progressbar.OptionSetDescription(fmt.Sprintf("  ↓ [%s] %s", source.DisplayName(), displayName)),
 		progressbar.OptionSpinnerType(14),
-		progressbar.OptionShowBytes(false),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionShowTotalBytes(true),
+		progressbar.OptionSetElapsedTime(true),
+		progressbar.OptionSetPredictTime(true),
+		progressbar.OptionShowElapsedTimeOnFinish(),
 		progressbar.OptionSetWidth(30),
-		progressbar.OptionThrottle(100),
+		progressbar.OptionThrottle(100*time.Millisecond),
 		progressbar.OptionOnCompletion(func() { fmt.Println() }),
 		progressbar.OptionSetRenderBlankState(true),
 	)
+	tracker := newGetterProgressTracker(bar, source, displayName)
 
-	// Start spinner in background
-	done := make(chan struct{})
+	// Fallback spinner updates for getters that don't emit byte callbacks (e.g. some git transports).
+	fallbackDone := make(chan struct{})
 	go func() {
+		ticker := time.NewTicker(180 * time.Millisecond)
+		defer ticker.Stop()
 		for {
 			select {
-			case <-done:
+			case <-fallbackDone:
 				return
 			case <-ctx.Done():
 				return
-			default:
-				_ = bar.Add(1)
+			case <-ticker.C:
+				if tracker.HasStreamCallback() {
+					return
+				}
+				_ = bar.Add64(1)
 			}
 		}
 	}()
 
 	// Create go-getter client
 	client := &getter.Client{
-		Ctx:     ctx,
-		Src:     getterURL,
-		Dst:     destPath,
-		Mode:    getter.ClientModeAny,
-		Options: []getter.ClientOption{},
+		Ctx:              ctx,
+		Src:              getterURL,
+		Dst:              destPath,
+		Mode:             getter.ClientModeAny,
+		ProgressListener: tracker,
+		Options:          []getter.ClientOption{},
 	}
 
 	// Execute download
 	err := client.Get()
-	close(done)
-	_ = bar.Finish()
+	close(fallbackDone)
+	tracker.Finish()
 
 	if err != nil {
 		return &ResolveError{
@@ -379,12 +486,22 @@ func (m *Manager) buildGetterURL(dep *Dependency, source Source) string {
 				url = "git::" + url
 			}
 		}
-		// Add ref query parameter for version/branch/tag
-		if dep.Ref != "" {
+		// Add ref query parameter for git tag/branch/commit from version
+		version := dependencyVersion(dep)
+		if version != "" {
 			if strings.Contains(url, "?") {
-				url += "&ref=" + dep.Ref
+				url += "&ref=" + version
 			} else {
-				url += "?ref=" + dep.Ref
+				url += "?ref=" + version
+			}
+		}
+
+		// Default to shallow clone for faster downloads, except commit SHA refs.
+		if shouldUseGitShallowClone(version) && !hasGetterQueryParam(url, "depth") {
+			if strings.Contains(url, "?") {
+				url += "&depth=" + strconv.Itoa(defaultGitShallowDepth)
+			} else {
+				url += "?depth=" + strconv.Itoa(defaultGitShallowDepth)
 			}
 		}
 
@@ -437,4 +554,154 @@ func (m *Manager) CleanCache() error {
 func hashString(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return fmt.Sprintf("%x", h[:12])
+}
+
+func dependencyVersion(dep *Dependency) string {
+	if dep == nil || dep.Version == nil {
+		return ""
+	}
+	return strings.TrimSpace(*dep.Version)
+}
+
+func shouldUseGitShallowClone(version string) bool {
+	if version == "" {
+		return true
+	}
+	return !isLikelyGitCommit(version)
+}
+
+func isLikelyGitCommit(ref string) bool {
+	if len(ref) < 7 || len(ref) > 40 {
+		return false
+	}
+	for _, r := range ref {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') && (r < 'A' || r > 'F') {
+			return false
+		}
+	}
+	return true
+}
+
+func hasGetterQueryParam(url, key string) bool {
+	return strings.Contains(url, "?"+key+"=") || strings.Contains(url, "&"+key+"=")
+}
+
+type getterProgressTracker struct {
+	bar        *progressbar.ProgressBar
+	label      string
+	startedAt  time.Time
+	bytesRead  atomic.Int64
+	hasStream  atomic.Bool
+	finishOnce sync.Once
+}
+
+func newGetterProgressTracker(bar *progressbar.ProgressBar, source Source, displayName string) *getterProgressTracker {
+	return &getterProgressTracker{
+		bar:       bar,
+		label:     fmt.Sprintf("[%s] %s", source.DisplayName(), displayName),
+		startedAt: time.Now(),
+	}
+}
+
+// TrackProgress adapts go-getter stream callbacks into progressbar updates.
+func (t *getterProgressTracker) TrackProgress(_ string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
+	t.hasStream.Store(true)
+
+	if currentSize >= 0 {
+		t.bytesRead.Store(currentSize)
+		_ = t.bar.Set64(currentSize)
+	}
+
+	if totalSize > 0 {
+		t.bar.ChangeMax64(totalSize)
+	}
+
+	return &trackingReadCloser{
+		ReadCloser: stream,
+		onRead: func(n int) {
+			t.bytesRead.Add(int64(n))
+			_ = t.bar.Add64(int64(n))
+		},
+		onClose: t.Finish,
+	}
+}
+
+func (t *getterProgressTracker) HasStreamCallback() bool {
+	return t.hasStream.Load()
+}
+
+func (t *getterProgressTracker) Finish() {
+	t.finishOnce.Do(func() {
+		_ = t.bar.Finish()
+
+		elapsed := time.Since(t.startedAt)
+		if elapsed <= 0 {
+			elapsed = time.Millisecond
+		}
+
+		bytes := t.bytesRead.Load()
+		if bytes <= 0 {
+			fmt.Printf("     ✅ Download complete: %s (elapsed %s)\n", t.label, elapsed.Round(100*time.Millisecond))
+			return
+		}
+
+		rateBytes := int64(float64(bytes) / elapsed.Seconds())
+		fmt.Printf("     ✅ Download complete: %s, %s in %s (avg %s/s)\n",
+			t.label,
+			formatBinaryBytes(bytes),
+			elapsed.Round(100*time.Millisecond),
+			formatBinaryBytes(rateBytes),
+		)
+	})
+}
+
+type trackingReadCloser struct {
+	io.ReadCloser
+	onRead  func(n int)
+	onClose func()
+	closed  sync.Once
+}
+
+func (r *trackingReadCloser) Read(p []byte) (int, error) {
+	n, err := r.ReadCloser.Read(p)
+	if n > 0 && r.onRead != nil {
+		r.onRead(n)
+	}
+	if err == io.EOF {
+		r.closeOnce()
+	}
+	return n, err
+}
+
+func (r *trackingReadCloser) Close() error {
+	err := r.ReadCloser.Close()
+	r.closeOnce()
+	return err
+}
+
+func (r *trackingReadCloser) closeOnce() {
+	r.closed.Do(func() {
+		if r.onClose != nil {
+			r.onClose()
+		}
+	})
+}
+
+func formatBinaryBytes(n int64) string {
+	if n < 1024 {
+		return fmt.Sprintf("%d B", n)
+	}
+
+	units := []string{"KB", "MB", "GB", "TB", "PB", "EB"}
+	v := float64(n) / 1024
+	unit := 0
+	for v >= 1024 && unit < len(units)-1 {
+		v /= 1024
+		unit++
+	}
+
+	if v >= 10 {
+		return fmt.Sprintf("%.0f %s", v, units[unit])
+	}
+	return fmt.Sprintf("%.1f %s", v, units[unit])
 }

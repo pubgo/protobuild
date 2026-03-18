@@ -79,11 +79,8 @@ type Depend struct {
 	// Path subdirectory within the source
 	Path string `yaml:"path,omitempty" json:"path,omitempty"`
 
-	// Version specific version (for Go modules)
+	// Version module version; for Git sources it is treated as tag/branch/commit.
 	Version *string `yaml:"version,omitempty" json:"version,omitempty"`
-
-	// Ref git ref (branch, tag, commit) for Git sources
-	Ref string `yaml:"ref,omitempty" json:"ref,omitempty"`
 
 	// Optional skip if not found
 	Optional *bool `yaml:"optional,omitempty" json:"optional,omitempty"`

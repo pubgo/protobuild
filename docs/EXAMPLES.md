@@ -130,7 +130,7 @@ deps:
   - name: internal/common
     source: git
     url: git@gitlab.company.com:platform/proto-common.git
-    ref: v2.0.0
+    version: v2.0.0
     path: common
   - name: internal/models
     source: s3

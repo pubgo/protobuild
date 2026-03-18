@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+func strPtr(v string) *string { return &v }
+
 func TestNewManager(t *testing.T) {
 	m := NewManager("", "")
 
@@ -185,10 +187,10 @@ func TestResolveLocal(t *testing.T) {
 
 func TestResolveError(t *testing.T) {
 	dep := &Dependency{
-		Name: "test-dep",
-		URL:  "https://example.com/repo.git",
-		Ref:  "v1.0.0",
-		Path: "proto",
+		Name:    "test-dep",
+		URL:     "https://example.com/repo.git",
+		Version: strPtr("v1.0.0"),
+		Path:    "proto",
 	}
 
 	err := &ResolveError{
@@ -224,8 +226,8 @@ func TestBuildGetterURL(t *testing.T) {
 		contains string
 	}{
 		{
-			name:     "git with ref",
-			dep:      &Dependency{URL: "https://github.com/user/repo.git", Ref: "v1.0.0"},
+			name:     "git with version",
+			dep:      &Dependency{URL: "https://github.com/user/repo.git", Version: strPtr("v1.0.0")},
 			source:   SourceGit,
 			contains: "ref=v1.0.0",
 		},
@@ -259,6 +261,89 @@ func TestBuildGetterURL(t *testing.T) {
 	}
 }
 
+func TestBuildGetterURL_GitAddsShallowDepthByDefault(t *testing.T) {
+	m := NewManager("", "")
+	dep := &Dependency{URL: "https://github.com/user/repo.git", Version: strPtr("v1.0.0")}
+
+	result := m.buildGetterURL(dep, SourceGit)
+	if !strings.Contains(result, "ref=v1.0.0") {
+		t.Fatalf("buildGetterURL() = %q, want contains ref=v1.0.0", result)
+	}
+	if !strings.Contains(result, "depth=1") {
+		t.Fatalf("buildGetterURL() = %q, want contains depth=1", result)
+	}
+}
+
+func TestBuildGetterURL_GitCommitSHAWithoutDepth(t *testing.T) {
+	m := NewManager("", "")
+	dep := &Dependency{URL: "https://github.com/user/repo.git", Version: strPtr("a1b2c3d4e5f60718293a4b5c6d7e8f9012345678")}
+
+	result := m.buildGetterURL(dep, SourceGit)
+	if !strings.Contains(result, "ref=a1b2c3d4e5f60718293a4b5c6d7e8f9012345678") {
+		t.Fatalf("buildGetterURL() = %q, want contains commit ref", result)
+	}
+	if strings.Contains(result, "depth=") {
+		t.Fatalf("buildGetterURL() = %q, should not include depth for commit SHA", result)
+	}
+}
+
+func TestBuildGetterURL_GitKeepsExplicitDepth(t *testing.T) {
+	m := NewManager("", "")
+	dep := &Dependency{URL: "git::https://github.com/user/repo.git?depth=5", Version: strPtr("main")}
+
+	result := m.buildGetterURL(dep, SourceGit)
+	if !strings.Contains(result, "depth=5") {
+		t.Fatalf("buildGetterURL() = %q, want contains explicit depth=5", result)
+	}
+	if strings.Contains(result, "depth=1") {
+		t.Fatalf("buildGetterURL() = %q, should not override explicit depth", result)
+	}
+}
+
+func TestIsLikelyGitCommit(t *testing.T) {
+	tests := []struct {
+		name string
+		ref  string
+		want bool
+	}{
+		{name: "short sha", ref: "a1b2c3d", want: true},
+		{name: "full sha", ref: "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", want: true},
+		{name: "tag", ref: "v1.2.3", want: false},
+		{name: "branch", ref: "main", want: false},
+		{name: "invalid chars", ref: "zzzzzzz", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isLikelyGitCommit(tt.ref); got != tt.want {
+				t.Fatalf("isLikelyGitCommit(%q) = %v, want %v", tt.ref, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeVersion_TrimsSpace(t *testing.T) {
+	m := NewManager("", "")
+	dep := &Dependency{Version: strPtr("  v1.2.3  ")}
+
+	m.normalizeVersion(dep)
+
+	if dep.Version == nil || *dep.Version != "v1.2.3" {
+		t.Fatalf("version should be normalized, got %#v", dep.Version)
+	}
+}
+
+func TestNormalizeVersion_EmptyBecomesNil(t *testing.T) {
+	m := NewManager("", "")
+	dep := &Dependency{Version: strPtr("   ")}
+
+	m.normalizeVersion(dep)
+
+	if dep.Version != nil {
+		t.Fatalf("empty version should be nil, got %#v", dep.Version)
+	}
+}
+
 func TestHashString(t *testing.T) {
 	hash1 := hashString("test-input")
 	hash2 := hashString("test-input")
@@ -273,6 +358,66 @@ func TestHashString(t *testing.T) {
 
 	if len(hash1) != 24 {
 		t.Errorf("Hash length = %d, want 24", len(hash1))
+	}
+}
+
+func TestCachePathForDependency_GitCanonicalURLReuse(t *testing.T) {
+	m := NewManager("/tmp/test-cache", "")
+
+	depA := &Dependency{
+		Name:    "googleapis",
+		URL:     "https://github.com/googleapis/googleapis.git",
+		Version: strPtr("master"),
+	}
+
+	depB := &Dependency{
+		Name:    "googleapis",
+		URL:     "github.com/googleapis/googleapis.git",
+		Version: strPtr("master"),
+	}
+
+	pathA := m.cachePathForDependency(depA, SourceGit)
+	pathB := m.cachePathForDependency(depB, SourceGit)
+
+	if pathA != pathB {
+		t.Fatalf("canonical git URLs should map to same cache path\nA: %s\nB: %s", pathA, pathB)
+	}
+}
+
+func TestCachePathForDependency_DifferentVersionDifferentCache(t *testing.T) {
+	m := NewManager("/tmp/test-cache", "")
+
+	depMain := &Dependency{URL: "https://github.com/googleapis/googleapis.git", Version: strPtr("main")}
+	depV1 := &Dependency{URL: "https://github.com/googleapis/googleapis.git", Version: strPtr("v1.0.0")}
+
+	mainPath := m.cachePathForDependency(depMain, SourceGit)
+	v1Path := m.cachePathForDependency(depV1, SourceGit)
+
+	if mainPath == v1Path {
+		t.Fatalf("different refs must map to different cache paths\nmain: %s\nv1:   %s", mainPath, v1Path)
+	}
+}
+
+func TestCachePathForDependency_PathNotInCacheKey(t *testing.T) {
+	m := NewManager("/tmp/test-cache", "")
+
+	depProto := &Dependency{
+		URL:     "https://github.com/googleapis/googleapis.git",
+		Version: strPtr("master"),
+		Path:    "google/api",
+	}
+
+	depRpc := &Dependency{
+		URL:     "https://github.com/googleapis/googleapis.git",
+		Version: strPtr("master"),
+		Path:    "google/rpc",
+	}
+
+	protoPath := m.cachePathForDependency(depProto, SourceGit)
+	rpcPath := m.cachePathForDependency(depRpc, SourceGit)
+
+	if protoPath != rpcPath {
+		t.Fatalf("dep.Path should not affect cache path\nproto: %s\nrpc:   %s", protoPath, rpcPath)
 	}
 }
 
