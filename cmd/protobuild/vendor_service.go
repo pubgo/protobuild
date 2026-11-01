@@ -115,6 +115,7 @@ func (s *VendorService) CopyToVendor(resolvedPaths map[string]string) (int, erro
 	)
 
 	var copiedFiles int
+	sourceByRel := make(map[string]string)
 	for name, localPath := range resolvedPaths {
 		if pathutil.IsNotExist(localPath) {
 			fmt.Printf("  ⚠️  Path not found: %s (%s)\n", name, localPath)
@@ -138,6 +139,13 @@ func (s *VendorService) CopyToVendor(resolvedPaths map[string]string) (int, erro
 				return nil
 			}
 
+			rel := strings.TrimPrefix(filepath.ToSlash(path), filepath.ToSlash(localPath))
+			rel = strings.TrimPrefix(rel, "/")
+			// files land under vendor/<dep name>/, key the map by the
+			// destination path relative to the vendor directory so it matches
+			// the manifest walk
+			sourceByRel[filepath.ToSlash(filepath.Join(name, rel))] = name
+
 			newPath := filepath.Join(newUrl, strings.TrimPrefix(path, localPath))
 			assert.Must(pathutil.IsNotExistMkDir(filepath.Dir(newPath)))
 			assert.Must1(copyFile(newPath, path))
@@ -152,6 +160,19 @@ func (s *VendorService) CopyToVendor(resolvedPaths map[string]string) (int, erro
 	}
 
 	_ = bar.Finish()
+
+	// Record the vendored file content so 'protobuild verify' can detect
+	// corrupted or hand-edited files later.
+	manifest, manifestErr := buildVendorManifest(s.config.Vendor, func(relPath string) string {
+		return sourceByRel[relPath]
+	}, s.config.Checksum)
+	if manifestErr != nil {
+		return copiedFiles, fmt.Errorf("生成 vendor manifest 失败: %w", manifestErr)
+	}
+	if manifestErr := writeVendorManifest(s.config.Vendor, manifest); manifestErr != nil {
+		return copiedFiles, fmt.Errorf("写入 vendor manifest 失败: %w", manifestErr)
+	}
+
 	return copiedFiles, nil
 }
 

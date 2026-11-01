@@ -131,6 +131,7 @@ func Main() *redant.Command {
 			newDoctorCommand(),
 			newGenCommand(),
 			newVendorCommand(&force, &update),
+			newVerifyCommand(),
 			newBufCommand(&bufForce),
 			newInstallCommand(&force),
 			newLintCommand(cliArgs, options),
