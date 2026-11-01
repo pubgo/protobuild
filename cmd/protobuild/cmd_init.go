@@ -143,6 +143,10 @@ func runInit(template string, force bool) error {
 	}
 
 	fmt.Printf("✅ 配置文件已创建: %s\n", protoCfg)
+
+	// Generate buf.yaml so buf CLI / buf lsp work from the very beginning.
+	syncBufConfig(cfg)
+
 	fmt.Println("\n下一步:")
 	fmt.Println("  1. 运行 'protobuild vendor' 同步依赖")
 	fmt.Println("  2. 在 proto/ 目录下创建 .proto 文件")
