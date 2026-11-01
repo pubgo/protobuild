@@ -75,7 +75,8 @@ func Linter(c *CliArgs, config LinterConfig, protoImportPaths, protoFiles []stri
 		return fmt.Errorf("no file to lint")
 	}
 
-	rules := lint.Configs{config.Rules}
+	rules := make(lint.Configs, 0, 3)
+	rules = append(rules, config.Rules)
 
 	// Add configs for the enabled rules.
 	rules = append(rules, lint.Config{EnabledRules: c.EnabledRules})
