@@ -3,15 +3,19 @@ package protobuild
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/bufbuild/protocompile"
+	"github.com/pubgo/funk/v2/pathutil"
 	"github.com/pubgo/funk/v2/recovery"
 	"github.com/pubgo/protobuild/internal/typex"
 	"github.com/pubgo/redant"
+	"github.com/samber/lo"
 )
 
 // checkItem represents a single environment check.
@@ -95,6 +99,11 @@ func runDoctor(fix bool) error {
 			Name:        "vendor",
 			Description: "Proto 依赖目录",
 			Check:       checkVendor,
+		},
+		{
+			Name:        "proto-compile",
+			Description: "Proto 文件编译体检",
+			Check:       checkProtoCompile,
 		},
 	}
 
@@ -344,6 +353,78 @@ func checkVendor() checkResult {
 	}
 
 	return checkResult{OK: true, Message: fmt.Sprintf("%s (%d 个 proto 文件)", globalCfg.Vendor, count)}
+}
+
+// checkProtoCompile compiles every proto file under the root and vendor dirs
+// with protocompile to catch corrupted or broken files early (e.g. a
+// hand-edited vendored file), before they fail a real build.
+func checkProtoCompile() checkResult {
+	if len(globalCfg.Root) == 0 && globalCfg.Vendor == "" {
+		return checkResult{OK: true, Message: "未配置 proto 目录，跳过"}
+	}
+
+	importPaths := lo.Uniq(lo.Compact(append(globalCfg.Root, globalCfg.Vendor, ".")))
+
+	// collect files by their canonical import path (relative to the import
+	// root that contains them), so a file passed explicitly and the same file
+	// pulled in via an import are compiled once under a single name
+	type protoSource struct {
+		importPath string
+		fullPath   string
+	}
+	var protoSources []protoSource
+	seenImports := map[string]bool{}
+	for _, dir := range importPaths {
+		if dir == "." || !pathutil.IsExist(dir) {
+			continue
+		}
+
+		_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil // skip unreadable entries, collect what we can
+			}
+			if !strings.HasSuffix(path, ".proto") {
+				return nil
+			}
+
+			rel, relErr := filepath.Rel(dir, path)
+			if relErr != nil {
+				return nil
+			}
+			rel = filepath.ToSlash(rel)
+			if seenImports[rel] {
+				return nil // shadowed by an earlier import root
+			}
+			seenImports[rel] = true
+			protoSources = append(protoSources, protoSource{importPath: rel, fullPath: path})
+			return nil
+		})
+	}
+
+	if len(protoSources) == 0 {
+		return checkResult{OK: true, Message: "未发现 proto 文件，跳过"}
+	}
+
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: importPaths,
+		}),
+	}
+
+	fileNames := lo.Map(protoSources, func(s protoSource, _ int) string { return s.importPath })
+	if _, err := compiler.Compile(context.Background(), fileNames...); err != nil {
+		msg := err.Error()
+		if len(msg) > 300 {
+			msg = msg[:300] + "..."
+		}
+		return checkResult{
+			OK:      false,
+			Message: fmt.Sprintf("%d 个 proto 文件中存在编译错误: %s", len(protoSources), msg),
+			Help:    "检查报错的 proto 文件；vendor 目录内容异常时运行 'protobuild verify' 定位，或 'protobuild vendor' 重建",
+		}
+	}
+
+	return checkResult{OK: true, Message: fmt.Sprintf("%d 个 proto 文件编译通过", len(protoSources))}
 }
 
 // getProtocInstallHelp returns platform-specific install instructions for protoc.
