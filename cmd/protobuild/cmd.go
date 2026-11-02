@@ -51,14 +51,15 @@ compatibility: "Requires protobuild CLI, protoc, plugins; run in repo root with 
 ## When to use
 - 项目存在 ` + "`protobuf.yaml`" + `，需要下载依赖、生成代码、lint/format proto。
 - 先 vendor 再 gen；只检查格式/规范，使用 lint 或 format --exit-code。
+- 使用 buf CLI / buf lsp 时，先运行 protobuild buf 生成 buf.yaml。
 
 ## Safety / Constraints
-- 会写盘的命令：gen、format -w、install（需告知用户）。
+- 会写盘的命令：gen、format -w、install、buf（需告知用户）。
 - 必须在包含 protobuf.yaml 的项目根目录执行。
 - 如未 vendor 过依赖，先运行 protobuild vendor。
 
 ## Inputs
-- command: one of [gen, vendor, lint, format, clean, deps, install, doctor, web]
+- command: one of [gen, vendor, buf, lint, format, clean, deps, install, doctor, web]
 - args: optional string list, e.g. ["-w", "--diff"]
 - working_dir: project root (defaults to current CWD if 已在项目根)
 
@@ -72,6 +73,7 @@ compatibility: "Requires protobuild CLI, protoc, plugins; run in repo root with 
 ## Examples
 - protobuild vendor
 - protobuild gen
+- protobuild buf
 - protobuild format --exit-code
 - protobuild lint
 `
@@ -108,7 +110,7 @@ func withParseConfig() redant.MiddlewareFunc {
 
 // Main creates and returns the root CLI command with all subcommands.
 func Main() *redant.Command {
-	var force, update, dryRun bool
+	var force, update, dryRun, bufForce bool
 	cliArgs, options := linters.NewCli()
 
 	app := &redant.Command{
@@ -129,6 +131,7 @@ func Main() *redant.Command {
 			newDoctorCommand(),
 			newGenCommand(),
 			newVendorCommand(&force, &update),
+			newBufCommand(&bufForce),
 			newInstallCommand(&force),
 			newLintCommand(cliArgs, options),
 			newFormatCommand(),
