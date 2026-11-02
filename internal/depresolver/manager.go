@@ -83,16 +83,16 @@ type ResolveError struct {
 
 func (e *ResolveError) Error() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("\n❌ Failed to %s dependency: %s\n", e.Operation, e.Dependency.Name))
-	sb.WriteString(fmt.Sprintf("   Source:  %s\n", e.Source.DisplayName()))
-	sb.WriteString(fmt.Sprintf("   URL:     %s\n", e.URL))
+	fmt.Fprintf(&sb, "\n❌ Failed to %s dependency: %s\n", e.Operation, e.Dependency.Name)
+	fmt.Fprintf(&sb, "   Source:  %s\n", e.Source.DisplayName())
+	fmt.Fprintf(&sb, "   URL:     %s\n", e.URL)
 	if version := dependencyVersion(e.Dependency); version != "" {
-		sb.WriteString(fmt.Sprintf("   Version: %s\n", version))
+		fmt.Fprintf(&sb, "   Version: %s\n", version)
 	}
 	if e.Dependency.Path != "" {
-		sb.WriteString(fmt.Sprintf("   Path:    %s\n", e.Dependency.Path))
+		fmt.Fprintf(&sb, "   Path:    %s\n", e.Dependency.Path)
 	}
-	sb.WriteString(fmt.Sprintf("   Error:   %s\n", e.Err.Error()))
+	fmt.Fprintf(&sb, "   Error:   %s\n", e.Err.Error())
 	sb.WriteString("\n💡 Suggestions:\n")
 
 	// Add helpful suggestions based on source type and error
@@ -133,6 +133,9 @@ func (e *ResolveError) Unwrap() error {
 type Manager struct {
 	cacheDir  string
 	gomodPath string // $GOPATH/pkg/mod
+	// concurrency > 1 enables quiet downloads: per-download progress bars are
+	// silenced because parallel bars would interleave into unreadable output.
+	concurrency int
 }
 
 // NewManager creates a new dependency manager
@@ -152,6 +155,15 @@ func NewManager(cacheDir, gomodPath string) *Manager {
 		cacheDir:  cacheDir,
 		gomodPath: gomodPath,
 	}
+}
+
+// WithConcurrency sets the maximum number of concurrent resolve operations.
+// n > 1 also silences per-download progress bars (they would interleave).
+func (m *Manager) WithConcurrency(n int) *Manager {
+	if n > 1 {
+		m.concurrency = n
+	}
+	return m
 }
 
 // Resolve resolves a dependency
@@ -405,8 +417,10 @@ func (m *Manager) downloadWithGetter(ctx context.Context, dep *Dependency, sourc
 		displayName = strings.TrimSpace(dep.URL)
 	}
 
-	// Create progress bar with getter-backed byte tracking
-	bar := progressbar.NewOptions64(-1,
+	// Create progress bar with getter-backed byte tracking.
+	// In concurrent (quiet) mode bars are written to io.Discard: multiple
+	// live progress bars would interleave into unreadable output.
+	barOpts := []progressbar.Option{
 		progressbar.OptionSetDescription(fmt.Sprintf("  ↓ [%s] %s", source.DisplayName(), displayName)),
 		progressbar.OptionSpinnerType(14),
 		progressbar.OptionShowBytes(true),
@@ -415,10 +429,14 @@ func (m *Manager) downloadWithGetter(ctx context.Context, dep *Dependency, sourc
 		progressbar.OptionSetPredictTime(true),
 		progressbar.OptionShowElapsedTimeOnFinish(),
 		progressbar.OptionSetWidth(30),
-		progressbar.OptionThrottle(100*time.Millisecond),
+		progressbar.OptionThrottle(100 * time.Millisecond),
 		progressbar.OptionOnCompletion(func() { fmt.Println() }),
 		progressbar.OptionSetRenderBlankState(true),
-	)
+	}
+	if m.concurrency > 1 {
+		barOpts = append(barOpts, progressbar.OptionSetWriter(io.Discard))
+	}
+	bar := progressbar.NewOptions64(-1, barOpts...)
 	tracker := newGetterProgressTracker(bar, source, displayName)
 
 	// Fallback spinner updates for getters that don't emit byte callbacks (e.g. some git transports).

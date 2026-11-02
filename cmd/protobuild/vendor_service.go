@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/pubgo/funk/v2/assert"
 	"github.com/pubgo/funk/v2/errors"
 	"github.com/pubgo/funk/v2/pathutil"
@@ -38,7 +40,11 @@ type VendorResult struct {
 	Changed       bool
 }
 
-// ResolveDependencies resolves all configured dependencies.
+// resolveConcurrency limits parallel dependency resolution.
+const resolveConcurrency = 4
+
+// ResolveDependencies resolves all configured dependencies in parallel and
+// reports results in config order.
 func (s *VendorService) ResolveDependencies(ctx context.Context, update bool) (*VendorResult, error) {
 	result := &VendorResult{
 		ResolvedPaths: make(map[string]string),
@@ -59,25 +65,51 @@ func (s *VendorService) ResolveDependencies(ctx context.Context, update bool) (*
 		fmt.Println()
 	}
 
-	// Resolve each dependency
+	type resolveOutcome struct {
+		dep      *depend
+		resolved *depresolver.ResolveResult
+		err      error
+	}
+
+	// resolve concurrently; failures are collected per dependency instead of
+	// aborting sibling downloads. Outcomes are indexed by the config slice
+	// position so version write-back targets the right dependency.
+	s.resolver.WithConcurrency(resolveConcurrency)
+	outcomes := make([]*resolveOutcome, len(s.config.Depends))
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.SetLimit(resolveConcurrency)
 	for i, dep := range s.config.Depends {
 		if dep.Name == "" || dep.Url == "" {
 			continue
 		}
 
-		resolverDep := s.toResolverDep(dep)
-		resolved, err := s.resolver.Resolve(ctx, resolverDep)
+		i, dep := i, dep
+		eg.Go(func() error {
+			resolved, err := s.resolver.Resolve(egCtx, s.toResolverDep(dep))
+			outcomes[i] = &resolveOutcome{dep: dep, resolved: resolved, err: err}
+			return nil
+		})
+	}
+	_ = eg.Wait()
 
-		if err != nil {
+	// report and collect in config order
+	for i, oc := range outcomes {
+		if oc == nil {
+			continue
+		}
+
+		dep := s.config.Depends[i]
+		if oc.err != nil {
 			if dep.Optional != nil && *dep.Optional {
 				fmt.Printf("  ⚠️  [optional] %s - skipped\n", dep.Name)
 				continue
 			}
-			fmt.Print(err.Error())
+			fmt.Print(oc.err.Error())
 			result.FailedDeps = append(result.FailedDeps, dep.Name)
 			continue
 		}
 
+		resolved := oc.resolved
 		if resolved.LocalPath == "" {
 			continue
 		}
