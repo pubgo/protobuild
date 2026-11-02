@@ -22,11 +22,15 @@ flowchart LR
 ## 核心能力
 
 - 统一构建：一条命令编译全部 `proto`
-- 多源依赖：`gomod`、`git`、`http`、`s3`、`gcs`、`local`
+- 多源依赖：`gomod`、`git`、`http`、`s3`、`gcs`、`local`，并行下载
+- 依赖锁定：`vendor` 生成 manifest + `protobuf.lock.yaml`，`verify` 作为 CI 门禁
+- 版本升级：`update` 自动发现 git/gomod 最新版本并重新 vendor
+- 兼容性检测：`breaking` 包装 buf breaking，自动物化 base 分支、排除 vendor 噪音
+- buf 集成：自动生成/同步 `buf.yaml`，供 buf CLI 与 buf lsp 解析 import
 - 配置驱动：基于 `protobuf.yaml`
 - 代码检查：内置规则检查
 - 格式化：支持 `buf`、内置格式化器与 `clang-format`
-- 诊断与初始化：`doctor`、`init`
+- 诊断与初始化：`doctor`（含 proto 编译体检）、`init`
 - 可视化管理：`web` 命令
 
 ## 典型工作流
