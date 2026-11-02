@@ -10,11 +10,8 @@ builds:
     goarch:
       - amd64
       - arm64
-    ldflags:
-      - -X 'github.com/pubgo/funk/version.version=v{{ .Version }}'
-      - -X 'github.com/pubgo/funk/version.project=protobuild'
-      - -X 'github.com/pubgo/funk/version.buildTime={{ .CommitDate }}'
-      - -X 'github.com/pubgo/funk/version.commitID={{ .ShortCommit }}'
+    # no ldflags: funk v2 version meta is unexported; it is injected in
+    # main.go via go:embed .version/VERSION and runtime/debug vcs stamping
 archives:
   - name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
     format: binary
