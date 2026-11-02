@@ -107,3 +107,10 @@ buf CLI / buf lsp（IDE 解析、`buf build`、`buf lint` 等场景），两者�
 - buf.yaml 中未映射 protobuf.yaml 的 `excludes`；如后续有需求，可按 module 前缀做映射。
 - `protobuild vendor` / `init` 会自动同步 buf.yaml：带 protobuild 生成标记的文件直接刷新，
   手写或外部生成的文件仅提示不覆盖（可用 `protobuild buf --force` 接管）。
+
+## 边界决策：代码生成不走 buf
+
+生成编排由 protobuild 自己负责，直接调用 protoc；**不生成 buf.gen.yaml，不委托 buf generate**。
+buf 只承担引擎级能力：import 解析（lsp）、format、breaking。原因：生成流程的
+插件参数、多目录配置、retag 后处理等都已在 protobuf.yaml + protoc_builder 中建模，
+迁移到 buf.gen.yaml 是重复建模且丢失能力。
