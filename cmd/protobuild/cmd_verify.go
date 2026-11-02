@@ -26,6 +26,20 @@ func newVerifyCommand() *redant.Command {
 				return err
 			}
 
+			// lockfile drift is a warning: config changes are common between
+			// vendor runs, integrity failures are what should block CI
+			lock, lockErr := loadLockfile()
+			if lockErr != nil {
+				fmt.Printf("⚠️  读取 lockfile 失败: %v\n", lockErr)
+			} else if lock == nil {
+				fmt.Printf("⚠️  %s 不存在，建议提交该文件以固定依赖解析结果（运行 protobuild vendor 生成）\n", lockfileName)
+			} else if drift := lock.diffDeps(&globalCfg); len(drift) > 0 {
+				fmt.Println("⚠️  依赖与 lockfile 不一致，请运行 'protobuild vendor':")
+				for _, d := range drift {
+					fmt.Printf("   • %s\n", d)
+				}
+			}
+
 			if stale {
 				fmt.Println("⚠️  protobuf.yaml 已变更，vendor 可能过期，请运行 'protobuild vendor'")
 			}

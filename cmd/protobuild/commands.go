@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/pubgo/funk/v2/pathutil"
 	"github.com/pubgo/funk/v2/recovery"
@@ -47,6 +49,61 @@ func newGenCommand() *redant.Command {
 	}
 }
 
+// writeLockfile persists the resolved dependency state next to protobuf.yaml.
+// Best-effort: failures warn but never break the vendor flow.
+func writeLockfile(resolvedPaths map[string]string) {
+	if err := saveLockfile(buildLockfile(&globalCfg, resolvedPaths)); err != nil {
+		fmt.Printf("  ⚠️  Failed to write lockfile: %s\n", err)
+		return
+	}
+	fmt.Printf("🔒 已更新 %s\n", lockfileName)
+}
+
+// runVendorSync resolves dependencies, syncs the vendor directory, and keeps
+// the generated artifacts (buf.yaml, lockfile) consistent.
+func runVendorSync(ctx context.Context, update, force bool) error {
+	svc := NewVendorService(&globalCfg)
+	result, err := svc.ResolveDependencies(ctx, update)
+	if err != nil {
+		return err
+	}
+
+	if len(result.FailedDeps) > 0 {
+		fmt.Printf("\n❌ Failed to resolve %d dependencies: %v\n", len(result.FailedDeps), result.FailedDeps)
+		return fmt.Errorf("dependency resolution failed")
+	}
+
+	if len(result.ResolvedPaths) == 0 {
+		fmt.Println("📦 No dependencies configured")
+		return nil
+	}
+
+	if !result.Changed && !globalCfg.Changed && !force {
+		fmt.Println("\n✨ No changes detected")
+		// keep buf.yaml in sync even when nothing was re-copied
+		syncBufConfig(&globalCfg)
+		writeLockfile(result.ResolvedPaths)
+		return nil
+	}
+
+	copiedFiles, err := svc.CopyToVendor(result.ResolvedPaths)
+	if err != nil {
+		return err
+	}
+
+	// Update config file
+	if err := saveConfig(); err != nil {
+		return err
+	}
+
+	// Keep buf.yaml in sync with the vendor layout for buf CLI / buf lsp.
+	syncBufConfig(&globalCfg)
+	writeLockfile(result.ResolvedPaths)
+
+	fmt.Printf("\n✅ Vendor complete! Copied %d proto files.\n", copiedFiles)
+	return nil
+}
+
 // newVendorCommand creates the vendor command.
 func newVendorCommand(force, update *bool) *redant.Command {
 	return &redant.Command{
@@ -70,44 +127,7 @@ func newVendorCommand(force, update *bool) *redant.Command {
 		Handler: func(ctx context.Context, inv *redant.Invocation) error {
 			defer recovery.Exit()
 
-			svc := NewVendorService(&globalCfg)
-			result, err := svc.ResolveDependencies(ctx, *update)
-			if err != nil {
-				return err
-			}
-
-			if len(result.FailedDeps) > 0 {
-				fmt.Printf("\n❌ Failed to resolve %d dependencies: %v\n", len(result.FailedDeps), result.FailedDeps)
-				return fmt.Errorf("dependency resolution failed")
-			}
-
-			if len(result.ResolvedPaths) == 0 {
-				fmt.Println("📦 No dependencies configured")
-				return nil
-			}
-
-			if !result.Changed && !globalCfg.Changed && !*force {
-				fmt.Println("\n✨ No changes detected")
-				// keep buf.yaml in sync even when nothing was re-copied
-				syncBufConfig(&globalCfg)
-				return nil
-			}
-
-			copiedFiles, err := svc.CopyToVendor(result.ResolvedPaths)
-			if err != nil {
-				return err
-			}
-
-			// Update config file
-			if err := saveConfig(); err != nil {
-				return err
-			}
-
-			// Keep buf.yaml in sync with the vendor layout for buf CLI / buf lsp.
-			syncBufConfig(&globalCfg)
-
-			fmt.Printf("\n✅ Vendor complete! Copied %d proto files.\n", copiedFiles)
-			return nil
+			return runVendorSync(ctx, *update, *force)
 		},
 	}
 }
@@ -158,19 +178,42 @@ func newDepsCommand() *redant.Command {
 }
 
 // newCleanCommand creates the clean command.
-func newCleanCommand(dryRun *bool) *redant.Command {
+func newCleanCommand(dryRun *bool, maxAge, maxSize *string) *redant.Command {
 	return &redant.Command{
 		Use:   "clean",
 		Short: "清理依赖缓存",
+		Long: `清理依赖缓存。
+
+默认清空全部缓存；通过 --max-age / --max-size 可按策略选择性清理：
+  protobuild clean --max-age 30d           # 只清理 30 天未使用的缓存
+  protobuild clean --max-size 500MB        # 从最旧开始清理直到缓存小于 500MB
+  protobuild clean --max-age 30d --max-size 1GB --dry-run`,
 		Options: typex.Options{
 			redant.Option{
 				Flag:        "dry-run",
 				Description: "只显示要删除的内容，不实际删除",
 				Value:       redant.BoolOf(dryRun),
 			},
+			redant.Option{
+				Flag:        "max-age",
+				Description: "只清理超过该时长未使用的缓存，如 30d / 720h",
+				Value:       redant.StringOf(maxAge),
+			},
+			redant.Option{
+				Flag:        "max-size",
+				Description: "把缓存清理到该大小以内，如 500MB / 2GB",
+				Value:       redant.StringOf(maxSize),
+			},
 		},
 		Handler: func(ctx context.Context, inv *redant.Invocation) error {
 			resolver := depresolver.NewManager("", "")
+
+			// selective mode
+			if strings.TrimSpace(*maxAge) != "" || strings.TrimSpace(*maxSize) != "" {
+				return cleanByPolicy(resolver.CacheDir(), *maxAge, *maxSize, *dryRun)
+			}
+
+			// full clean mode
 			cacheDir := resolver.CacheDir()
 
 			totalSize, fileCount := calculateCacheSize(cacheDir)
@@ -199,6 +242,60 @@ func newCleanCommand(dryRun *bool) *redant.Command {
 			return nil
 		},
 	}
+}
+
+// cleanByPolicy removes cache entries by age and/or size policy.
+func cleanByPolicy(cacheDir, maxAge, maxSize string, dryRun bool) error {
+	var cutoff time.Time
+	if strings.TrimSpace(maxAge) != "" {
+		d, err := parseCleanDuration(maxAge)
+		if err != nil {
+			return err
+		}
+		cutoff = time.Now().Add(-d)
+	}
+
+	var limit int64
+	if strings.TrimSpace(maxSize) != "" {
+		size, err := parseCleanSize(maxSize)
+		if err != nil {
+			return err
+		}
+		limit = size
+	}
+
+	entries := collectCacheEntries(cacheDir)
+	if len(entries) == 0 {
+		fmt.Println("📭 Cache is empty, nothing to clean.")
+		return nil
+	}
+
+	remove := planCacheRemoval(entries, cutoff, limit)
+	if len(remove) == 0 {
+		fmt.Printf("📭 没有符合清理条件的缓存 (%d 个缓存项)\n", len(entries))
+		return nil
+	}
+
+	var removeSize int64
+	fmt.Printf("🗑️  将清理 %d 个缓存项:\n", len(remove))
+	for _, e := range remove {
+		fmt.Printf("   • %s (%s, %s)\n", e.name, formatBytes(e.size), e.modTime.Format("2006-01-02"))
+		removeSize += e.size
+	}
+
+	if dryRun {
+		fmt.Println("\n🔍 Dry-run mode: no files will be deleted.")
+		return nil
+	}
+
+	fmt.Println()
+	for _, e := range remove {
+		if err := os.RemoveAll(e.path); err != nil {
+			return fmt.Errorf("删除 %s 失败: %w", e.path, err)
+		}
+	}
+	fmt.Printf("✨ 已清理 %d 个缓存项 (%s)\n", len(remove), formatBytes(removeSize))
+	return nil
 }
 
 // Helper functions

@@ -59,7 +59,7 @@ compatibility: "Requires protobuild CLI, protoc, plugins; run in repo root with 
 - 如未 vendor 过依赖，先运行 protobuild vendor。
 
 ## Inputs
-- command: one of [gen, vendor, buf, lint, format, clean, deps, install, doctor, web]
+- command: one of [gen, vendor, update, verify, buf, breaking, lint, format, clean, deps, install, doctor, web]
 - args: optional string list, e.g. ["-w", "--diff"]
 - working_dir: project root (defaults to current CWD if 已在项目根)
 
@@ -110,7 +110,8 @@ func withParseConfig() redant.MiddlewareFunc {
 
 // Main creates and returns the root CLI command with all subcommands.
 func Main() *redant.Command {
-	var force, update, dryRun, bufForce bool
+	var force, update, dryRun, bufForce, dryRunUpdate bool
+	var maxAge, maxSize string
 	cliArgs, options := linters.NewCli()
 
 	app := &redant.Command{
@@ -131,13 +132,15 @@ func Main() *redant.Command {
 			newDoctorCommand(),
 			newGenCommand(),
 			newVendorCommand(&force, &update),
+			newUpdateCommand(&dryRunUpdate),
 			newVerifyCommand(),
 			newBufCommand(&bufForce),
+			newBreakingCommand(),
 			newInstallCommand(&force),
 			newLintCommand(cliArgs, options),
 			newFormatCommand(),
 			newDepsCommand(),
-			newCleanCommand(&dryRun),
+			newCleanCommand(&dryRun, &maxAge, &maxSize),
 			newSkillsCommand(),
 			webcmd.New(&protoCfg),
 			newVersionCommand(),
