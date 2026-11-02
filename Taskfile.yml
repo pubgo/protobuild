@@ -2,26 +2,7 @@
 
 version: '3'
 
-vars:
-  PROJECT: protobuild
-  BASE: github.com/pubgo/protobuild
-  TAG:
-    sh: git describe --abbrev=0 --tags 2>/dev/null || echo "v0.0.0"
-  VERSION:
-    sh: git tag --sort=committerdate | tail -n 1 || echo "v0.0.0"
-  BUILD_TIME:
-    sh: date "+%F %T"
-  COMMIT_ID:
-    sh: git rev-parse --short=8 HEAD
-  LDFLAGS: >-
-    -ldflags "
-    -X '{{.BASE}}/version.BuildTime={{.BUILD_TIME}}'
-    -X '{{.BASE}}/version.CommitID={{.COMMIT_ID}}'
-    -X '{{.BASE}}/version.Version={{.VERSION}}'
-    -X '{{.BASE}}/version.Tag={{.TAG}}'
-    -X '{{.BASE}}/version.Project={{.PROJECT}}'
-    -X '{{.BASE}}/version.Data=hello'
-    "
+vars: {}
 
 tasks:
   default:
@@ -32,7 +13,7 @@ tasks:
   build:
     desc: Build the binary
     cmds:
-      - go build {{.LDFLAGS}} -mod vendor -v -o main *.go
+      - go build -v -o main .
     sources:
       - "**/*.go"
     generates:
@@ -41,7 +22,7 @@ tasks:
   install:
     desc: Install the binary to $GOPATH/bin
     cmds:
-      - go install {{.LDFLAGS}} -mod vendor -v .
+      - go install -v .
 
   vet:
     desc: Run go vet and format code
