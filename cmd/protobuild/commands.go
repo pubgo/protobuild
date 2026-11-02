@@ -88,6 +88,8 @@ func newVendorCommand(force, update *bool) *redant.Command {
 
 			if !result.Changed && !globalCfg.Changed && !*force {
 				fmt.Println("\n✨ No changes detected")
+				// keep buf.yaml in sync even when nothing was re-copied
+				syncBufConfig(&globalCfg)
 				return nil
 			}
 
@@ -100,6 +102,9 @@ func newVendorCommand(force, update *bool) *redant.Command {
 			if err := saveConfig(); err != nil {
 				return err
 			}
+
+			// Keep buf.yaml in sync with the vendor layout for buf CLI / buf lsp.
+			syncBufConfig(&globalCfg)
 
 			fmt.Printf("\n✅ Vendor complete! Copied %d proto files.\n", copiedFiles)
 			return nil

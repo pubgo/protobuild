@@ -105,4 +105,5 @@ buf CLI / buf lsp（IDE 解析、`buf build`、`buf lint` 等场景），两者�
 - `buf lint` 会按 buf 规则检查 vendored 文件（如 `PACKAGE_DIRECTORY_MATCH`），
   如需使用，要在 buf.yaml 中为 vendored module 增加 ignore，本命令暂不生成 lint 配置。
 - buf.yaml 中未映射 protobuf.yaml 的 `excludes`；如后续有需求，可按 module 前缀做映射。
-- `protobuild vendor` 未来可考虑自动调用 `buf` 生成逻辑，保证 vendor 后 buf 配置同步。
+- `protobuild vendor` / `init` 会自动同步 buf.yaml：带 protobuild 生成标记的文件直接刷新，
+  手写或外部生成的文件仅提示不覆盖（可用 `protobuild buf --force` 接管）。

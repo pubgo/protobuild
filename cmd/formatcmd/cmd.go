@@ -52,7 +52,7 @@ type ProjectConfig struct {
 // New creates a new format command.
 // The configProvider function is called to get project configuration.
 func New(name string, configProvider func() *ProjectConfig) *redant.Command {
-	var cfg = FormatConfig{ClangStyle: "google"}
+	cfg := FormatConfig{ClangStyle: "google"}
 
 	return &redant.Command{
 		Use:   name,
@@ -404,7 +404,7 @@ func unifiedDiff(filePath string, original, formatted []byte) (string, error) {
 		return "", err
 	}
 	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
+	defer func() { _ = os.Remove(tmpPath) }()
 
 	if _, err := tmp.Write(formatted); err != nil {
 		_ = tmp.Close()
