@@ -131,7 +131,7 @@ func runInit(template string, force bool) error {
 
 	// Create proto directory if not exists
 	for _, dir := range cfg.Root {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("创建目录 %s 失败: %w", dir, err)
 		}
 		fmt.Printf("📁 创建目录: %s\n", dir)
@@ -250,7 +250,7 @@ func createExampleProto(protoDir string) error {
 
 	// Create example proto
 	exampleDir := filepath.Join(protoDir, "example", "v1")
-	if err := os.MkdirAll(exampleDir, 0755); err != nil {
+	if err := os.MkdirAll(exampleDir, 0o755); err != nil {
 		return err
 	}
 
@@ -283,7 +283,7 @@ service GreeterService {
 `, module)
 
 	exampleFile := filepath.Join(exampleDir, "greeter.proto")
-	if err := os.WriteFile(exampleFile, []byte(example), 0644); err != nil {
+	if err := os.WriteFile(exampleFile, []byte(example), 0o644); err != nil {
 		return err
 	}
 

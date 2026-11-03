@@ -14,7 +14,7 @@ func TestProtoWalker_GetProtoFiles(t *testing.T) {
 	testFiles := []string{"test1.proto", "test2.proto", "other.txt"}
 	for _, f := range testFiles {
 		path := filepath.Join(tmpDir, f)
-		if err := os.WriteFile(path, []byte("syntax = \"proto3\";"), 0644); err != nil {
+		if err := os.WriteFile(path, []byte("syntax = \"proto3\";"), 0o644); err != nil {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 	}
@@ -45,7 +45,7 @@ func TestProtoWalker_HasProtoFiles(t *testing.T) {
 
 	// Create a proto file
 	protoFile := filepath.Join(tmpDir, "test.proto")
-	if err := os.WriteFile(protoFile, []byte("syntax = \"proto3\";"), 0644); err != nil {
+	if err := os.WriteFile(protoFile, []byte("syntax = \"proto3\";"), 0o644); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
@@ -62,15 +62,15 @@ func TestProtoWalker_WalkDirs(t *testing.T) {
 	subDir1 := filepath.Join(tmpDir, "api", "v1")
 	subDir2 := filepath.Join(tmpDir, "internal")
 
-	if err := os.MkdirAll(subDir1, 0755); err != nil {
+	if err := os.MkdirAll(subDir1, 0o755); err != nil {
 		t.Fatalf("failed to create subdir1: %v", err)
 	}
-	if err := os.MkdirAll(subDir2, 0755); err != nil {
+	if err := os.MkdirAll(subDir2, 0o755); err != nil {
 		t.Fatalf("failed to create subdir2: %v", err)
 	}
 
 	// Create proto files in subDir1 only
-	if err := os.WriteFile(filepath.Join(subDir1, "test.proto"), []byte("syntax = \"proto3\";"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(subDir1, "test.proto"), []byte("syntax = \"proto3\";"), 0o644); err != nil {
 		t.Fatalf("failed to create proto file: %v", err)
 	}
 
@@ -93,18 +93,18 @@ func TestProtoWalker_WithExcludes(t *testing.T) {
 	includedDir := filepath.Join(tmpDir, "api")
 	excludedDir := filepath.Join(tmpDir, "vendor")
 
-	if err := os.MkdirAll(includedDir, 0755); err != nil {
+	if err := os.MkdirAll(includedDir, 0o755); err != nil {
 		t.Fatalf("failed to create includedDir: %v", err)
 	}
-	if err := os.MkdirAll(excludedDir, 0755); err != nil {
+	if err := os.MkdirAll(excludedDir, 0o755); err != nil {
 		t.Fatalf("failed to create excludedDir: %v", err)
 	}
 
 	// Create proto files in both directories
-	if err := os.WriteFile(filepath.Join(includedDir, "test.proto"), []byte("syntax = \"proto3\";"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(includedDir, "test.proto"), []byte("syntax = \"proto3\";"), 0o644); err != nil {
 		t.Fatalf("failed to create proto file: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(excludedDir, "vendor.proto"), []byte("syntax = \"proto3\";"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(excludedDir, "vendor.proto"), []byte("syntax = \"proto3\";"), 0o644); err != nil {
 		t.Fatalf("failed to create proto file: %v", err)
 	}
 
@@ -126,13 +126,13 @@ func TestCountProtoFiles(t *testing.T) {
 	// Create some proto files
 	for i := 0; i < 5; i++ {
 		path := filepath.Join(tmpDir, "test"+string(rune('0'+i))+".proto")
-		if err := os.WriteFile(path, []byte("syntax = \"proto3\";"), 0644); err != nil {
+		if err := os.WriteFile(path, []byte("syntax = \"proto3\";"), 0o644); err != nil {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 	}
 
 	// Create non-proto file
-	if err := os.WriteFile(filepath.Join(tmpDir, "readme.md"), []byte("# Test"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "readme.md"), []byte("# Test"), 0o644); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 

@@ -201,7 +201,6 @@ func installPlugin(plg string, force bool) {
 
 	plgName := strings.Split(lo.LastOrEmpty(strings.Split(plg, "/")), "@")[0]
 	path, err := exec.LookPath(plgName)
-
 	if err != nil {
 		slog.Error("command not found", slog.Any("name", plgName))
 	}

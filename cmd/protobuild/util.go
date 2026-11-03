@@ -133,7 +133,7 @@ var checkSumPath = func(vendorPath string) string {
 }
 
 func getChecksumData(vendorPath string) (string, error) {
-	var path = checkSumPath(vendorPath)
+	path := checkSumPath(vendorPath)
 	if pathutil.IsNotExist(vendorPath) {
 		return "", errors.New("file not found")
 	}
@@ -150,9 +150,9 @@ func getChecksumData(vendorPath string) (string, error) {
 }
 
 func writeChecksumData(vendorPath string, data []byte) error {
-	_ = os.MkdirAll(vendorPath, 0755)
-	var path = checkSumPath(vendorPath)
-	return errors.WrapCaller(os.WriteFile(path, data, 0644))
+	_ = os.MkdirAll(vendorPath, 0o755)
+	path := checkSumPath(vendorPath)
+	return errors.WrapCaller(os.WriteFile(path, data, 0o644))
 }
 
 // formatBytes formats bytes into a human-readable string.
