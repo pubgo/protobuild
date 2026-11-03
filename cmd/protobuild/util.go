@@ -77,6 +77,9 @@ func mergePluginConfig(base *Config, pluginConfigs ...*Config) *Config {
 func parseConfig() error {
 	content := assert.Must1(os.ReadFile(protoCfg))
 	content = assert.Must1(envsubst.Bytes(content))
+	// start from zero: yaml.Unmarshal keeps fields absent from the document,
+	// and doctor re-parses in-process — parse result must reflect only the file
+	globalCfg = Config{}
 	assert.Must(yaml.Unmarshal(content, &globalCfg))
 
 	globalCfg.Vendor = strutil.FirstFnNotEmpty(

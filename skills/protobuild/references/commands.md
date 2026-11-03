@@ -11,7 +11,7 @@
 | `vendor` | 同步 protobuf 依赖到 `.proto/` 目录 | `-f/--force` 强制重建；`-u/--update` 忽略缓存强制重新下载 | 是（写 `.proto/`） |
 | `update`（可带 `[name...]`） | 升级依赖到最新发布版本并重新 vendor；git/gomod 源可自动发现版本，http/s3/gcs/local 源会被跳过 | `--dry-run` 只显示可升级项 | 是（改 protobuf.yaml 并重新 vendor） |
 | `gen` | 编译 protobuf 文件，按配置生成代码 | —（读 protobuf.yaml 与 protobuf.plugin.yaml） | 是（写生成代码） |
-| `verify` | 校验 `.proto/` 内容与 manifest（per-file sha256）一致，CI 门禁 | — | 否 |
+| `verify` | 校验 `.proto/` 内容与 manifest（per-file sha256）一致，CI 门禁；无依赖且 vendor 为空时按空集通过 | — | 否 |
 | `buf` | 生成 `buf.yaml`，供 buf CLI / buf LSP 解析 import | `-f/--force` 覆盖已存在的 buf.yaml | 是（写 buf.yaml） |
 | `breaking` | proto 兼容性检查（包装 `buf breaking`，自动排除 vendor）；默认对比自动物化的 base 分支（origin/main → master → main） | `--against` buf 输入（如 `.git#branch=main`、`.git#tag=v1.0.0`）；`--error-format`（text/json/msvs/junit/github-actions/gitlab-code-quality） | 否 |
 | `lint` | AIP lint 规则检查（api-linter + protocompile） | `--debug`；`--list-rules` 列出规则后退出 | 否 |

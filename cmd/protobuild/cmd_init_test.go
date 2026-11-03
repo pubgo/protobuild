@@ -2,6 +2,7 @@ package protobuild
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -57,6 +58,77 @@ func TestRunInitGatewayFillsModule(t *testing.T) {
 	}
 }
 
+func TestVerifyPassesZeroDepProject(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	oldPwd := pwd
+	pwd = dir
+	t.Cleanup(func() { pwd = oldPwd })
+
+	if err := os.WriteFile("go.mod", []byte("module smoke.example/verify\n\ngo 1.25.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runInit("minimal", false); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	if err := parseConfig(); err != nil {
+		t.Fatalf("parseConfig: %v", err)
+	}
+	if err := runVerify(); err != nil {
+		t.Errorf("zero-dep project must pass verify (new templates ship no deps), got: %v", err)
+	}
+}
+
+func TestVerifyFailsWithStrayFilesNoDepsNoManifest(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	oldPwd := pwd
+	pwd = dir
+	t.Cleanup(func() { pwd = oldPwd })
+
+	cfg := "vendor: .proto\nroot: [proto]\nincludes: [proto]\nplugins:\n  - name: go\n"
+	if err := os.WriteFile("protobuf.yaml", []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := parseConfig(); err != nil {
+		t.Fatalf("parseConfig: %v", err)
+	}
+	// drop a stray file into vendor without deps and without manifest:
+	// the empty-set pass must NOT bless hand-placed vendor content
+	if err := os.MkdirAll(filepath.Join(".proto", "google", "protobuf"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(".proto", "google", "protobuf", "any.proto"), []byte("syntax=\"proto3\";package google.protobuf;message Any{}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runVerify(); err == nil {
+		t.Error("stray vendor content without manifest must fail even for zero-dep projects")
+	}
+}
+
+func TestVerifyFailsWithDepsNoVendor(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	oldPwd := pwd
+	pwd = dir
+	t.Cleanup(func() { pwd = oldPwd })
+
+	src := filepath.Join(dir, "extsrc")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := "vendor: .proto\nroot: [proto]\nincludes: [proto]\ndeps:\n  - name: ext\n    source: local\n    url: " + src + "\nplugins:\n  - name: go\n"
+	if err := os.WriteFile("protobuf.yaml", []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := parseConfig(); err != nil {
+		t.Fatalf("parseConfig: %v", err)
+	}
+	if err := runVerify(); err == nil {
+		t.Error("project with deps but never vendored must still fail verify (guard against over-broad zero-dep pass)")
+	}
+}
+
 func mustReadFile(t *testing.T, path string) []byte {
 	t.Helper()
 	data, err := os.ReadFile(path)
@@ -86,6 +158,20 @@ func TestTemplatesNoWKTDep(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestGatewayTemplateOpenAPIV2SkipsBase(t *testing.T) {
+	// protoc-gen-openapiv2 has no paths=/module= flags; protoc fails atomically
+	// when runVendor injects base opts into it. The template must skip base for it.
+	for _, p := range initTemplates["grpc-gateway"].Plugins {
+		if p.Name == "openapiv2" {
+			if !p.SkipBase {
+				t.Fatalf("openapiv2 plugin must set SkipBase: protoc rejects paths=import for it (verified: 'cannot set flag paths=import: no such flag -paths')")
+			}
+			return
+		}
+	}
+	t.Fatal("openapiv2 plugin missing from grpc-gateway template")
 }
 
 func TestGatewayTemplateHasLinterBlock(t *testing.T) {

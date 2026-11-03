@@ -57,7 +57,7 @@ var initTemplates = map[string]*config.Config{
 			{Name: "go"},
 			{Name: "go-grpc"},
 			{Name: "grpc-gateway", Opts: config.PluginOpts{"generate_unbound_methods=true"}},
-			{Name: "openapiv2", Out: "./docs/swagger"},
+			{Name: "openapiv2", Out: "./docs/swagger", SkipBase: true},
 		},
 		Installers: []string{
 			"go install google.golang.org/protobuf/cmd/protoc-gen-go@latest",
