@@ -1,0 +1,8 @@
+interface:
+  display_name: "Protobuild"
+  short_description: "Proto build/lint/format tool"
+  brand_color: "#0F9D58"
+  default_prompt: "Use protobuild to vendor deps and generate proto code."
+
+dependencies:
+  tools: []
