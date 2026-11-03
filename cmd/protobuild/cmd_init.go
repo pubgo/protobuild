@@ -136,8 +136,10 @@ func runInit(template string, force bool) error {
 		cfg = interactiveInit()
 	}
 
-	// Try to detect Go module
-	if cfg.BasePlugin != nil && cfg.BasePlugin.Module == "" {
+	// Detect Go module for import-mode configs only: protoc-gen-go rejects
+	// module= combined with paths=source_relative (verified via `protoc-gen-go`
+	// error "cannot use module= with paths=source_relative").
+	if cfg.BasePlugin != nil && cfg.BasePlugin.Module == "" && cfg.BasePlugin.Paths == "import" {
 		if mod := detectGoModule(); mod != "" {
 			cfg.BasePlugin.Module = mod + "/pkg"
 			fmt.Printf("🔍 检测到 Go 模块: %s\n", mod)

@@ -27,11 +27,33 @@ func TestRunInitProducesUsableProject(t *testing.T) {
 		}
 	}
 	content := string(mustReadFile(t, "protobuf.yaml"))
-	if !strings.Contains(content, "module: example.com/demo/pkg") {
-		t.Errorf("config must contain detected module, got:\n%s", content)
+	if strings.Contains(content, "module:") {
+		t.Errorf("source_relative config must NOT carry module (protoc-gen-go rejects module= with paths=source_relative), got:\n%s", content)
 	}
 	if strings.Contains(content, "protocolbuffers") {
 		t.Error("config must not contain WKT github dep")
+	}
+}
+
+func TestRunInitGatewayFillsModule(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	oldPwd := pwd
+	pwd = dir
+	t.Cleanup(func() { pwd = oldPwd })
+
+	if err := os.WriteFile("go.mod", []byte("module smoke.example/gw\n\ngo 1.25.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runInit("grpc-gateway", false); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	content := string(mustReadFile(t, "protobuf.yaml"))
+	if !strings.Contains(content, "module: smoke.example/gw/pkg") {
+		t.Errorf("import-mode config must carry detected module, got:\n%s", content)
+	}
+	if !strings.Contains(content, "paths: import") {
+		t.Errorf("gateway template must keep paths=import, got:\n%s", content)
 	}
 }
 
