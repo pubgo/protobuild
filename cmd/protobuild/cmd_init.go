@@ -17,12 +17,13 @@ import (
 // initTemplates defines available project templates.
 var initTemplates = map[string]*config.Config{
 	"basic": {
-		Vendor:   ".proto",
+		Vendor: ".proto",
+		BasePlugin: &config.BasePluginCfg{
+			Out:   "./pkg",
+			Paths: "source_relative",
+		},
 		Root:     []string{"proto"},
 		Includes: []string{"proto"},
-		Depends: []*config.Depend{
-			{Name: "google/protobuf", Url: "https://github.com/protocolbuffers/protobuf", Path: "src/google/protobuf"},
-		},
 		Plugins: []*config.Plugin{
 			{Name: "go"},
 			{Name: "go-grpc"},
@@ -38,9 +39,19 @@ var initTemplates = map[string]*config.Config{
 		Root:     []string{"proto"},
 		Includes: []string{"proto"},
 		Depends: []*config.Depend{
-			{Name: "google/protobuf", Url: "https://github.com/protocolbuffers/protobuf", Path: "src/google/protobuf"},
 			{Name: "google/api", Url: "https://github.com/googleapis/googleapis", Path: "google/api"},
 			{Name: "protoc-gen-openapiv2/options", Url: "https://github.com/grpc-ecosystem/grpc-gateway", Path: "protoc-gen-openapiv2/options"},
+		},
+		Linter: &config.Linter{
+			Rules: &config.LinterRules{
+				EnabledRules: []string{
+					"core::0131::http-method",
+					"core::0131::http-body",
+					"core::0235::plural-method-name",
+				},
+				DisabledRules: []string{"all"},
+			},
+			FormatType: "yaml",
 		},
 		Plugins: []*config.Plugin{
 			{Name: "go"},
@@ -56,7 +67,11 @@ var initTemplates = map[string]*config.Config{
 		},
 	},
 	"minimal": {
-		Vendor:   ".proto",
+		Vendor: ".proto",
+		BasePlugin: &config.BasePluginCfg{
+			Out:   "./pkg",
+			Paths: "source_relative",
+		},
 		Root:     []string{"proto"},
 		Includes: []string{"proto"},
 		Plugins: []*config.Plugin{
@@ -201,9 +216,6 @@ func interactiveInit() *config.Config {
 		},
 		Root:     []string{protoDir},
 		Includes: []string{protoDir},
-		Depends: []*config.Depend{
-			{Name: "google/protobuf", Url: "https://github.com/protocolbuffers/protobuf", Path: "src/google/protobuf"},
-		},
 		Plugins: []*config.Plugin{
 			{Name: "go"},
 		},
