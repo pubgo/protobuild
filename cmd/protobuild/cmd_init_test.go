@@ -1,9 +1,48 @@
 package protobuild
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
+
+func TestRunInitProducesUsableProject(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	// syncBufConfig writes to the package-level pwd captured at process start;
+	// align it with the chdir'ed temp dir (for the CLI these are the same).
+	oldPwd := pwd
+	pwd = dir
+	t.Cleanup(func() { pwd = oldPwd })
+
+	if err := os.WriteFile("go.mod", []byte("module example.com/demo\n\ngo 1.25.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runInit("basic", false); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	for _, want := range []string{"protobuf.yaml", "buf.yaml", "proto/example/v1/greeter.proto"} {
+		if _, err := os.Stat(want); err != nil {
+			t.Errorf("expected artifact %s: %v", want, err)
+		}
+	}
+	content := string(mustReadFile(t, "protobuf.yaml"))
+	if !strings.Contains(content, "module: example.com/demo/pkg") {
+		t.Errorf("config must contain detected module, got:\n%s", content)
+	}
+	if strings.Contains(content, "protocolbuffers") {
+		t.Error("config must not contain WKT github dep")
+	}
+}
+
+func mustReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return data
+}
 
 func TestTemplatesHaveBase(t *testing.T) {
 	for _, name := range []string{"basic", "minimal", "grpc-gateway"} {

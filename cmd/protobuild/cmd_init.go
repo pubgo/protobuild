@@ -152,6 +152,17 @@ func runInit(template string, force bool) error {
 		fmt.Printf("📁 创建目录: %s\n", dir)
 	}
 
+	// Seed an example proto when the root dir is still empty (best-effort;
+	// existing user protos are never touched — check is inside the function).
+	hasExample := false
+	if len(cfg.Root) > 0 {
+		created, err := createExampleProto(cfg.Root[0])
+		if err != nil {
+			fmt.Printf("  ⚠️  示例 proto 生成失败: %v\n", err)
+		}
+		hasExample = created
+	}
+
 	// Save config
 	if err := config.Save(protoCfg, cfg); err != nil {
 		return fmt.Errorf("保存配置失败: %w", err)
@@ -163,9 +174,15 @@ func runInit(template string, force bool) error {
 	syncBufConfig(cfg)
 
 	fmt.Println("\n下一步:")
-	fmt.Println("  1. 运行 'protobuild vendor' 同步依赖")
-	fmt.Println("  2. 在 proto/ 目录下创建 .proto 文件")
-	fmt.Println("  3. 运行 'protobuild gen' 生成代码")
+	if len(cfg.Depends) > 0 {
+		fmt.Println("  1. 运行 'protobuild vendor' 同步依赖")
+	}
+	if hasExample {
+		fmt.Println("  · 示例 proto 已生成于 proto/example/v1/，直接 'protobuild gen' 即可验证链路")
+	} else {
+		fmt.Println("  · 在 proto/ 目录下创建 .proto 文件")
+	}
+	fmt.Println("  · 运行 'protobuild gen' 生成代码")
 
 	return nil
 }
@@ -247,23 +264,24 @@ func detectGoModule() string {
 }
 
 // createExampleProto creates an example proto file if the directory is empty.
-func createExampleProto(protoDir string) error {
+// It reports whether an example was actually written.
+func createExampleProto(protoDir string) (bool, error) {
 	// Check if directory is empty
 	entries, err := os.ReadDir(protoDir)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for _, e := range entries {
 		if strings.HasSuffix(e.Name(), ".proto") {
-			return nil // Already has proto files
+			return false, nil // Already has proto files
 		}
 	}
 
 	// Create example proto
 	exampleDir := filepath.Join(protoDir, "example", "v1")
 	if err := os.MkdirAll(exampleDir, 0o755); err != nil {
-		return err
+		return false, err
 	}
 
 	module := detectGoModule()
@@ -296,9 +314,9 @@ service GreeterService {
 
 	exampleFile := filepath.Join(exampleDir, "greeter.proto")
 	if err := os.WriteFile(exampleFile, []byte(example), 0o644); err != nil {
-		return err
+		return false, err
 	}
 
 	fmt.Printf("📝 创建示例文件: %s\n", exampleFile)
-	return nil
+	return true, nil
 }
