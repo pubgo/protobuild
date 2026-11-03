@@ -6,7 +6,7 @@
 
 | 命令 | 用途 | 关键 flag | 写盘 |
 |------|------|-----------|------|
-| `init` | 初始化 protobuf 项目配置（生成 protobuf.yaml，同步 buf.yaml） | `-f/--force` 覆盖已有配置；`-t/--template` 模板（BASIC、GRPC-GATEWAY、MINIMAL） | 是（创建配置文件） |
+| `init` | 初始化 protobuf 项目配置（生成 protobuf.yaml，同步 buf.yaml） | `-f/--force` 覆盖已有配置；`-t/--template` 模板（`basic`、`grpc-gateway`、`minimal`，区分大小写） | 是（创建配置文件） |
 | `doctor` | 检查开发环境（protoc、插件、配置） | `--fix` 尝试自动修复 | `--fix` 时可能修复环境 |
 | `vendor` | 同步 protobuf 依赖到 `.proto/` 目录 | `-f/--force` 强制重建；`-u/--update` 忽略缓存强制重新下载 | 是（写 `.proto/`） |
 | `update`（可带 `[name...]`） | 升级依赖到最新发布版本并重新 vendor；git/gomod 源可自动发现版本，http/s3/gcs/local 源会被跳过 | `--dry-run` 只显示可升级项 | 是（改 protobuf.yaml 并重新 vendor） |

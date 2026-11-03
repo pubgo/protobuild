@@ -15,7 +15,7 @@
 | vendor | 依赖是否已 vendor 到 `.proto/` |
 | proto compile | 实际编译一遍 proto 验证 import 链 |
 
-`protobuild doctor --fix` 在发现问题后自动执行：`go install` 缺失的 protoc-gen-go / protoc-gen-go-grpc、按需跑 vendor。其余缺失（protoc、buf、api-linter）只提示，不代装。
+`protobuild doctor --fix` 在发现问题后自动执行：`go install` 缺失的 protoc-gen-go / protoc-gen-go-grpc。其余不代做：protoc、buf、api-linter 缺失只提示；`.proto/` 未 vendor 时也只打印"请手动运行 protobuild vendor"，**不会代跑 vendor**。
 
 ## verify：vendor 产物完整性校验
 

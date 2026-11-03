@@ -60,4 +60,4 @@ plugins:
 
 ## 与 buf.yaml 的关系
 
-buf（LSP / format / breaking 引擎）只认 `buf.yaml`，其 import 相对 module root 解析。改 `protobuf.yaml` 的 `root`/`vendor` 后，`protobuild init`/`protobuild buf` 会同步生成 buf.yaml；手写的 buf.yaml 默认不覆盖，接管需 `protobuild buf -f`。
+buf（LSP / format / breaking 引擎）只认 `buf.yaml`，其 import 相对 module root 解析。改 `protobuf.yaml` 的 `root`/`vendor` 后，`vendor` / `init` 会自动同步生成 buf.yaml；需要手动重生成时跑 `protobuild buf`，手写的 buf.yaml 默认不覆盖，接管需 `protobuild buf -f`。

@@ -20,7 +20,7 @@ protobuild 是 protobuf 工程的构建管理 CLI：粘合层定位，直调 pro
 
 1. `protobuild` 与 `protoc` 可用：`protobuild --help`；缺失时先引导安装 protobuild。
 2. protoc 插件（如 go-grpc、gateway）缺失时用 `protobuild install`（可 `-f` 强制更新）。
-3. 环境异常（插件、配置、网络源）跑 `protobuild doctor`，可加 `--fix` 尝试自动修复。
+3. 环境异常（插件、配置、网络源）跑 `protobuild doctor`；`--fix` 只会 `go install` 缺失的 protoc-gen-go / protoc-gen-go-grpc，其余按提示手动处理。
 
 ## Workflows
 
@@ -46,7 +46,7 @@ protobuild 是 protobuf 工程的构建管理 CLI：粘合层定位，直调 pro
 - **会写盘的命令**：`gen`、`format -w`、`install`、`buf`、`clean`、`init`、`vendor`、`update`——执行前告知用户文件/缓存会变化，执行后提示查看 diff。
 - 命令须在含 `protobuf.yaml` 的项目根执行（全局 `-c` 可换配置文件路径）。
 - **`.proto/` 是 vendor 产物，禁止手改**；内容异常（如 package 被文本替换弄坏）用 `protobuild vendor -f` 重建，`verify` 失败先怀疑手改。
-- **buf 只认 `buf.yaml`**：改 root/vendor 后由 `protobuild buf`（或 init）同步生成；手写的 buf.yaml 默认不被覆盖，接管需 `--force` 提示。
+- **buf 只认 `buf.yaml`**：改 root/vendor 后 `vendor`/`init` 会自动同步 buf.yaml；手动重生成用 `protobuild buf`，手写的 buf.yaml 默认不覆盖（接管需 `-f`）。
 - `upgrade`/`version` 是 protobuild 自身管理，非用户项目操作，除非用户明确要求勿跑。
 
 ## 进一步阅读（references）
