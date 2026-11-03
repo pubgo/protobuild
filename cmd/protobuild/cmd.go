@@ -95,6 +95,18 @@ func Main() *redant.Command {
 	return app
 }
 
+// ExitOnError logs a CLI error and terminates with exit code 1. Unlike funk's
+// assert.Exit it never dumps the goroutine stack: ordinary operational errors
+// (missing config, unknown template, ...) must read as a single log line.
+func ExitOnError(err error) {
+	if err == nil {
+		return
+	}
+
+	logger.Err(err).Msg("os exit with error")
+	os.Exit(1)
+}
+
 // handleStdinPlugin handles protoc plugin mode when invoked via stdin.
 func handleStdinPlugin(ctx context.Context, inv *redant.Invocation) error {
 	file := os.Stdin
