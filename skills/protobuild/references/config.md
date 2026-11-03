@@ -39,6 +39,8 @@ deps:
 
 要点：
 
+- WKT（`google/protobuf/*.proto`）通常**无需作为依赖**——protoc、buf、lint 引擎均内置解析；上例仅在需要把 WKT 固定为工作区文件时使用。
+
 - `protobuild update` 只能自动发现 `git`/`gomod` 的新版本；`http/s3/gcs/local` 会被跳过（升级需手改 `version`/`url`）。
 - 依赖同步落地到 `vendor` 目录并记录于 manifest；`.proto/` 内容异常用 `vendor -f` 重建。
 

@@ -25,9 +25,9 @@ protobuild 是 protobuf 工程的构建管理 CLI：粘合层定位，直调 pro
 ## Workflows
 
 ### ① 新项目：初始化到首次生成
-1. `protobuild init`（可选 `-t grpc-gateway|minimal|basic` 模板，`-f` 覆盖）。
-2. 与用户确认 `protobuf.yaml`：root 目录、deps 依赖源（git/gomod/http/s3/gcs/local 六种，写法见 references/config.md）。
-3. `protobuild vendor` 同步依赖到 `.proto/`，并生成 manifest。
+1. `protobuild init`（可选 `-t basic|grpc-gateway|minimal` 模板，`-f` 覆盖）。模板自带 `base:` 输出配置；root 目录为空时还会生成示例 `proto/example/v1/greeter.proto`。
+2. 按需调整 `protobuf.yaml`：deps 依赖源（git/gomod/http/s3/gcs/local 六种，写法见 references/config.md；`google/protobuf/*.proto` 无需作为依赖——protoc 与 buf 内置解析）。
+3. 有 deps 时 `protobuild vendor` 同步依赖到 `.proto/`（模板默认无依赖的项目此步为空操作）。
 4. `protobuild gen` 生成代码。**先 vendor 再 gen**。
 
 ### ② 日常改动

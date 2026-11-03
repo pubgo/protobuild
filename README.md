@@ -80,9 +80,9 @@ root:
 includes:
   - proto
 deps:
-  - name: google/protobuf
-    url: github.com/protocolbuffers/protobuf
-    path: src/google/protobuf
+  - name: googleapis                      # git 源示例（WKT 无需 vendor：protoc/buf 内置解析）
+    url: github.com/googleapis/googleapis
+    path: google/api
 plugins:
   - name: go
     out: pkg
