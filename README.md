@@ -106,7 +106,6 @@ plugins:
 | `clean --dry-run`              | 预览缓存清理       |
 | `init --template grpc-gateway` | 使用模板初始化     |
 | `doctor --fix`                 | 环境检查并尝试修复 |
-| `skills`                       | 生成智能体技能模板 |
 | `upgrade`                      | 自升级管理         |
 | `version`                      | 版本信息           |
 
