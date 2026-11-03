@@ -10,7 +10,7 @@ protobuild：面向 protobuf 工程的构建管理 CLI（Go）。定位是粘合
 - `internal/`：`depresolver`（多源依赖 git/gomod/http/s3/gcs/local）、`config`（protobuf.yaml 模型）、`typex`（Options/Commands 包装）、`protoutil`（protogen 生成辅助）、`modutil`（go.mod 解析）、`shutil`（shell 封装）
 - `cmd/format`（内置 proto 格式化器）和 `cmd/linters`（内置 AIP lint 规则）是独立实现包；`cmd/formatcmd`、`cmd/webcmd` 分别挂为 format / web 子命令
 - `skills/protobuild/` 是对外分发的 Agent Skill **唯一真源**（`npx skills add pubgo/protobuild` 安装）；原 `protobuild skills` 子命令已移除
-- 本仓库自举使用自己：`protobuf.yaml`、`buf.yaml`、`protobuf.lock.yaml` 已入库；`.proto/` 是 gitignore 的 vendor 产物
+- 本仓库自举使用自己：`protobuf.yaml`、`buf.yaml` 已入库；`.proto/` 是 gitignore 的 vendor 产物
 
 ## 命令
 
