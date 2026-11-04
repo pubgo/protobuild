@@ -21,7 +21,7 @@ golangci-lint run   # v2 配置，issues.fix: true 会自动改写文件
 go run . vendor     # 自举：proto:* / release:dry 等见 Taskfile.yml
 ```
 
-CI（`.github/workflows/ci.yml`）真实执行 lint + build + test，必须本地全绿再提 PR。
+CI（`.github/workflows/ci.yml`）真实执行 lint + build + test + proto 自举门禁（`vendor → verify → format --exit-code → lint → breaking`），必须本地全绿再提 PR。
 
 ## 关键坑（都是踩出来的）
 
