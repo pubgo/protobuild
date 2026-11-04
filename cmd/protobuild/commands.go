@@ -49,18 +49,8 @@ func newGenCommand() *redant.Command {
 	}
 }
 
-// writeLockfile persists the resolved dependency state next to protobuf.yaml.
-// Best-effort: failures warn but never break the vendor flow.
-func writeLockfile(resolvedPaths map[string]string) {
-	if err := saveLockfile(buildLockfile(&globalCfg, resolvedPaths)); err != nil {
-		fmt.Printf("  ⚠️  Failed to write lockfile: %s\n", err)
-		return
-	}
-	fmt.Printf("🔒 已更新 %s\n", lockfileName)
-}
-
 // runVendorSync resolves dependencies, syncs the vendor directory, and keeps
-// the generated artifacts (buf.yaml, lockfile) consistent.
+// the generated artifacts (buf.yaml) consistent.
 func runVendorSync(ctx context.Context, update, force bool) error {
 	svc := NewVendorService(&globalCfg)
 	result, err := svc.ResolveDependencies(ctx, update)
@@ -82,7 +72,6 @@ func runVendorSync(ctx context.Context, update, force bool) error {
 		fmt.Println("\n✨ No changes detected")
 		// keep buf.yaml in sync even when nothing was re-copied
 		syncBufConfig(&globalCfg)
-		writeLockfile(result.ResolvedPaths)
 		return nil
 	}
 
@@ -98,7 +87,6 @@ func runVendorSync(ctx context.Context, update, force bool) error {
 
 	// Keep buf.yaml in sync with the vendor layout for buf CLI / buf lsp.
 	syncBufConfig(&globalCfg)
-	writeLockfile(result.ResolvedPaths)
 
 	fmt.Printf("\n✅ Vendor complete! Copied %d proto files.\n", copiedFiles)
 	return nil

@@ -43,6 +43,7 @@ flowchart LR
 | [`EXAMPLES.md`](./EXAMPLES.md)                   | 配置模板与场景示例           | 4            |
 | [`AUDIT_REVIEW.md`](./AUDIT_REVIEW.md)           | 版本审计、风险与改进建议     | 5            |
 | [`AGENT_SKILL.md`](./AGENT_SKILL.md)             | 智能体接入与技能规范         | 6            |
+| [`skills/protobuild/SKILL.md`](../skills/protobuild/SKILL.md) | Agent Skill 唯一真源（含 references 命令速查） | 6.5          |
 | [`BUF_LSP.md`](./BUF_LSP.md)                     | buf lsp 集成与 buf.yaml 生成 | 7            |
 
 ## 维护状态图

@@ -56,8 +56,15 @@ func parseCleanSize(s string) (int64, error) {
 		suffix string
 		multi  int64
 	}{
-		{"KIB", 1 << 10}, {"MIB", 1 << 20}, {"GIB", 1 << 30}, {"TIB", 1 << 40},
-		{"KB", 1e3}, {"MB", 1e6}, {"GB", 1e9}, {"TB", 1e12}, {"B", 1},
+		{"KIB", 1 << 10},
+		{"MIB", 1 << 20},
+		{"GIB", 1 << 30},
+		{"TIB", 1 << 40},
+		{"KB", 1e3},
+		{"MB", 1e6},
+		{"GB", 1e9},
+		{"TB", 1e12},
+		{"B", 1},
 	}
 
 	for _, u := range units {

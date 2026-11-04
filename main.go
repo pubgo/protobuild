@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"runtime/debug"
 
-	"github.com/pubgo/funk/v2/assert"
 	"github.com/pubgo/funk/v2/buildinfo/version"
 
 	"github.com/pubgo/protobuild/cmd/protobuild"
@@ -39,5 +38,5 @@ func commitID() string {
 }
 
 func main() {
-	assert.Exit(protobuild.Main().Invoke().WithOS().Run())
+	protobuild.ExitOnError(protobuild.Main().Invoke().WithOS().Run())
 }

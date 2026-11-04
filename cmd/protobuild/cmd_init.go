@@ -17,12 +17,13 @@ import (
 // initTemplates defines available project templates.
 var initTemplates = map[string]*config.Config{
 	"basic": {
-		Vendor:   ".proto",
+		Vendor: ".proto",
+		BasePlugin: &config.BasePluginCfg{
+			Out:   "./pkg",
+			Paths: "source_relative",
+		},
 		Root:     []string{"proto"},
 		Includes: []string{"proto"},
-		Depends: []*config.Depend{
-			{Name: "google/protobuf", Url: "https://github.com/protocolbuffers/protobuf", Path: "src/google/protobuf"},
-		},
 		Plugins: []*config.Plugin{
 			{Name: "go"},
 			{Name: "go-grpc"},
@@ -38,15 +39,25 @@ var initTemplates = map[string]*config.Config{
 		Root:     []string{"proto"},
 		Includes: []string{"proto"},
 		Depends: []*config.Depend{
-			{Name: "google/protobuf", Url: "https://github.com/protocolbuffers/protobuf", Path: "src/google/protobuf"},
 			{Name: "google/api", Url: "https://github.com/googleapis/googleapis", Path: "google/api"},
 			{Name: "protoc-gen-openapiv2/options", Url: "https://github.com/grpc-ecosystem/grpc-gateway", Path: "protoc-gen-openapiv2/options"},
+		},
+		Linter: &config.Linter{
+			Rules: &config.LinterRules{
+				EnabledRules: []string{
+					"core::0131::http-method",
+					"core::0131::http-body",
+					"core::0235::plural-method-name",
+				},
+				DisabledRules: []string{"all"},
+			},
+			FormatType: "yaml",
 		},
 		Plugins: []*config.Plugin{
 			{Name: "go"},
 			{Name: "go-grpc"},
 			{Name: "grpc-gateway", Opts: config.PluginOpts{"generate_unbound_methods=true"}},
-			{Name: "openapiv2", Out: "./docs/swagger"},
+			{Name: "openapiv2", Out: "./docs/swagger", SkipBase: true},
 		},
 		Installers: []string{
 			"go install google.golang.org/protobuf/cmd/protoc-gen-go@latest",
@@ -56,7 +67,11 @@ var initTemplates = map[string]*config.Config{
 		},
 	},
 	"minimal": {
-		Vendor:   ".proto",
+		Vendor: ".proto",
+		BasePlugin: &config.BasePluginCfg{
+			Out:   "./pkg",
+			Paths: "source_relative",
+		},
 		Root:     []string{"proto"},
 		Includes: []string{"proto"},
 		Plugins: []*config.Plugin{
@@ -121,8 +136,10 @@ func runInit(template string, force bool) error {
 		cfg = interactiveInit()
 	}
 
-	// Try to detect Go module
-	if cfg.BasePlugin != nil && cfg.BasePlugin.Module == "" {
+	// Detect Go module for import-mode configs only: protoc-gen-go rejects
+	// module= combined with paths=source_relative (verified via `protoc-gen-go`
+	// error "cannot use module= with paths=source_relative").
+	if cfg.BasePlugin != nil && cfg.BasePlugin.Module == "" && cfg.BasePlugin.Paths == "import" {
 		if mod := detectGoModule(); mod != "" {
 			cfg.BasePlugin.Module = mod + "/pkg"
 			fmt.Printf("🔍 检测到 Go 模块: %s\n", mod)
@@ -131,10 +148,21 @@ func runInit(template string, force bool) error {
 
 	// Create proto directory if not exists
 	for _, dir := range cfg.Root {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("创建目录 %s 失败: %w", dir, err)
 		}
 		fmt.Printf("📁 创建目录: %s\n", dir)
+	}
+
+	// Seed an example proto when the root dir is still empty (best-effort;
+	// existing user protos are never touched — check is inside the function).
+	hasExample := false
+	if len(cfg.Root) > 0 {
+		created, err := createExampleProto(cfg.Root[0])
+		if err != nil {
+			fmt.Printf("  ⚠️  示例 proto 生成失败: %v\n", err)
+		}
+		hasExample = created
 	}
 
 	// Save config
@@ -148,9 +176,15 @@ func runInit(template string, force bool) error {
 	syncBufConfig(cfg)
 
 	fmt.Println("\n下一步:")
-	fmt.Println("  1. 运行 'protobuild vendor' 同步依赖")
-	fmt.Println("  2. 在 proto/ 目录下创建 .proto 文件")
-	fmt.Println("  3. 运行 'protobuild gen' 生成代码")
+	if len(cfg.Depends) > 0 {
+		fmt.Println("  1. 运行 'protobuild vendor' 同步依赖")
+	}
+	if hasExample {
+		fmt.Println("  · 示例 proto 已生成于 proto/example/v1/，直接 'protobuild gen' 即可验证链路")
+	} else {
+		fmt.Println("  · 在 proto/ 目录下创建 .proto 文件")
+	}
+	fmt.Println("  · 运行 'protobuild gen' 生成代码")
 
 	return nil
 }
@@ -201,9 +235,6 @@ func interactiveInit() *config.Config {
 		},
 		Root:     []string{protoDir},
 		Includes: []string{protoDir},
-		Depends: []*config.Depend{
-			{Name: "google/protobuf", Url: "https://github.com/protocolbuffers/protobuf", Path: "src/google/protobuf"},
-		},
 		Plugins: []*config.Plugin{
 			{Name: "go"},
 		},
@@ -235,23 +266,24 @@ func detectGoModule() string {
 }
 
 // createExampleProto creates an example proto file if the directory is empty.
-func createExampleProto(protoDir string) error {
+// It reports whether an example was actually written.
+func createExampleProto(protoDir string) (bool, error) {
 	// Check if directory is empty
 	entries, err := os.ReadDir(protoDir)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for _, e := range entries {
 		if strings.HasSuffix(e.Name(), ".proto") {
-			return nil // Already has proto files
+			return false, nil // Already has proto files
 		}
 	}
 
 	// Create example proto
 	exampleDir := filepath.Join(protoDir, "example", "v1")
-	if err := os.MkdirAll(exampleDir, 0755); err != nil {
-		return err
+	if err := os.MkdirAll(exampleDir, 0o755); err != nil {
+		return false, err
 	}
 
 	module := detectGoModule()
@@ -283,10 +315,10 @@ service GreeterService {
 `, module)
 
 	exampleFile := filepath.Join(exampleDir, "greeter.proto")
-	if err := os.WriteFile(exampleFile, []byte(example), 0644); err != nil {
-		return err
+	if err := os.WriteFile(exampleFile, []byte(example), 0o644); err != nil {
+		return false, err
 	}
 
 	fmt.Printf("📝 创建示例文件: %s\n", exampleFile)
-	return nil
+	return true, nil
 }

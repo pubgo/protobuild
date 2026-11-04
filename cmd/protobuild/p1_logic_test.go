@@ -3,8 +3,6 @@ package protobuild
 import (
 	"testing"
 	"time"
-
-	"github.com/pubgo/protobuild/internal/config"
 )
 
 func TestParseCleanDuration(t *testing.T) {
@@ -173,26 +171,3 @@ func TestToGitURL(t *testing.T) {
 		}
 	}
 }
-
-func TestLockfileDiff(t *testing.T) {
-	l := &lockfile{Version: 1, Deps: []*lockDep{
-		{Name: "retag", URL: "github.com/pubgo/protoc-gen-retag", Version: "v0.0.5", Commit: "abc"},
-		{Name: "google/api", URL: "https://github.com/googleapis/googleapis", Version: "main"},
-	}}
-
-	cfg := &config.Config{Depends: []*config.Depend{
-		{Name: "retag", Url: "github.com/pubgo/protoc-gen-retag", Version: strPtr("v0.0.5")},
-		{Name: "google/api", Url: "https://github.com/googleapis/googleapis", Version: strPtr("main")},
-	}}
-	if drift := l.diffDeps(cfg); len(drift) != 0 {
-		t.Fatalf("expected no drift, got %v", drift)
-	}
-
-	cfg.Depends[0].Version = strPtr("v0.0.6")
-	drift := l.diffDeps(cfg)
-	if len(drift) != 1 {
-		t.Fatalf("expected 1 drift, got %v", drift)
-	}
-}
-
-func strPtr(s string) *string { return &s }
