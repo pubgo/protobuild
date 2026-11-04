@@ -36,6 +36,61 @@ func TestNewManagerCustomPaths(t *testing.T) {
 	}
 }
 
+// TestNewManagerGomodPathWithoutGopathEnv reproduces the CI runner case: GOPATH
+// is not exported there, and the module cache path must still be the absolute
+// real one (what `go` itself uses), never a relative "pkg/mod".
+func TestNewManagerGomodPathWithoutGopathEnv(t *testing.T) {
+	t.Setenv("GOPATH", "")
+	t.Setenv("GOMODCACHE", "")
+
+	m := NewManager("", "")
+
+	if !filepath.IsAbs(m.gomodPath) {
+		t.Errorf("gomodPath = %q, want absolute module cache path", m.gomodPath)
+	}
+}
+
+func TestResolveGomodPath(t *testing.T) {
+	tests := []struct {
+		name       string
+		goModCache string // `go env GOMODCACHE` output
+		gopathEnv  string
+		home       string
+		want       string
+	}{
+		{
+			name:       "go env GOMODCACHE wins",
+			goModCache: "/custom/mod",
+			gopathEnv:  "/gopath",
+			home:       "/home/user",
+			want:       "/custom/mod",
+		},
+		{
+			name:       "GOPATH env fallback when go env fails",
+			goModCache: "",
+			gopathEnv:  "/gopath",
+			home:       "/home/user",
+			want:       "/gopath/pkg/mod",
+		},
+		{
+			name:       "home default when both empty",
+			goModCache: "",
+			gopathEnv:  "",
+			home:       "/home/user",
+			want:       "/home/user/go/pkg/mod",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveGomodPath(tt.goModCache, tt.gopathEnv, tt.home)
+			if got != tt.want {
+				t.Errorf("resolveGomodPath(%q, %q, %q) = %q, want %q",
+					tt.goModCache, tt.gopathEnv, tt.home, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDetectSource(t *testing.T) {
 	tests := []struct {
 		name     string

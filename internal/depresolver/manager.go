@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -148,13 +149,41 @@ func NewManager(cacheDir, gomodPath string) *Manager {
 		cacheDir = filepath.Join(home, ".cache", "protobuild", "deps")
 	}
 	if gomodPath == "" {
-		gomodPath = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
+		home, _ := os.UserHomeDir()
+		gomodPath = resolveGomodPath(goEnvModCache(), os.Getenv("GOPATH"), home)
 	}
 
 	return &Manager{
 		cacheDir:  cacheDir,
 		gomodPath: gomodPath,
 	}
+}
+
+// goEnvModCache asks the go toolchain for its effective module cache dir;
+// returns "" when go is unavailable or prints nothing.
+func goEnvModCache() string {
+	out, err := exec.Command("go", "env", "GOMODCACHE").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// resolveGomodPath picks the Go module cache dir: authoritative `go env
+// GOMODCACHE` first, then $GOPATH/pkg/mod, then the default $HOME/go/pkg/mod.
+// GOPATH is not exported on CI runners, which is why the go toolchain answer
+// wins; an empty GOPATH env must never degrade into a relative "pkg/mod".
+func resolveGomodPath(goModCache, gopathEnv, home string) string {
+	if goModCache = strings.TrimSpace(goModCache); goModCache != "" {
+		return goModCache
+	}
+	if gopathEnv != "" {
+		return filepath.Join(gopathEnv, "pkg", "mod")
+	}
+	if home != "" {
+		return filepath.Join(home, "go", "pkg", "mod")
+	}
+	return ""
 }
 
 // WithConcurrency sets the maximum number of concurrent resolve operations.
