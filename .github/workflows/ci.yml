@@ -36,3 +36,58 @@ jobs:
 
       - name: Test
         run: go test ./... -timeout 10m
+
+  # 自举门禁：用 protobuild 自己的命令检查本仓库 proto/ 与 vendor 产物
+  proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # breaking 缺省物化 origin/main 作 base，浅检出没有该 ref
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      # protobuf.yaml 的 google/protobuf 依赖是本地路径 /usr/local/include/google/protobuf，
+      # apt 的 protobuf-compiler 装到 /usr/include 对不上，必须用官方 release zip 解到 /usr/local
+      - name: Install protoc
+        run: |
+          set -euo pipefail
+          VER=36.2
+          curl -sSLo "${RUNNER_TEMP}/protoc.zip" \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${VER}/protoc-${VER}-linux-x86_64.zip"
+          sudo unzip -oq "${RUNNER_TEMP}/protoc.zip" -d /usr/local
+          protoc --version
+
+      # format 默认引擎与 breaking 依赖 buf 二进制；lint 引擎已内置无需安装
+      - name: Install buf
+        run: |
+          set -euo pipefail
+          curl -sSLo "${RUNNER_TEMP}/buf" \
+            "https://github.com/bufbuild/buf/releases/download/v1.74.0/buf-Linux-x86_64"
+          sudo install -m755 "${RUNNER_TEMP}/buf" /usr/local/bin/buf
+          buf --version
+
+      - name: Cache proto deps
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/protobuild/deps
+          key: protobuild-deps-${{ runner.os }}-${{ hashFiles('protobuf.yaml') }}
+
+      - name: Vendor proto deps
+        run: go run . vendor
+
+      - name: Verify vendor integrity
+        run: go run . verify
+
+      - name: Format check
+        run: go run . format --exit-code
+
+      - name: Lint
+        run: go run . lint
+
+      - name: Breaking change check
+        run: go run . breaking --error-format github-actions
